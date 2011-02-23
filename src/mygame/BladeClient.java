@@ -44,49 +44,34 @@ public class BladeClient extends SimpleApplication implements EntityFactory{
     private AnimControl control;
     private ChaseCamera chaseCam;
     private Node model;
-//    private Node clientModel;
+    
     private float angle = 0;
     private float[] upArmAngle = {0, 0, 0};
     private float rate = 1;
     private BulletAppState bulletAppState;
     private TerrainQuad terrain;
     Material mat_terrain;
-    /** Prepare Materials */
     Material wall_mat;
     Material stone_mat;
     Material floor_mat;
-    private RigidBodyControl ball_phy;
     private RigidBodyControl terrain_phy;
-    private static final Sphere sphere;
 
-//    Server server;
     Client client;
-//    ServerSyncService serverSyncService;
-//    CharacterEntity serverCharacter;
     ClientCharacterEntity clientCharacter;
     ClientSyncService clientSyncService;
     boolean clientSet=false;
-
-    static {
-        /** Initialize the cannon ball geometry */
-        sphere = new Sphere(32, 32, 0.4f, true, false);
-        sphere.setTextureMode(TextureMode.Projected);
-    }
-
 
 
     public SyncEntity createEntity(Class<? extends SyncEntity> entityType){
         clientCharacter=new ClientCharacterEntity(model);
         rootNode.attachChild(model);
         clientSet=true;
-        System.out.println("creating entity ................................................................");
         return clientCharacter;
     }
 
     public static void main(String[] args) {
         BladeClient app = new BladeClient();
         app.start();
-
     }
 
     public void onAnalog(String name, float value, float tpf) {
@@ -110,7 +95,6 @@ public class BladeClient extends SimpleApplication implements EntityFactory{
         model.rotate(0.0f, FastMath.HALF_PI, 0.0f);
         model.setLocalTranslation(0.0f, 0.0f, 0.0f);
 
-
         try{
             client=new Client("172.16.168.66",5001,5001);
             client.start();
@@ -120,7 +104,6 @@ public class BladeClient extends SimpleApplication implements EntityFactory{
         }
 
         clientSyncService=client.getService(ClientSyncService.class);
-        System.out.println("setting entity factory");
         clientSyncService.setEntityFactory(this);
 
         DirectionalLight sun = new DirectionalLight();
@@ -144,11 +127,9 @@ public class BladeClient extends SimpleApplication implements EntityFactory{
     @Override
     public void simpleUpdate(float tpf){
         clientSyncService.update(tpf);
- //       serverSyncService.update(tpf);
         if(clientSet){
             clientCharacter.onLocalUpdate();
         }
-            // System.out.println("Server");
     }
 
     public void registerInput() {
