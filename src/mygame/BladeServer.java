@@ -5,8 +5,11 @@ import com.jme3.animation.Bone;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.bullet.BulletAppState;
+import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
+import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.input.ChaseCamera;
+import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.AnalogListener;
@@ -23,8 +26,6 @@ import com.jme3.network.sync.ServerSyncService;
 import com.jme3.network.sync.SyncMessage;
 import com.jme3.renderer.Camera;
 import com.jme3.scene.Node;
-import com.jme3.scene.shape.Sphere;
-import com.jme3.scene.shape.Sphere.TextureMode;
 import com.jme3.terrain.geomipmap.TerrainLodControl;
 import com.jme3.terrain.heightmap.AbstractHeightMap;
 import com.jme3.terrain.geomipmap.TerrainQuad;
@@ -50,10 +51,14 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
     Material stone_mat;
     Material floor_mat;
     private RigidBodyControl terrain_phy;
+    boolean left = false, right = false, up = false, down = false;
+    float airTime = 0;
 
     Server server;
     ServerSyncService serverSyncService;
     CharacterEntity serverCharacter;
+    CharacterControl character;
+    Vector3f walkDirection = new Vector3f();
 
     public static void main(String[] args) {
         BladeServer app = new BladeServer();
@@ -94,9 +99,39 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
 
     }
 
-    public void onAction(String name, boolean keyPressed, float tpf) {
-        if (name.equals("displayPosition") && keyPressed) {
+    public void onAction(String binding, boolean value, float tpf) {
+        if (binding.equals("displayPosition") && value) {
         }
+        else if(binding.equals("CharLeft")) {
+            if (value) {
+                left = true;
+            } else {
+                left = false;
+            }
+        } else if (binding.equals("CharRight")) {
+            if (value) {
+                right = true;
+            } else {
+                right = false;
+            }
+        } else if (binding.equals("CharUp")) {
+            if (value) {
+                up = true;
+            } else {
+                up = false;
+            }
+        } else if (binding.equals("CharDown")) {
+            if (value) {
+                down = true;
+            } else {
+                down = false;
+            }
+        } else if (binding.equals("CharSpace")) {
+            character.jump();
+        }// else if (binding.equals("CharShoot") && !value) {
+          //  bulletControl();
+        //}
+
     }
 
     @Override
@@ -111,6 +146,7 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
             e.printStackTrace();
         }
 
+        setupKeys();
 
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
@@ -119,17 +155,19 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
         initTerrain();
         /** 1. Create terrain material and load four textures into it. */
         // Load a model from test_data (OgreXML + material + texture)
+        CapsuleCollisionShape capsule = new CapsuleCollisionShape(1.5f, 2f);
+        character = new CharacterControl(capsule, 0.01f);
         model = (Node) assetManager.loadModel("Models/Fighter.mesh.xml");
         model.scale(1.0f, 1.0f, 1.0f);
         model.rotate(0.0f, FastMath.HALF_PI, 0.0f);
         model.setLocalTranslation(0.0f, 0.0f, 0.0f);
+        model.addControl(character);
         rootNode.attachChild(model);
-
-
         serverCharacter=new CharacterEntity(model);
         serverSyncService.addNpc(serverCharacter);
-
         serverSyncService.setNetworkSimulationParams(0.0f, 50);
+        rootNode.attachChild(model);
+        bulletAppState.getPhysicsSpace().add(character);
 
         DirectionalLight sun = new DirectionalLight();
         sun.setDirection(new Vector3f(-0.1f, -0.7f, -1.0f));
@@ -153,6 +191,47 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
     @Override
     public void simpleUpdate(float tpf){
         serverSyncService.update(tpf);
+        Vector3f camDir = cam.getDirection().clone().multLocal(0.2f);
+        Vector3f camLeft = cam.getLeft().clone().multLocal(0.2f);
+        camDir.y = 0;
+        camLeft.y = 0;
+        if (left) {
+            walkDirection.addLocal(camLeft);
+        }
+        if (right) {
+            walkDirection.addLocal(camLeft.negate());
+        }
+        if (up) {
+            walkDirection.addLocal(camDir);
+        }
+        if (down) {
+            walkDirection.addLocal(camDir.negate());
+        }
+        if (!character.onGround()) {
+            airTime = airTime + tpf;
+        } else {
+            airTime = 0;
+        }
+        /*if (walkDirection.length() == 0) {
+          //  if (!"stand".equals(animationChannel.getAnimationName())) {
+          //      animationChannel.setAnim("stand", 1f);
+            }
+        } else {
+            character.setViewDirection(walkDirection);
+            if (airTime > .3f) {
+                if (!"stand".equals(animationChannel.getAnimationName())) {
+                    animationChannel.setAnim("stand");
+                }
+            } else if (!"Walk".equals(animationChannel.getAnimationName())) {
+                animationChannel.setAnim("Walk", 0.7f);
+            }
+        }*/
+        character.setWalkDirection(walkDirection);
+
+
+
+        walkDirection.set(0, 0, 0);
+
     }
 
     public void registerInput() {
@@ -162,6 +241,23 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
         inputManager.addListener(this, "twistUpArmLeftCCW", "twistUpArmLeftCW");
         inputManager.addListener(this, "displayPosition");
     }
+    private void setupKeys() {
+        inputManager.addMapping("wireframe", new KeyTrigger(KeyInput.KEY_T));
+        inputManager.addListener(this, "wireframe");
+        inputManager.addMapping("CharLeft", new KeyTrigger(KeyInput.KEY_A));
+        inputManager.addMapping("CharRight", new KeyTrigger(KeyInput.KEY_D));
+        inputManager.addMapping("CharUp", new KeyTrigger(KeyInput.KEY_W));
+        inputManager.addMapping("CharDown", new KeyTrigger(KeyInput.KEY_S));
+        inputManager.addMapping("CharSpace", new KeyTrigger(KeyInput.KEY_RETURN));
+        inputManager.addMapping("CharShoot", new KeyTrigger(KeyInput.KEY_SPACE));
+        inputManager.addListener(this, "CharLeft");
+        inputManager.addListener(this, "CharRight");
+        inputManager.addListener(this, "CharUp");
+        inputManager.addListener(this, "CharDown");
+        inputManager.addListener(this, "CharSpace");
+        inputManager.addListener(this, "CharShoot");
+    }
+
 
     public void initTerrain() {
         mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/Terrain.j3md");
@@ -242,4 +338,17 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
         floor_mat.setTexture("ColorMap", tex3);
 
     }
+
+    private void createCharacter() {
+        CapsuleCollisionShape capsule = new CapsuleCollisionShape(1.5f, 2f);
+        character = new CharacterControl(capsule, 0.01f);
+        model = (Node) assetManager.loadModel("Models/Oto/Oto.mesh.xml");
+        model.setLocalScale(0.5f);
+        model.addControl(character);
+        character.setPhysicsLocation(new Vector3f(-140, 10, -10));
+        rootNode.attachChild(model);
+        bulletAppState.getPhysicsSpace().add(character);
+    }
+
+
 }
