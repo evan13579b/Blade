@@ -103,7 +103,7 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
     public void simpleInitApp() {
         Serializer.registerClass(SyncMessage.class);
         try {
-            server = new Server(5001, 5001);
+            server = new Server(BladeMain.port,BladeMain.port);
             server.start();
             serverSyncService=server.getService(ServerSyncService.class);
         }
