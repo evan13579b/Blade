@@ -40,44 +40,21 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
     private AnimControl control;
     private ChaseCamera chaseCam;
     private Node model;
- //   private Node clientModel;
     private float angle = 0;
     private float[] upArmAngle = {0, 0, 0};
     private float rate = 1;
     private BulletAppState bulletAppState;
     private TerrainQuad terrain;
     Material mat_terrain;
-    /** Prepare Materials */
     Material wall_mat;
     Material stone_mat;
     Material floor_mat;
-    private RigidBodyControl ball_phy;
     private RigidBodyControl terrain_phy;
-    private static final Sphere sphere;
 
     Server server;
-//    Client client;
     ServerSyncService serverSyncService;
     CharacterEntity serverCharacter;
- //   ClientCharacterEntity clientCharacter;
- //   ClientSyncService clientSyncService;
-  //  boolean clientSet=false;
 
-    static {
-        /** Initialize the cannon ball geometry */
-        sphere = new Sphere(32, 32, 0.4f, true, false);
-        sphere.setTextureMode(TextureMode.Projected);
-    }
-
-
-/*
-    public SyncEntity createEntity(Class<? extends SyncEntity> entityType){
-        clientCharacter=new ClientCharacterEntity(clientModel);
-        rootNode.attachChild(clientModel);
-        clientSet=true;
-        return clientCharacter;
-    }
-*/
     public static void main(String[] args) {
         BladeServer app = new BladeServer();
         app.start();
@@ -119,7 +96,6 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
 
     public void onAction(String name, boolean keyPressed, float tpf) {
         if (name.equals("displayPosition") && keyPressed) {
-            //model.move(10, 10, 10);
         }
     }
 
@@ -152,24 +128,9 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
 
         serverCharacter=new CharacterEntity(model);
         serverSyncService.addNpc(serverCharacter);
- /*       clientModel=model.clone(false);
-        clientModel.setLocalTranslation(10,0,0);
-*/
-        serverSyncService.setNetworkSimulationParams(0.0f, 50);
-/*
-        try{
-            client=new Client("localhost",5001,5001);
-            client.start();
-        }
-        catch(Exception e){
-            e.printStackTrace();
-        }
-*/
- //       clientSyncService=client.getService(ClientSyncService.class);
- //       clientSyncService.setEntityFactory(this);
-    //    clientSet=true;
 
-        // You must add a light to make the model visible
+        serverSyncService.setNetworkSimulationParams(0.0f, 50);
+
         DirectionalLight sun = new DirectionalLight();
         sun.setDirection(new Vector3f(-0.1f, -0.7f, -1.0f));
         rootNode.addLight(sun);
@@ -180,37 +141,18 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
 
         control = model.getControl(AnimControl.class);
 
-        // Disable the flyby cam
         flyCam.setEnabled(false);
 
-        // Enable a chase cam
         chaseCam = new ChaseCamera(cam, model, inputManager);
         chaseCam.setSmoothMotion(true);
         chaseCam.setDefaultVerticalRotation(FastMath.HALF_PI / 4f);
         chaseCam.setLookAtOffset(new Vector3f(0.0f, 4.0f, 0.0f));
         registerInput();
- /*       while(server.getConnectors().size()==0){
-            try{
-                Thread.sleep(1000);
-            }
-            catch(Exception e){
-                e.printStackTrace();
-            }
-            System.out.println("waiting for clients");
-        }*/
     }
 
     @Override
     public void simpleUpdate(float tpf){
-  //      clientSyncService.update(tpf);
         serverSyncService.update(tpf);
-//        if(server.getConnectors().size()>0){
-//            System.out.println(server.getConnectors().size()+" clients connected");
- //       }
-  //      if(clientSet){
- //          clientCharacter.onLocalUpdate();
- //       }
-     //        System.out.println("Server");
     }
 
     public void registerInput() {
@@ -219,55 +161,6 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
         inputManager.addMapping("displayPosition", new KeyTrigger(keyInput.KEY_P));
         inputManager.addListener(this, "twistUpArmLeftCCW", "twistUpArmLeftCW");
         inputManager.addListener(this, "displayPosition");
-
-
-        /*
-        mouseInput.setInputListener(new RawInputListener() {
-
-        @Override
-        public void onMouseMotionEvent(MouseMotionEvent event) {
-
-        float tpf = timer.getTimePerFrame();
-        Vector2f mouseCoords = new Vector2f(event.getX(), event.getY());
-        System.out.println(mouseCoords.x + " , " + mouseCoords.y);
-
-
-        Bone b = control.getSkeleton().getBone("UpArmL");
-
-        upArmAngle[1] += (FastMath.HALF_PI / 2f) * tpf;
-
-        Quaternion q = new Quaternion();
-        q.fromAngles(0, upArmAngle[1], 0);
-
-        b.setUserControl(true);
-        b.setUserTransforms(Vector3f.ZERO, q, Vector3f.UNIT_XYZ);
-
-        }
-
-        public void onKeyEvent(KeyInputEvent event) {
-
-        }
-
-        public void onMouseButtonEvent(MouseButtonEvent event) {
-
-        }
-
-        public void onJoyButtonEvent(JoyButtonEvent event) {
-
-        }
-
-        public void onJoyAxisEvent(JoyAxisEvent event) {
-
-        }
-
-        public void endInput() {
-
-        }
-
-        public void beginInput() {
-
-        }
-        });*/
     }
 
     public void initTerrain() {
