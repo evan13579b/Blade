@@ -4,3 +4,4 @@
 *.dll
 *.so
 *.zip
+/nbproject/private/config.properties
