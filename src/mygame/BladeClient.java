@@ -93,7 +93,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory{
         model.setLocalTranslation(0.0f, 0.0f, 0.0f);
 
         try{
-            client=new Client("97.115.2.114",BladeMain.port,BladeMain.port);
+            client=new Client(BladeMain.serverMap.get("larry"),BladeMain.port,BladeMain.port);
             client.start();
         }
         catch(Exception e){
