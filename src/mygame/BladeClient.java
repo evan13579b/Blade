@@ -17,10 +17,8 @@ import com.jme3.material.Material;
 import com.jme3.math.FastMath;
 import com.jme3.math.Vector3f;
 import com.jme3.network.connection.Client;
-import com.jme3.network.events.MessageAdapter;
 import com.jme3.network.events.MessageListener;
 import com.jme3.network.message.Message;
-import com.jme3.network.serializing.Serializable;
 import com.jme3.network.serializing.Serializer;
 import com.jme3.network.sync.ClientSyncService;
 import com.jme3.network.sync.EntityFactory;
@@ -46,32 +44,6 @@ import jme3tools.converters.ImageToAwt;
  * @author blah
  */
 public class BladeClient extends SimpleApplication implements EntityFactory, ActionListener, MessageListener{
-
-    @Serializable
-    public static class PingMessage extends Message {
-    }
-
-    @Serializable
-    public static class PongMessage extends Message {
-    }
-
-    private static class PingResponder extends MessageAdapter {
-        @Override
-        public void messageReceived(Message message) {
-            try {
-                if (message instanceof PingMessage){
-                    System.out.println("Received ping message!");
-                    System.out.println("Sending pong message..");
-                    message.getClient().send(new PongMessage());
-                }else if (message instanceof PongMessage){
-                    System.out.println("Received pong message!");
-                }
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-        }
-    }
-
     private AnimControl control;
     private ChaseCamera chaseCam;
     private Node model;
@@ -91,6 +63,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Act
     ClientCharacterEntity clientCharacter;
     ClientSyncService clientSyncService;
     boolean clientSet=false;
+
 
 
     public SyncEntity createEntity(Class<? extends SyncEntity> entityType){
@@ -114,9 +87,8 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Act
     @Override
     public void simpleInitApp() {
         Serializer.registerClass(SyncMessage.class);
-        Serializer.registerClass(InputMessage.class);
-        Serializer.registerClass(PingMessage.class);
-        Serializer.registerClass(PongMessage.class);
+        InputMessages.registerInputClasses();
+
         
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
@@ -130,7 +102,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Act
         model.setLocalTranslation(0.0f, 0.0f, 0.0f);
 
         try{
-            client=new Client(BladeMain.serverMap.get("evan"),BladeMain.port,BladeMain.port);
+            client=new Client(BladeMain.serverMap.get("evan")/*"localhost"*/,BladeMain.port,BladeMain.port);
             client.start();
             Thread.sleep(1000);
         }
@@ -138,13 +110,11 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Act
             e.printStackTrace();
         }
 
-        client.addMessageListener(this,InputMessage.class);
-        client.addMessageListener(new PingResponder(),PongMessage.class,PingMessage.class);
+        InputMessages.addInputMessageListeners(client, this);
         clientSyncService=client.getService(ClientSyncService.class);
         clientSyncService.setEntityFactory(this);
         try {
-            client.send(new InputMessage());
-            client.send(new PingMessage());
+            client.send(new InputMessages.RotateArmC());
         } catch (IOException ex) {
             Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -182,8 +152,8 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Act
         inputManager.addListener(this, "twistUpArmLeftCCW", "twistUpArmLeftCW");
         inputManager.addListener(this, "displayPosition");
 
-
-        /*
+/*
+        
         mouseInput.setInputListener(new RawInputListener() {
 
         @Override

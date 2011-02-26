@@ -44,32 +44,6 @@ import java.util.logging.Logger;
 import jme3tools.converters.ImageToAwt;
 
 public class BladeServer extends SimpleApplication implements AnalogListener, ActionListener, MessageListener{
-
-    @Serializable
-    public static class PingMessage extends Message {
-    }
-
-    @Serializable
-    public static class PongMessage extends Message {
-    }
-
-    private static class PingResponder extends MessageAdapter {
-        @Override
-        public void messageReceived(Message message) {
-            try {
-                if (message instanceof PingMessage){
-                    System.out.println("Received ping message!");
-                    System.out.println("Sending pong message..");
-                    message.getClient().send(new PongMessage());
-                }else if (message instanceof PongMessage){
-                    System.out.println("Received pong message!");
-                }
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-        }
-    }
-
     private AnimControl control;
     private ChaseCamera chaseCam;
     private Node model;
@@ -169,9 +143,8 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
     @Override
     public void simpleInitApp() {
         Serializer.registerClass(SyncMessage.class);
-        Serializer.registerClass(InputMessage.class);
-        Serializer.registerClass(PingMessage.class);
-        Serializer.registerClass(PongMessage.class);
+        InputMessages.registerInputClasses();
+        
         try {
             server = new Server(BladeMain.port,BladeMain.port);
             server.start();
@@ -181,8 +154,7 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
             e.printStackTrace();
         }
 
-        server.addMessageListener(this,InputMessage.class);
-        server.addMessageListener(new PingResponder(),PingMessage.class,PongMessage.class);
+        InputMessages.addInputMessageListeners(server, this);
         setupKeys();
 
         flyCam.setMoveSpeed(50);
@@ -388,8 +360,7 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
     }
 
     public void messageReceived(Message message) {
-        InputMessage inputMessage=(InputMessage)message;
-        System.out.println("Message received:"+inputMessage.hello);
+        System.out.println("Received class "+message.getClass());
     }
 
     public void messageSent(Message message) {
