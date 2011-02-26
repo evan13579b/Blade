@@ -113,8 +113,8 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Act
 
     @Override
     public void simpleInitApp() {
-   //     Serializer.registerClass(SyncMessage.class);
-  //      Serializer.registerClass(InputMessage.class);
+        Serializer.registerClass(SyncMessage.class);
+        Serializer.registerClass(InputMessage.class);
         Serializer.registerClass(PingMessage.class);
         Serializer.registerClass(PongMessage.class);
         
@@ -130,7 +130,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Act
         model.setLocalTranslation(0.0f, 0.0f, 0.0f);
 
         try{
-            client=new Client(BladeMain.serverMap.get("evan")/*"localhost"*/,BladeMain.port,BladeMain.port);
+            client=new Client(BladeMain.serverMap.get("evan"),BladeMain.port,BladeMain.port);
             client.start();
             Thread.sleep(1000);
         }
@@ -138,12 +138,12 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Act
             e.printStackTrace();
         }
 
-   //     client.addMessageListener(new InputMessageListener(),InputMessage.class);
+        client.addMessageListener(this,InputMessage.class);
         client.addMessageListener(new PingResponder(),PongMessage.class,PingMessage.class);
- //       clientSyncService=client.getService(ClientSyncService.class);
-   //     clientSyncService.setEntityFactory(this);
+        clientSyncService=client.getService(ClientSyncService.class);
+        clientSyncService.setEntityFactory(this);
         try {
- //           client.send(new InputMessage());
+            client.send(new InputMessage());
             client.send(new PingMessage());
         } catch (IOException ex) {
             Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
@@ -169,7 +169,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Act
 
     @Override
     public void simpleUpdate(float tpf){
-  //      clientSyncService.update(tpf);
+        clientSyncService.update(tpf);
         if(clientSet){
             clientCharacter.onLocalUpdate();
         }
@@ -327,7 +327,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Act
     public void objectSent(Object object) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
-
+/*
     @Override
     public void destroy(){
         try {
@@ -335,5 +335,5 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Act
         } catch (IOException ex) {
             Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
         }
-    }
+    }*/
 }

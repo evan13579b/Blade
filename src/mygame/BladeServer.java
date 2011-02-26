@@ -168,20 +168,20 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
 
     @Override
     public void simpleInitApp() {
-   //     Serializer.registerClass(SyncMessage.class);
-  //      Serializer.registerClass(InputMessage.class);
+        Serializer.registerClass(SyncMessage.class);
+        Serializer.registerClass(InputMessage.class);
         Serializer.registerClass(PingMessage.class);
         Serializer.registerClass(PongMessage.class);
         try {
             server = new Server(BladeMain.port,BladeMain.port);
             server.start();
- //           serverSyncService=server.getService(ServerSyncService.class);
+            serverSyncService=server.getService(ServerSyncService.class);
         }
         catch(Exception e){
             e.printStackTrace();
         }
 
- //       server.addMessageListener(new InputMessageListener(),InputMessage.class);
+        server.addMessageListener(this,InputMessage.class);
         server.addMessageListener(new PingResponder(),PingMessage.class,PongMessage.class);
         setupKeys();
 
@@ -200,9 +200,9 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
         model.setLocalTranslation(0.0f, 0.0f, 0.0f);
         model.addControl(character);
         rootNode.attachChild(model);
- //       serverCharacter=new CharacterEntity(model);
- //       serverSyncService.addNpc(serverCharacter);
- //       serverSyncService.setNetworkSimulationParams(0.0f, 50);
+        serverCharacter=new CharacterEntity(model);
+        serverSyncService.addNpc(serverCharacter);
+        serverSyncService.setNetworkSimulationParams(0.0f, 50);
         rootNode.attachChild(model);
         bulletAppState.getPhysicsSpace().add(character);
 
@@ -222,12 +222,12 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
         chaseCam.setSmoothMotion(true);
         chaseCam.setDefaultVerticalRotation(FastMath.HALF_PI / 4f);
         chaseCam.setLookAtOffset(new Vector3f(0.0f, 4.0f, 0.0f));
- //       registerInput();
+        registerInput();
     }
 
     @Override
     public void simpleUpdate(float tpf){
- //       serverSyncService.update(tpf);
+        serverSyncService.update(tpf);
         Vector3f camDir = cam.getDirection().clone().multLocal(0.2f);
         Vector3f camLeft = cam.getLeft().clone().multLocal(0.2f);
         camDir.y = 0;
@@ -403,7 +403,7 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
     public void objectSent(Object object) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
-
+/*
     @Override
     public void destroy(){
         try {
@@ -411,5 +411,5 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
         } catch (IOException ex) {
             Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
         }
-    }
+    }*/
 }
