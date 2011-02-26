@@ -66,7 +66,7 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
 
     public static void main(String[] args) {
         BladeServer app = new BladeServer();
-        app.start(JmeContext.Type.Headless);
+        app.start();
 
     }
 
