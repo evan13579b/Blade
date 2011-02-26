@@ -130,7 +130,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Act
         model.setLocalTranslation(0.0f, 0.0f, 0.0f);
 
         try{
-            client=new Client(/*BladeMain.serverMap.get("evan")*/"localhost",BladeMain.port,BladeMain.port);
+            client=new Client(BladeMain.serverMap.get("evan")/*"localhost"*/,BladeMain.port,BladeMain.port);
             client.start();
             Thread.sleep(1000);
         }
