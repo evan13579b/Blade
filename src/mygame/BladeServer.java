@@ -174,6 +174,7 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
 
     @Override
     public void simpleUpdate(float tpf){
+        updateCharacter(tpf);
         serverSyncService.update(tpf);
         Vector3f camDir = cam.getDirection().clone().multLocal(0.2f);
         Vector3f camLeft = cam.getLeft().clone().multLocal(0.2f);
