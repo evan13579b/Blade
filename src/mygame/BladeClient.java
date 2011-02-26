@@ -10,6 +10,7 @@ import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.input.ChaseCamera;
 import com.jme3.input.MouseInput;
 import com.jme3.input.controls.ActionListener;
+import com.jme3.input.controls.AnalogListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.input.controls.MouseButtonTrigger;
 import com.jme3.light.DirectionalLight;
@@ -43,7 +44,7 @@ import jme3tools.converters.ImageToAwt;
  *
  * @author blah
  */
-public class BladeClient extends SimpleApplication implements EntityFactory, ActionListener, MessageListener{
+public class BladeClient extends SimpleApplication implements EntityFactory, ActionListener, AnalogListener, MessageListener{
     private AnimControl control;
     private ChaseCamera chaseCam;
     private Node model;
@@ -79,8 +80,9 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Act
     }
 
     public void onAnalog(String name, float value, float tpf) {
-        System.out.println("Processing Input");
+        
         if(name.equals("twistUpArmLeftCCW")){
+            System.out.println("left mouse button");
             try {
                 client.send(new InputMessages.RotateArmCC());
             } catch (IOException ex) {
@@ -88,6 +90,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Act
             }
         }
         else if(name.equals("twistUpArmLeftCW")){
+            System.out.println("right mouse button");
             try {
                 client.send(new InputMessages.RotateArmC());
             } catch (IOException ex) {
@@ -117,7 +120,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Act
         model.setLocalTranslation(0.0f, 0.0f, 0.0f);
 
         try{
-            client=new Client(/*BladeMain.serverMap.get("evan")*/"localhost",BladeMain.port,BladeMain.port);
+            client=new Client(BladeMain.serverMap.get("localhost"),BladeMain.port,BladeMain.port);
             
             client.start();
     //        Thread.sleep(100);

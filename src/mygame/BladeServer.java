@@ -364,9 +364,11 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
 
     public void messageReceived(Message message) {
         if(message instanceof InputMessages.RotateArmCC){
+            System.out.println("RotateArmCC");
             armRotationVel.y=-1;
         }
         else if(message instanceof InputMessages.RotateArmC){
+            System.out.println("RotateArmC");
             armRotationVel.y=1;
         }
     }
