@@ -99,7 +99,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
         model.setLocalTranslation(0.0f, 0.0f, 0.0f);
 
         try{
-            client=new Client(BladeMain.serverMap.get("evan"),BladeMain.port,BladeMain.port);
+            client=new Client(BladeMain.serverMap.get("larry"),BladeMain.port,BladeMain.port);
             
             client.start();
     //        Thread.sleep(100);
@@ -116,12 +116,9 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
         } catch (InterruptedException ex) {
             Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
         }
-         InputMessages.addInputMessageListeners(client, this);
-        try {
-            client.send(new InputMessages.RotateArmC());
-        } catch (IOException ex) {
-            Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
-        }
+
+        InputMessages.addInputMessageListeners(client, this);
+
 
         DirectionalLight sun = new DirectionalLight();
         sun.setDirection(new Vector3f(-0.1f, -0.7f, -1.0f));
