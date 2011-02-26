@@ -28,14 +28,14 @@ public class ClientCharacterEntity extends CharacterEntity {
     public void onRemoteUpdate(float latencyDelta){
 
         if(upperArmAngle!=null){
-            setTransforms(upperArmAngle.y);
+            setTransforms(upperArmAngle.z);
         
 
    
             prevUpArmAngle=upperArmAngle.clone();
    
 
-            upperArmAngle=new Vector3f(0,0,extrapolateAngles(upperArmAngle.y,latencyDelta));
+            upperArmAngle=new Vector3f(0,0,extrapolateAngles(upperArmAngle.z,latencyDelta));
             timeOfLastUpdate=System.currentTimeMillis();
         }
      //   System.out.println("onRemoteUpdate");
@@ -58,7 +58,7 @@ public class ClientCharacterEntity extends CharacterEntity {
     @Override
     public void onLocalUpdate(){
         if(prevUpArmAngle!=null){
-            setTransforms(extrapolateAngles(prevUpArmAngle.y,((float)(System.currentTimeMillis()-timeOfLastUpdate)/1000)));
+            setTransforms(extrapolateAngles(prevUpArmAngle.z,((float)(System.currentTimeMillis()-timeOfLastUpdate)/1000)));
         }
 //       System.out.println("delta:"+delta);
     }
@@ -69,7 +69,7 @@ public class ClientCharacterEntity extends CharacterEntity {
             float tempUpArmAngle[] = {0, 0, 0};
 
 
-            tempUpArmAngle[2] = interpolateAngles(prevUpArmAngle.y, upperArmAngle.y, blendAmount);
+            tempUpArmAngle[2] = interpolateAngles(prevUpArmAngle.z, upperArmAngle.z, blendAmount);
 
 
             setTransforms(tempUpArmAngle[2]);

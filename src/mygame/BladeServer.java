@@ -219,7 +219,7 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
  //     if (armRotationVel.y==-1) {
         Bone b = control.getSkeleton().getBone("UpArmL");
 
-        upArmAngle[2] += (FastMath.HALF_PI / 2f) * tpf * 10f * armRotationVel.y;
+        upArmAngle[2] += (FastMath.HALF_PI / 2f) * tpf * 10f * armRotationVel.z;
 
         Quaternion q = new Quaternion();
         q.fromAngles(0, upArmAngle[2], 0);
@@ -365,15 +365,15 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
     public void messageReceived(Message message) {
         if(message instanceof InputMessages.RotateArmCC){
             System.out.println("RotateArmCC");
-            armRotationVel.y=-1;
+            armRotationVel.z=-1;
         }
         else if(message instanceof InputMessages.RotateArmC){
             System.out.println("RotateArmC");
-            armRotationVel.y=1;
+            armRotationVel.z=1;
         }
         else if(message instanceof InputMessages.StopRotateTwist){
             System.out.println("StopRotateTwist");
-            armRotationVel.y=0;
+            armRotationVel.z=0;
         }
     }
 
