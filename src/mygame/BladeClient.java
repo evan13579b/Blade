@@ -101,14 +101,14 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Act
         model.setLocalTranslation(0.0f, 0.0f, 0.0f);
 
         try{
-            client=new Client(BladeMain.serverMap.get("evan")/*"192.168.0.2"*/,BladeMain.port,BladeMain.port);
+            client=new Client(/*BladeMain.serverMap.get("evan")*/"192.168.0.2",BladeMain.port,BladeMain.port);
             client.start();
         }
         catch(Exception e){
             e.printStackTrace();
         }
 
-        client.addMessageListener(this,InputMessage.class);
+        client.addMessageListener(new InputMessageListener(),InputMessage.class);
         clientSyncService=client.getService(ClientSyncService.class);
         clientSyncService.setEntityFactory(this);
         try {

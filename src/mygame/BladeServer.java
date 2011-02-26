@@ -149,7 +149,7 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
             e.printStackTrace();
         }
 
-        server.addMessageListener(this,InputMessage.class);
+        server.addMessageListener(new InputMessageListener(),InputMessage.class);
         setupKeys();
 
         flyCam.setMoveSpeed(50);
