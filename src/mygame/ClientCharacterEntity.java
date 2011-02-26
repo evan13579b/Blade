@@ -31,12 +31,12 @@ public class ClientCharacterEntity extends CharacterEntity {
        //     setTransforms(upperArmAngle.z);
             float extrapolatedSelfAngle,angleDiff,extrapolatedForeignAngle,newUpperArmAngle;
             if(prevUpArmAngle!=null){
-                extrapolatedSelfAngle=extrapolateAngles(prevUpArmAngle.z,((float)(System.currentTimeMillis()-timeOfLastUpdate)/1000));
-      //          System.out.println("extrapolatedAngle:"+extrapolatedAngle+",actualAngle:"+upperArmAngle.z);
+                extrapolatedSelfAngle=extrapolateAngles(prevUpArmAngle.z,((float)(System.currentTimeMillis()-timeOfLastUpdate)/1000));     
                 extrapolatedForeignAngle=extrapolateAngles(upperArmAngle.z,latencyDelta);
+            //    System.out.println("extrapolatedAngle:"+extrapolatedSelfAngle+",actualAngle:"+extrapolatedForeignAngle);
                 angleDiff=upperArmAngle.z-extrapolatedSelfAngle;
 
-                if(Math.abs(angleDiff%360)<1){
+                if(Math.abs(angleDiff%360)<0.5){
                     newUpperArmAngle=extrapolatedSelfAngle;
                 }
                 else{
