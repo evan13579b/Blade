@@ -21,26 +21,22 @@ import com.jme3.math.FastMath;
 import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.network.connection.Server;
-import com.jme3.network.events.MessageAdapter;
 import com.jme3.network.events.MessageListener;
 import com.jme3.network.message.Message;
-import com.jme3.network.serializing.Serializable;
 import com.jme3.network.serializing.Serializer;
 import com.jme3.network.sync.ServerSyncService;
 import com.jme3.network.sync.SyncMessage;
 import com.jme3.renderer.Camera;
 import com.jme3.scene.Node;
+import com.jme3.system.JmeContext;
 import com.jme3.terrain.geomipmap.TerrainLodControl;
 import com.jme3.terrain.heightmap.AbstractHeightMap;
 import com.jme3.terrain.geomipmap.TerrainQuad;
 import com.jme3.terrain.heightmap.ImageBasedHeightMap;
 import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.WrapMode;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import jme3tools.converters.ImageToAwt;
 
 public class BladeServer extends SimpleApplication implements AnalogListener, ActionListener, MessageListener{
@@ -70,7 +66,7 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
 
     public static void main(String[] args) {
         BladeServer app = new BladeServer();
-        app.start();
+        app.start(JmeContext.Type.Headless);
 
     }
 
