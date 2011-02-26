@@ -112,7 +112,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Act
         clientSyncService=client.getService(ClientSyncService.class);
         clientSyncService.setEntityFactory(this);
         try {
-            client.send(new InputMessage(new Vector3f(1, 1, 1)));
+            client.send(new InputMessage(new Vector3f()));
         } catch (IOException ex) {
             Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
         }
