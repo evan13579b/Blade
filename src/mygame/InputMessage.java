@@ -16,12 +16,13 @@ import com.jme3.network.serializing.Serializable;
 @Serializable()
 public class InputMessage extends Message{
   //  public Vector3f armRotVel;
-
-  //  public InputMessage(){
+ public String hello="test";
+    public InputMessage(){
+        super(true);
       //  armRotVel=new Vector3f(0,0,0);
-  //  }
+    }
 
-    public String hello="test";
+   
 
 /*    public InputMessage(Vector3f armRotVel){
         this.armRotVel=armRotVel;
