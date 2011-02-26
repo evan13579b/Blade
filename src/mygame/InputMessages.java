@@ -43,11 +43,11 @@ public class InputMessages{
 
     }
     
-    @Serializable(id=ROTARMCC) static public class RotateArmCC extends Message{}
-    @Serializable(id=ROTARMC) static public class RotateArmC extends Message{}
+    @Serializable(id=ROTARMCC) static public class RotateArmCC extends Message{public RotateArmCC(){super(false);}}
+    @Serializable(id=ROTARMC) static public class RotateArmC extends Message{public RotateArmC(){super(false);}}
     @Serializable(id=ROTARMUP) static public class RotateArmUp extends Message{}
     @Serializable(id=ROTARMDOWN) static public class RotateArmDown extends Message{}
     @Serializable(id=ROTARMLEFT) static public class RotateArmLeft extends Message{}
     @Serializable(id=ROTARMRIGHT) static public class RotateArmRight extends Message{}
-    @Serializable(id=STOPROTATETWIST) static public class StopRotateTwist extends Message{}
+    @Serializable(id=STOPROTATETWIST) static public class StopRotateTwist extends Message{ public StopRotateTwist(){super(false);}}
 }

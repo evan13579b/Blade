@@ -28,12 +28,29 @@ public class ClientCharacterEntity extends CharacterEntity {
     public void onRemoteUpdate(float latencyDelta){
 
         if(upperArmAngle!=null){
-            setTransforms(upperArmAngle.z);
-        
+       //     setTransforms(upperArmAngle.z);
+            float extrapolatedSelfAngle,angleDiff,extrapolatedForeignAngle,newUpperArmAngle;
+            if(prevUpArmAngle!=null){
+                extrapolatedSelfAngle=extrapolateAngles(prevUpArmAngle.z,((float)(System.currentTimeMillis()-timeOfLastUpdate)/1000));
+      //          System.out.println("extrapolatedAngle:"+extrapolatedAngle+",actualAngle:"+upperArmAngle.z);
+                extrapolatedForeignAngle=extrapolateAngles(upperArmAngle.z,latencyDelta);
+                angleDiff=upperArmAngle.z-extrapolatedSelfAngle;
 
-   
+                if(Math.abs(angleDiff%360)<1){
+                    newUpperArmAngle=extrapolatedSelfAngle;
+                }
+                else{
+                    newUpperArmAngle=extrapolatedForeignAngle;
+                }
+
+                upperArmAngle=new Vector3f(0,0,newUpperArmAngle);
+            }
+
+            
             prevUpArmAngle=upperArmAngle.clone();
    
+
+            
 
             upperArmAngle=new Vector3f(0,0,extrapolateAngles(upperArmAngle.z,latencyDelta));
             timeOfLastUpdate=System.currentTimeMillis();
@@ -68,25 +85,24 @@ public class ClientCharacterEntity extends CharacterEntity {
         if (prevUpArmAngle != null && upperArmAngle != null) {
             float tempUpArmAngle[] = {0, 0, 0};
 
-
             tempUpArmAngle[2] = interpolateAngles(prevUpArmAngle.z, upperArmAngle.z, blendAmount);
-
 
             setTransforms(tempUpArmAngle[2]);
         }
     }
-/*
+
     @Override
     public void extrapolate(float tpf){
-        setTransforms(extrapolateAngles(prevUpArmAngle,tpf));
+        if(prevUpArmAngle!=null){
+            setTransforms(extrapolateAngles(prevUpArmAngle.z,tpf));
+        }
     }
-*/
+
     public float extrapolateAngles(float currentAngle,float tpf){
        
         float tempUpArmAngle[]={0,0,0};
         tempUpArmAngle[2]=currentAngle+(FastMath.HALF_PI / 2f) * tpf * 10f * upperArmVelocity.z;
         
-
         return tempUpArmAngle[2];
     }
 }
