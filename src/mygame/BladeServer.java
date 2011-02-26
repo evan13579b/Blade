@@ -21,6 +21,8 @@ import com.jme3.math.FastMath;
 import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.network.connection.Server;
+import com.jme3.network.events.MessageListener;
+import com.jme3.network.message.Message;
 import com.jme3.network.serializing.Serializer;
 import com.jme3.network.sync.ServerSyncService;
 import com.jme3.network.sync.SyncMessage;
@@ -36,7 +38,7 @@ import java.util.ArrayList;
 import java.util.List;
 import jme3tools.converters.ImageToAwt;
 
-public class BladeServer extends SimpleApplication implements AnalogListener, ActionListener{
+public class BladeServer extends SimpleApplication implements AnalogListener, ActionListener, MessageListener{
 
     private AnimControl control;
     private ChaseCamera chaseCam;
@@ -137,6 +139,7 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
     @Override
     public void simpleInitApp() {
         Serializer.registerClass(SyncMessage.class);
+        Serializer.registerClass(InputMessage.class);
         try {
             server = new Server(BladeMain.port,BladeMain.port);
             server.start();
@@ -146,6 +149,7 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
             e.printStackTrace();
         }
 
+        server.addMessageListener(this,InputMessage.class);
         setupKeys();
 
         flyCam.setMoveSpeed(50);
@@ -348,6 +352,22 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
         character.setPhysicsLocation(new Vector3f(-140, 10, -10));
         rootNode.attachChild(model);
         bulletAppState.getPhysicsSpace().add(character);
+    }
+
+    public void messageReceived(Message message) {
+        System.out.println("Received Message");
+    }
+
+    public void messageSent(Message message) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    public void objectReceived(Object object) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    public void objectSent(Object object) {
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
 

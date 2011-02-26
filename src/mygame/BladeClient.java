@@ -8,11 +8,17 @@ import com.jme3.asset.TextureKey;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.input.ChaseCamera;
+import com.jme3.input.MouseInput;
+import com.jme3.input.controls.ActionListener;
+import com.jme3.input.controls.KeyTrigger;
+import com.jme3.input.controls.MouseButtonTrigger;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.FastMath;
 import com.jme3.math.Vector3f;
 import com.jme3.network.connection.Client;
+import com.jme3.network.events.MessageListener;
+import com.jme3.network.message.Message;
 import com.jme3.network.serializing.Serializer;
 import com.jme3.network.sync.ClientSyncService;
 import com.jme3.network.sync.EntityFactory;
@@ -20,23 +26,24 @@ import com.jme3.network.sync.SyncEntity;
 import com.jme3.network.sync.SyncMessage;
 import com.jme3.renderer.Camera;
 import com.jme3.scene.Node;
-import com.jme3.scene.shape.Sphere;
-import com.jme3.scene.shape.Sphere.TextureMode;
 import com.jme3.terrain.geomipmap.TerrainLodControl;
 import com.jme3.terrain.heightmap.AbstractHeightMap;
 import com.jme3.terrain.geomipmap.TerrainQuad;
 import com.jme3.terrain.heightmap.ImageBasedHeightMap;
 import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.WrapMode;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import jme3tools.converters.ImageToAwt;
 
 /**
  *
  * @author blah
  */
-public class BladeClient extends SimpleApplication implements EntityFactory{
+public class BladeClient extends SimpleApplication implements EntityFactory, ActionListener, MessageListener{
 
     private AnimControl control;
     private ChaseCamera chaseCam;
@@ -80,7 +87,8 @@ public class BladeClient extends SimpleApplication implements EntityFactory{
     @Override
     public void simpleInitApp() {
         Serializer.registerClass(SyncMessage.class);
-
+        Serializer.registerClass(InputMessage.class);
+        
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
         stateManager.attach(bulletAppState);
@@ -93,15 +101,21 @@ public class BladeClient extends SimpleApplication implements EntityFactory{
         model.setLocalTranslation(0.0f, 0.0f, 0.0f);
 
         try{
-            client=new Client(BladeMain.serverMap.get("larry"),BladeMain.port,BladeMain.port);
+            client=new Client(BladeMain.serverMap.get("evan"),BladeMain.port,BladeMain.port);
             client.start();
         }
         catch(Exception e){
             e.printStackTrace();
         }
 
+        client.addMessageListener(this,InputMessage.class);
         clientSyncService=client.getService(ClientSyncService.class);
         clientSyncService.setEntityFactory(this);
+        try {
+            client.send(new InputMessage(new Vector3f(1, 1, 1)));
+        } catch (IOException ex) {
+            Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
+        }
 
         DirectionalLight sun = new DirectionalLight();
         sun.setDirection(new Vector3f(-0.1f, -0.7f, -1.0f));
@@ -118,7 +132,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory{
         chaseCam.setSmoothMotion(true);
         chaseCam.setDefaultVerticalRotation(FastMath.HALF_PI / 4f);
         chaseCam.setLookAtOffset(new Vector3f(0.0f, 4.0f, 0.0f));
-
+        registerInput();
     }
 
     @Override
@@ -130,11 +144,11 @@ public class BladeClient extends SimpleApplication implements EntityFactory{
     }
 
     public void registerInput() {
-  //      inputManager.addMapping("twistUpArmLeftCCW", new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
- //       inputManager.addMapping("twistUpArmLeftCW", new MouseButtonTrigger(MouseInput.BUTTON_RIGHT));
-  //      inputManager.addMapping("displayPosition", new KeyTrigger(keyInput.KEY_P));
-//        inputManager.addListener(this, "twistUpArmLeftCCW", "twistUpArmLeftCW");
-//        inputManager.addListener(this, "displayPosition");
+        inputManager.addMapping("twistUpArmLeftCCW", new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
+        inputManager.addMapping("twistUpArmLeftCW", new MouseButtonTrigger(MouseInput.BUTTON_RIGHT));
+        inputManager.addMapping("displayPosition", new KeyTrigger(keyInput.KEY_P));
+        inputManager.addListener(this, "twistUpArmLeftCCW", "twistUpArmLeftCW");
+        inputManager.addListener(this, "displayPosition");
 
 
         /*
@@ -264,5 +278,21 @@ public class BladeClient extends SimpleApplication implements EntityFactory{
         tex3.setWrap(WrapMode.Repeat);
         floor_mat.setTexture("ColorMap", tex3);
 
+    }
+
+    public void messageReceived(Message message) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    public void messageSent(Message message) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    public void objectReceived(Object object) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    public void objectSent(Object object) {
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 }
