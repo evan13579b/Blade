@@ -174,7 +174,7 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
         rootNode.attachChild(model);
         serverCharacter=new CharacterEntity(model);
         serverSyncService.addNpc(serverCharacter);
-        serverSyncService.setNetworkSimulationParams(0.0f, 50);
+ //       serverSyncService.setNetworkSimulationParams(0.0f, 50);
         rootNode.attachChild(model);
         bulletAppState.getPhysicsSpace().add(character);
 

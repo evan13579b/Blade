@@ -102,17 +102,23 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Act
         model.setLocalTranslation(0.0f, 0.0f, 0.0f);
 
         try{
-            client=new Client(BladeMain.serverMap.get("evan")/*"localhost"*/,BladeMain.port,BladeMain.port);
+            client=new Client(/*BladeMain.serverMap.get("evan")*/"localhost",BladeMain.port,BladeMain.port);
             client.start();
-            Thread.sleep(1000);
+    //        Thread.sleep(100);
         }
         catch(Exception e){
             e.printStackTrace();
         }
 
-        InputMessages.addInputMessageListeners(client, this);
+       
         clientSyncService=client.getService(ClientSyncService.class);
         clientSyncService.setEntityFactory(this);
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
+        }
+         InputMessages.addInputMessageListeners(client, this);
         try {
             client.send(new InputMessages.RotateArmC());
         } catch (IOException ex) {
@@ -134,7 +140,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Act
         chaseCam.setSmoothMotion(true);
         chaseCam.setDefaultVerticalRotation(FastMath.HALF_PI / 4f);
         chaseCam.setLookAtOffset(new Vector3f(0.0f, 4.0f, 0.0f));
-        registerInput();
+//        registerInput();
     }
 
     @Override
