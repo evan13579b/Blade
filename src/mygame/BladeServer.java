@@ -355,11 +355,12 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
     }
 
     public void messageReceived(Message message) {
-        System.out.println("Received Message");
+        InputMessage inputMessage=(InputMessage)message;
+        System.out.println("Message received:"+inputMessage.armRotVel);
     }
 
     public void messageSent(Message message) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        System.out.println("Message Sent");
     }
 
     public void objectReceived(Object object) {

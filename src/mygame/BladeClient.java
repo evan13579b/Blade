@@ -101,7 +101,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Act
         model.setLocalTranslation(0.0f, 0.0f, 0.0f);
 
         try{
-            client=new Client(BladeMain.serverMap.get("evan"),BladeMain.port,BladeMain.port);
+            client=new Client(BladeMain.serverMap.get("evan")/*"localhost"*/,BladeMain.port,BladeMain.port);
             client.start();
         }
         catch(Exception e){
@@ -285,7 +285,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Act
     }
 
     public void messageSent(Message message) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        System.out.println("Message Sent");
     }
 
     public void objectReceived(Object object) {
