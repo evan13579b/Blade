@@ -13,7 +13,7 @@ import com.jme3.network.serializing.Serializable;
  *
  * @author blah
  */
-@Serializable()
+@Serializable(id=10)
 public class InputMessage extends Message{
   //  public Vector3f armRotVel;
  public String hello="test";
