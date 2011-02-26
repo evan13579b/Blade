@@ -28,8 +28,8 @@ public class CharacterEntity implements SyncEntity{
         upperArmAngle=new Vector3f(currentUpArmAngle[0],currentUpArmAngle[1],currentUpArmAngle[2]);
     }
 
-    public void setDelta(int delta){
-        upperArmVelocity=new Vector3f(0,0,delta);
+    public void setUpArmVelocity(Vector3f upperArmVelocity){
+        this.upperArmVelocity=new Vector3f(upperArmVelocity);
     }
 
     public void extrapolate(float tpf){}

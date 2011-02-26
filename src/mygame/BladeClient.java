@@ -79,6 +79,21 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Act
     }
 
     public void onAnalog(String name, float value, float tpf) {
+        System.out.println("Processing Input");
+        if(name.equals("twistUpArmLeftCCW")){
+            try {
+                client.send(new InputMessages.RotateArmCC());
+            } catch (IOException ex) {
+                Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        else if(name.equals("twistUpArmLeftCW")){
+            try {
+                client.send(new InputMessages.RotateArmC());
+            } catch (IOException ex) {
+                Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
     }
 
     public void onAction(String name, boolean keyPressed, float tpf) {
@@ -102,7 +117,8 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Act
         model.setLocalTranslation(0.0f, 0.0f, 0.0f);
 
         try{
-            client=new Client(BladeMain.serverMap.get("evan")/*"localhost"*/,BladeMain.port,BladeMain.port);
+            client=new Client(/*BladeMain.serverMap.get("evan")*/"localhost",BladeMain.port,BladeMain.port);
+            
             client.start();
     //        Thread.sleep(100);
         }
@@ -110,9 +126,9 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Act
             e.printStackTrace();
         }
 
-       
         clientSyncService=client.getService(ClientSyncService.class);
         clientSyncService.setEntityFactory(this);
+        
         try {
             Thread.sleep(1000);
         } catch (InterruptedException ex) {
@@ -140,7 +156,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Act
         chaseCam.setSmoothMotion(true);
         chaseCam.setDefaultVerticalRotation(FastMath.HALF_PI / 4f);
         chaseCam.setLookAtOffset(new Vector3f(0.0f, 4.0f, 0.0f));
-//        registerInput();
+        registerInput();
     }
 
     @Override

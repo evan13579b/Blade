@@ -64,7 +64,9 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
     ServerSyncService serverSyncService;
     CharacterEntity serverCharacter;
     CharacterControl character;
-    Vector3f walkDirection = new Vector3f();
+    Vector3f walkDirection = new Vector3f(0,0,0);
+
+    Vector3f armRotationVel = new Vector3f(0,0,0);
 
     public static void main(String[] args) {
         BladeServer app = new BladeServer();
@@ -73,35 +75,8 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
     }
 
     public void onAnalog(String name, float value, float tpf) {
-
-        if (name.equals("twistUpArmLeftCW")) {
-            Bone b = control.getSkeleton().getBone("UpArmL");
-
-            upArmAngle[2] += (FastMath.HALF_PI / 2f) * tpf * 10f;
-
-            Quaternion q = new Quaternion();
-            q.fromAngles(0, upArmAngle[2], 0);
-
-            b.setUserControl(true);
-            b.setUserTransforms(Vector3f.ZERO, q, Vector3f.UNIT_XYZ);
-            serverCharacter.setUpArmAngle(upArmAngle);
-            serverCharacter.setDelta(1);
-        } else if (name.equals("twistUpArmLeftCCW")) {
-            Bone b = control.getSkeleton().getBone("UpArmL");
-
-            upArmAngle[2] -= (FastMath.HALF_PI / 2f) * tpf * 10f;
-
-            Quaternion q = new Quaternion();
-            q.fromAngles(0, upArmAngle[2], 0);
-
-            b.setUserControl(true);
-            b.setUserTransforms(Vector3f.ZERO, q, Vector3f.UNIT_XYZ);
-            serverCharacter.setUpArmAngle(upArmAngle);
-            serverCharacter.setDelta(-1);
-        }
-        else{
-            serverCharacter.setDelta(0);
-        }
+        System.out.println("Processing input");
+      
 
     }
 
@@ -194,7 +169,7 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
         chaseCam.setSmoothMotion(true);
         chaseCam.setDefaultVerticalRotation(FastMath.HALF_PI / 4f);
         chaseCam.setLookAtOffset(new Vector3f(0.0f, 4.0f, 0.0f));
-        registerInput();
+  //      registerInput();
     }
 
     @Override
@@ -241,6 +216,34 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
 
         walkDirection.set(0, 0, 0);
 
+    }
+
+    public void updateCharacter(float tpf){
+      if (armRotationVel.y==-1) {
+            Bone b = control.getSkeleton().getBone("UpArmL");
+
+            upArmAngle[2] += (FastMath.HALF_PI / 2f) * tpf * 10f;
+
+            Quaternion q = new Quaternion();
+            q.fromAngles(0, upArmAngle[2], 0);
+
+            b.setUserControl(true);
+            b.setUserTransforms(Vector3f.ZERO, q, Vector3f.UNIT_XYZ);
+            serverCharacter.setUpArmAngle(upArmAngle);
+            serverCharacter.setUpArmVelocity(armRotationVel);
+        } else if (armRotationVel.y==1) {
+            Bone b = control.getSkeleton().getBone("UpArmL");
+
+            upArmAngle[2] -= (FastMath.HALF_PI / 2f) * tpf * 10f;
+
+            Quaternion q = new Quaternion();
+            q.fromAngles(0, upArmAngle[2], 0);
+
+            b.setUserControl(true);
+            b.setUserTransforms(Vector3f.ZERO, q, Vector3f.UNIT_XYZ);
+            serverCharacter.setUpArmAngle(upArmAngle);
+            serverCharacter.setUpArmVelocity(armRotationVel);
+        }
     }
 
     public void registerInput() {
@@ -360,7 +363,12 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
     }
 
     public void messageReceived(Message message) {
-        System.out.println("Received class "+message.getClass());
+        if(message instanceof InputMessages.RotateArmCC){
+            armRotationVel.y=-1;
+        }
+        else if(message instanceof InputMessages.RotateArmC){
+            armRotationVel.y=1;
+        }
     }
 
     public void messageSent(Message message) {
