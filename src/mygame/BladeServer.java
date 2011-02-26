@@ -220,7 +220,20 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
     }
 
     public void updateCharacter(float tpf){
-      if (armRotationVel.y==-1) {
+ //     if (armRotationVel.y==-1) {
+        Bone b = control.getSkeleton().getBone("UpArmL");
+
+        upArmAngle[2] += (FastMath.HALF_PI / 2f) * tpf * 10f * armRotationVel.y;
+
+        Quaternion q = new Quaternion();
+        q.fromAngles(0, upArmAngle[2], 0);
+
+        b.setUserControl(true);
+        b.setUserTransforms(Vector3f.ZERO, q, Vector3f.UNIT_XYZ);
+        serverCharacter.setUpArmAngle(upArmAngle);
+        serverCharacter.setUpArmVelocity(armRotationVel);
+      //  }
+        /* else if (armRotationVel.y==1) {
             Bone b = control.getSkeleton().getBone("UpArmL");
 
             upArmAngle[2] += (FastMath.HALF_PI / 2f) * tpf * 10f;
@@ -232,19 +245,9 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
             b.setUserTransforms(Vector3f.ZERO, q, Vector3f.UNIT_XYZ);
             serverCharacter.setUpArmAngle(upArmAngle);
             serverCharacter.setUpArmVelocity(armRotationVel);
-        } else if (armRotationVel.y==1) {
-            Bone b = control.getSkeleton().getBone("UpArmL");
+        } else {
 
-            upArmAngle[2] -= (FastMath.HALF_PI / 2f) * tpf * 10f;
-
-            Quaternion q = new Quaternion();
-            q.fromAngles(0, upArmAngle[2], 0);
-
-            b.setUserControl(true);
-            b.setUserTransforms(Vector3f.ZERO, q, Vector3f.UNIT_XYZ);
-            serverCharacter.setUpArmAngle(upArmAngle);
-            serverCharacter.setUpArmVelocity(armRotationVel);
-        }
+        }*/
     }
 
     public void registerInput() {
@@ -371,6 +374,10 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
         else if(message instanceof InputMessages.RotateArmC){
             System.out.println("RotateArmC");
             armRotationVel.y=1;
+        }
+        else if(message instanceof InputMessages.StopRotateTwist){
+            System.out.println("StopRotateTwist");
+            armRotationVel.y=0;
         }
     }
 

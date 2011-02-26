@@ -17,7 +17,7 @@ import com.jme3.network.serializing.Serializer;
  * @author blah
  */
 public class InputMessages{
-    static final int ROTARMCC=1,ROTARMC=2,ROTARMUP=3,ROTARMDOWN=4,ROTARMLEFT=5,ROTARMRIGHT=6;
+    static final int ROTARMCC=1,ROTARMC=2,ROTARMUP=3,ROTARMDOWN=4,ROTARMLEFT=5,ROTARMRIGHT=6,STOPROTATETWIST=7;
     static public void registerInputClasses(){
         Serializer.registerClass(RotateArmCC.class);
         Serializer.registerClass(RotateArmC.class);
@@ -25,17 +25,20 @@ public class InputMessages{
         Serializer.registerClass(RotateArmDown.class);
         Serializer.registerClass(RotateArmLeft.class);
         Serializer.registerClass(RotateArmRight.class);
+        Serializer.registerClass(StopRotateTwist.class);
     }
 
     static public void addInputMessageListeners(Object connector,MessageListener listener){
 
         if(connector instanceof Server){
             Server con=(Server)connector;
-            con.addMessageListener(listener,RotateArmCC.class,RotateArmC.class,RotateArmUp.class,RotateArmUp.class,RotateArmLeft.class,RotateArmRight.class);
+            con.addMessageListener(listener,RotateArmCC.class,RotateArmC.class,RotateArmUp.class,RotateArmUp.class,
+                    RotateArmLeft.class,RotateArmRight.class,StopRotateTwist.class);
         }
         else if(connector instanceof Client){
             Client con=(Client)connector;
-            con.addMessageListener(listener,RotateArmCC.class,RotateArmC.class,RotateArmUp.class,RotateArmUp.class,RotateArmLeft.class,RotateArmRight.class);
+            con.addMessageListener(listener,RotateArmCC.class,RotateArmC.class,RotateArmUp.class,RotateArmUp.class,
+                    RotateArmLeft.class,RotateArmRight.class,StopRotateTwist.class);
         }
 
     }
@@ -46,4 +49,5 @@ public class InputMessages{
     @Serializable(id=ROTARMDOWN) static public class RotateArmDown extends Message{}
     @Serializable(id=ROTARMLEFT) static public class RotateArmLeft extends Message{}
     @Serializable(id=ROTARMRIGHT) static public class RotateArmRight extends Message{}
+    @Serializable(id=STOPROTATETWIST) static public class StopRotateTwist extends Message{}
 }
