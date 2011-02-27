@@ -17,11 +17,19 @@ import com.jme3.scene.Node;
 public class CharacterEntity implements SyncEntity{
     protected @Sync Vector3f upperArmAngles;
     protected @Sync Vector3f upperArmVelocity;
+    protected @Sync Float elbowWristAngle;
+    protected @Sync Float elbowWristVel;
 
     protected Node model;
 
     public CharacterEntity(Node model) {
         this.model=model;
+    }
+
+    public void setElbowWrist(Float elbowWristAngle,Float elbowWristVel){
+        this.elbowWristAngle=new Float(elbowWristAngle);
+        this.elbowWristVel=new Float(elbowWristVel);
+       // System.out.println("elbowWristAngle is now "+this.elbowWristAngle+",elbowWristVel is now "+this.elbowWristVel);
     }
 
     public void setUpperArmAngles(Vector3f upperArmAngles){
