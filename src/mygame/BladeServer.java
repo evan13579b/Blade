@@ -1,7 +1,6 @@
 package mygame;
 
 import com.jme3.animation.AnimControl;
-import com.jme3.animation.Bone;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.bullet.BulletAppState;
@@ -9,16 +8,9 @@ import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.input.ChaseCamera;
-import com.jme3.input.KeyInput;
-import com.jme3.input.MouseInput;
-import com.jme3.input.controls.ActionListener;
-import com.jme3.input.controls.AnalogListener;
-import com.jme3.input.controls.KeyTrigger;
-import com.jme3.input.controls.MouseButtonTrigger;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.FastMath;
-import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.network.connection.Server;
 import com.jme3.network.events.MessageListener;
@@ -39,13 +31,10 @@ import java.util.ArrayList;
 import java.util.List;
 import jme3tools.converters.ImageToAwt;
 
-public class BladeServer extends SimpleApplication implements AnalogListener, ActionListener, MessageListener{
+public class BladeServer extends SimpleApplication implements MessageListener{
     private AnimControl control;
     private ChaseCamera chaseCam;
     private Node model;
-    private float angle = 0;
-    private float[] upArmAngle = {0, 0, 0};
-    private float rate = 1;
     private BulletAppState bulletAppState;
     private TerrainQuad terrain;
     Material mat_terrain;
@@ -63,52 +52,13 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
     Vector3f walkDirection = new Vector3f(0,0,0);
 
     Vector3f upperArmAngles = new Vector3f(0,0,0);
-    Vector3f armRotationVel = new Vector3f(0,0,0);
+    Vector3f upperArmRotationVel = new Vector3f(0,0,0);
+    float elbowWristAngle=CharMovement.Constraints.lRotMin;
+    int elbowWristVel=0;
 
     public static void main(String[] args) {
         BladeServer app = new BladeServer();
         app.start(JmeContext.Type.Headless);
-    }
-
-    public void onAnalog(String name, float value, float tpf) {
-        System.out.println("Processing input");
-      
-
-    }
-
-    public void onAction(String binding, boolean value, float tpf) {
-        if (binding.equals("displayPosition") && value) {
-        }
-        else if(binding.equals("CharLeft")) {
-            if (value) {
-                left = true;
-            } else {
-                left = false;
-            }
-        } else if (binding.equals("CharRight")) {
-            if (value) {
-                right = true;
-            } else {
-                right = false;
-            }
-        } else if (binding.equals("CharUp")) {
-            if (value) {
-                up = true;
-            } else {
-                up = false;
-            }
-        } else if (binding.equals("CharDown")) {
-            if (value) {
-                down = true;
-            } else {
-                down = false;
-            }
-        } else if (binding.equals("CharSpace")) {
-            character.jump();
-        }// else if (binding.equals("CharShoot") && !value) {
-          //  bulletControl();
-        //}
-
     }
 
     @Override
@@ -126,7 +76,7 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
         }
 
         InputMessages.addInputMessageListeners(server, this);
-        setupKeys();
+//        setupKeys();
 
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
@@ -145,7 +95,7 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
         rootNode.attachChild(model);
         serverCharacter=new CharacterEntity(model);
         serverSyncService.addNpc(serverCharacter);
-        serverSyncService.setNetworkSimulationParams(0.0f, 100);
+ //       serverSyncService.setNetworkSimulationParams(0.0f, 100);
 
         rootNode.attachChild(model);
         bulletAppState.getPhysicsSpace().add(character);
@@ -217,24 +167,30 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
     }
 
     public void updateCharacter(float tpf){
-        float speedScale=3;
-        upperArmAngles.x += (FastMath.HALF_PI / 2f) * tpf * speedScale * armRotationVel.x;
-        upperArmAngles.y += (FastMath.HALF_PI / 2f) * tpf * speedScale * armRotationVel.y;
-        upperArmAngles.z += (FastMath.HALF_PI / 2f) * tpf * speedScale * armRotationVel.z;
+        float speedScale=3;/*
+        upperArmAngles.x += (FastMath.HALF_PI / 2f) * tpf * speedScale * upperArmRotationVel.x;
+        if(upperArmAngles.x<-FastMath.QUARTER_PI){
+            upperArmAngles.x=-FastMath.QUARTER_PI;
+        }
+        upperArmAngles.y += (FastMath.HALF_PI / 2f) * tpf * speedScale * upperArmRotationVel.y;
+        if(upperArmAngles.y<0){
+            upperArmAngles.y=0;
+        }
+        upperArmAngles.z += (FastMath.HALF_PI / 2f) * tpf * speedScale * upperArmRotationVel.z;*/
+
+        upperArmAngles=CharMovement.extrapolateUpperArmAngles(upperArmAngles, upperArmRotationVel, tpf);
+        elbowWristAngle=CharMovement.extrapolateLowerArmAngles(elbowWristAngle, elbowWristAngle, tpf);
+
+   //     System.out.println("updateCharacter->elbowWristAngle is now "+this.elbowWristAngle+",elbowWristVel is now "+this.elbowWristVel);
+        serverCharacter.setElbowWrist(new Float(elbowWristAngle), new Float(elbowWristVel));
 
         serverCharacter.setUpperArmAngles(upperArmAngles);
-        serverCharacter.setUpArmVelocity(armRotationVel);
+        serverCharacter.setUpArmVelocity(upperArmRotationVel);
 
-        CharMovement.setUpperArmTransforms(upperArmAngles, model);
+        CharMovement.setUpperArmTransform(upperArmAngles, model);
+        CharMovement.setLowerArmTransform(elbowWristAngle,  model);
     }
-
-    public void registerInput() {
-        inputManager.addMapping("twistUpArmLeftCCW", new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
-        inputManager.addMapping("twistUpArmLeftCW", new MouseButtonTrigger(MouseInput.BUTTON_RIGHT));
-        inputManager.addMapping("displayPosition", new KeyTrigger(keyInput.KEY_P));
-        inputManager.addListener(this, "twistUpArmLeftCCW", "twistUpArmLeftCW");
-        inputManager.addListener(this, "displayPosition");
-    }
+/*
     private void setupKeys() {
         inputManager.addMapping("wireframe", new KeyTrigger(KeyInput.KEY_T));
         inputManager.addListener(this, "wireframe");
@@ -251,7 +207,7 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
         inputManager.addListener(this, "CharSpace");
         inputManager.addListener(this, "CharShoot");
     }
-
+*/
 
     public void initTerrain() {
         mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/Terrain.j3md");
@@ -345,26 +301,36 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
     }
 
     public void messageReceived(Message message) {
-        if(message instanceof InputMessages.RotateArmCC){
-            System.out.println("RotateArmCC");
-            armRotationVel.z=-1;
+        if(message instanceof InputMessages.RotateUArmCC){
+            System.out.println("RotateUArmCC");
+            upperArmRotationVel.z=-1;
         }
-        else if(message instanceof InputMessages.RotateArmC){
-            System.out.println("RotateArmC");
-            armRotationVel.z=1;
+        else if(message instanceof InputMessages.RotateUArmC){
+            System.out.println("RotateUArmC");
+            upperArmRotationVel.z=1;
         }
         else if(message instanceof InputMessages.StopRotateTwist){
             System.out.println("StopRotateTwist");
-            armRotationVel.z=0;
+            upperArmRotationVel.z=0;
         }
         else if(message instanceof InputMessages.MouseMovement){
             InputMessages.MouseMovement mouseMovement=(InputMessages.MouseMovement)message;
-            armRotationVel.x=FastMath.cos(mouseMovement.angle);
-            armRotationVel.y=FastMath.sin(mouseMovement.angle);
-    //        System.out.println("AngleVelx:"+armRotationVel.x+",AngleVely:"+armRotationVel.y);
+            upperArmRotationVel.x=FastMath.cos(mouseMovement.angle);
+            upperArmRotationVel.y=FastMath.sin(mouseMovement.angle);
         }
         else if(message instanceof InputMessages.StopMouseMovement){
-            armRotationVel.x=armRotationVel.y=0;
+            upperArmRotationVel.x=upperArmRotationVel.y=0;
+        }
+        else if(message instanceof InputMessages.LArmUp){
+            System.out.println("received wheelup");
+            elbowWristVel=1;
+        }
+        else if(message instanceof InputMessages.LArmDown){
+            System.out.println("received wheeldown");
+            elbowWristVel=-1;
+        }
+        else if(message instanceof InputMessages.StopLArm){
+            elbowWristVel=0;
         }
     }
 
@@ -379,13 +345,4 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
     public void objectSent(Object object) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
-/*
-    @Override
-    public void destroy(){
-        try {
-            server.stop();
-        } catch (IOException ex) {
-            Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }*/
 }

@@ -51,9 +51,6 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
     private ChaseCamera chaseCam;
     private Node model;
     
-    private float angle = 0;
-    private float[] upArmAngle = {0, 0, 0};
-    private float rate = 1;
     private BulletAppState bulletAppState;
     private TerrainQuad terrain;
     Material mat_terrain;
@@ -145,10 +142,11 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
             clientCharacter.onLocalUpdate();
             if((System.currentTimeMillis()-timeOfLastMouseMotion)>mouseMovementTimeout){
                 try {
-                    client.send(new InputMessages.StopMouseMovement());
+                    client.send(new InputMessages.StopMouseMovement());                   
                 } catch (IOException ex) {
                     Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
                 }
+                currentMouseEvents=0;
                 timeOfLastMouseMotion=System.currentTimeMillis();
             }
         }
@@ -271,35 +269,61 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
       //  throw new UnsupportedOperationException("Not supported yet.");
     }
 
-    private final int eventsPerPacket=5; // how many events should happen before next packet is sent
+    private final int eventsPerPacket=10; // how many events should happen before next packet is sent
     private final long mouseMovementTimeout=100; // how long until we propose to send a StopMouseMovement message
     private long timeOfLastMouseMotion=0; // how long since last movement
-    private int currentEvents=0;
+    private int currentMouseEvents=0;
     private int currentDX=0;
     private int currentDY=0;
+    private int prevDeltaWheel=0;
     public void onMouseMotionEvent(MouseMotionEvent evt) {
-        currentEvents++;
-        currentDX+=evt.getDX();
-        currentDY+=evt.getDY();
 
-        if(currentEvents>=eventsPerPacket){
-            try {
-                float angle=FastMath.atan2(currentDY, currentDX);
-                if(angle<0){
-                    angle=FastMath.TWO_PI+angle;
+        float dy=evt.getDY(),dx=evt.getDX();
+        if(dy!=0||dx!=0){
+            currentMouseEvents++;
+            currentDX += dx;
+            currentDY += dy;
+
+            if (currentMouseEvents >= eventsPerPacket) {
+                try {
+                    float angle = FastMath.atan2(currentDY, currentDX);
+                    if (angle < 0) {
+                        angle = FastMath.TWO_PI + angle;
+                    }
+                    client.send(new InputMessages.MouseMovement(angle));
+                    //         System.out.println("Message sent with angle degrees:"+360*angle/FastMath.TWO_PI+",radians:"+angle);
+                } catch (IOException ex) {
+                    Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
                 }
-                client.send(new InputMessages.MouseMovement(angle));
-       //         System.out.println("Message sent with angle degrees:"+360*angle/FastMath.TWO_PI+",radians:"+angle);
-            } catch (IOException ex) {
-                Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
+
+                currentMouseEvents = 0;
+                currentDX = 0;
+                currentDY = 0;
             }
 
-            currentEvents=0;
-            currentDX=0;
-            currentDY=0;
+            timeOfLastMouseMotion = System.currentTimeMillis();
         }
 
-        timeOfLastMouseMotion=System.currentTimeMillis();
+        try {
+            if (evt.getDeltaWheel() > 0) {
+                if (prevDeltaWheel < 0 && !(clientCharacter.elbowWristAngle==CharMovement.Constraints.lRotMax)) {
+                    client.send(new InputMessages.StopLArm());
+                } else {
+                    client.send(new InputMessages.LArmDown());
+                }
+                prevDeltaWheel=1;
+            } else if (evt.getDeltaWheel() < 0) {
+                if (prevDeltaWheel > 0  && !(clientCharacter.elbowWristAngle==CharMovement.Constraints.lRotMin)) {
+                    client.send(new InputMessages.StopLArm());
+                } else {
+                    client.send(new InputMessages.LArmUp());
+                }
+                prevDeltaWheel=-1;
+            }
+        } catch (IOException ex) {
+            Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
     }
 
     private boolean prevPressed = false;
@@ -310,14 +334,14 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
                 if (evt.getButtonIndex() == MouseInput.BUTTON_LEFT) {
                     System.out.println("left mouse button");
                     try {
-                        client.send(new InputMessages.RotateArmCC());
+                        client.send(new InputMessages.RotateUArmCC());
                     } catch (IOException ex) {
                         Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 } else if (evt.getButtonIndex() == MouseInput.BUTTON_RIGHT) {
                     System.out.println("right mouse button");
                     try {
-                        client.send(new InputMessages.RotateArmC());
+                        client.send(new InputMessages.RotateUArmC());
                     } catch (IOException ex) {
                         Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
                     }
@@ -335,18 +359,27 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
 
         prevPressed=evt.isPressed();
         inputManager.setCursorVisible(false);
+
+        if(evt.getButtonIndex()==MouseInput.BUTTON_MIDDLE){
+            try {
+                client.send(new InputMessages.StopLArm());
+            } catch (IOException ex) {
+                Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
     }
 
     public void onKeyEvent(KeyInputEvent evt) {
        // throw new UnsupportedOperationException("Not supported yet.");
     }
-/*
+
     @Override
     public void destroy(){
+        super.destroy();
         try {
             client.disconnect();
-        } catch (IOException ex) {
-            Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (Throwable ex) {
+            Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
         }
-    }*/
+    }
 }
