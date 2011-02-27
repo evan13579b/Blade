@@ -10,6 +10,7 @@ public class BladeMain {
         serverMap=new HashMap();
         serverMap.put("larry", "24.20.242.41");
         serverMap.put("evan", "97.115.2.114");
+        serverMap.put("localhost","localhost");
     }
 
     public static void main(String[] args) {
@@ -29,6 +30,5 @@ public class BladeMain {
         else{
             System.out.println("'"+args[0]+"' is not a proper command.");
         }
-
     }
 }

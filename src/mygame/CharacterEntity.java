@@ -15,7 +15,7 @@ import com.jme3.scene.Node;
  * @author blah
  */
 public class CharacterEntity implements SyncEntity{
-    protected @Sync Vector3f upperArmAngle;
+    protected @Sync Vector3f upperArmAngles;
     protected @Sync Vector3f upperArmVelocity;
 
     protected Node model;
@@ -24,12 +24,12 @@ public class CharacterEntity implements SyncEntity{
         this.model=model;
     }
 
-    public void setUpArmAngle(float currentUpArmAngle[]){
-        upperArmAngle=new Vector3f(currentUpArmAngle[0],currentUpArmAngle[1],currentUpArmAngle[2]);
+    public void setUpperArmAngles(Vector3f upperArmAngles){
+        this.upperArmAngles=new Vector3f(upperArmAngles);
     }
 
-    public void setDelta(int delta){
-        upperArmVelocity=new Vector3f(0,0,delta);
+    public void setUpArmVelocity(Vector3f upperArmVelocity){
+        this.upperArmVelocity=new Vector3f(upperArmVelocity);
     }
 
     public void extrapolate(float tpf){}
