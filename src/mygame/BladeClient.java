@@ -99,7 +99,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
         model.setLocalTranslation(0.0f, 0.0f, 0.0f);
 
         try{
-            client=new Client(BladeMain.serverMap.get("larry"),BladeMain.port,BladeMain.port);
+            client=new Client(BladeMain.serverMap.get("localhost"),BladeMain.port,BladeMain.port);
             
             client.start();
     //        Thread.sleep(100);
@@ -239,11 +239,11 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
     }
 
     public void messageReceived(Message message) {
-        System.out.println("Message Received");
+//        System.out.println("Message Received");
     }
 
     public void messageSent(Message message) {
-        System.out.println("Message Sent");
+//        System.out.println("Message Sent");
     }
 
     public void objectReceived(Object object) {
