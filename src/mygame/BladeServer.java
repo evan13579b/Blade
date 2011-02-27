@@ -95,7 +95,7 @@ public class BladeServer extends SimpleApplication implements MessageListener{
         rootNode.attachChild(model);
         serverCharacter=new CharacterEntity(model);
         serverSyncService.addNpc(serverCharacter);
- //       serverSyncService.setNetworkSimulationParams(0.0f, 100);
+        serverSyncService.setNetworkSimulationParams(0.0f, 100);
 
         rootNode.attachChild(model);
         bulletAppState.getPhysicsSpace().add(character);
@@ -302,15 +302,15 @@ public class BladeServer extends SimpleApplication implements MessageListener{
 
     public void messageReceived(Message message) {
         if(message instanceof InputMessages.RotateUArmCC){
-            System.out.println("RotateUArmCC");
+    //        System.out.println("RotateUArmCC");
             upperArmRotationVel.z=-1;
         }
         else if(message instanceof InputMessages.RotateUArmC){
-            System.out.println("RotateUArmC");
+   //         System.out.println("RotateUArmC");
             upperArmRotationVel.z=1;
         }
         else if(message instanceof InputMessages.StopRotateTwist){
-            System.out.println("StopRotateTwist");
+    //        System.out.println("StopRotateTwist");
             upperArmRotationVel.z=0;
         }
         else if(message instanceof InputMessages.MouseMovement){
@@ -322,11 +322,11 @@ public class BladeServer extends SimpleApplication implements MessageListener{
             upperArmRotationVel.x=upperArmRotationVel.y=0;
         }
         else if(message instanceof InputMessages.LArmUp){
-            System.out.println("received wheelup");
+    //        System.out.println("received wheelup");
             elbowWristVel=1;
         }
         else if(message instanceof InputMessages.LArmDown){
-            System.out.println("received wheeldown");
+     //       System.out.println("received wheeldown");
             elbowWristVel=-1;
         }
         else if(message instanceof InputMessages.StopLArm){

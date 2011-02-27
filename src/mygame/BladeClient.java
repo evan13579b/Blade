@@ -332,14 +332,14 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
         if (evt.isPressed() != prevPressed) {
             if (evt.isPressed()) {
                 if (evt.getButtonIndex() == MouseInput.BUTTON_LEFT) {
-                    System.out.println("left mouse button");
+       //             System.out.println("left mouse button");
                     try {
                         client.send(new InputMessages.RotateUArmCC());
                     } catch (IOException ex) {
                         Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 } else if (evt.getButtonIndex() == MouseInput.BUTTON_RIGHT) {
-                    System.out.println("right mouse button");
+        //            System.out.println("right mouse button");
                     try {
                         client.send(new InputMessages.RotateUArmC());
                     } catch (IOException ex) {
@@ -348,7 +348,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
                 }
             }
             else{
-                System.out.println("Releasing mouse button");
+      //          System.out.println("Releasing mouse button");
                 try {
                     client.send(new InputMessages.StopRotateTwist());
                 } catch (IOException ex) {
