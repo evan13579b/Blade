@@ -374,22 +374,22 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
 
     public void messageReceived(Message message) {
         if(message instanceof InputMessages.RotateArmCC){
-            System.out.println("RotateArmCC");
+    //        System.out.println("RotateArmCC");
             armRotationVel.z=-1;
         }
         else if(message instanceof InputMessages.RotateArmC){
-            System.out.println("RotateArmC");
+    //        System.out.println("RotateArmC");
             armRotationVel.z=1;
         }
         else if(message instanceof InputMessages.StopRotateTwist){
-            System.out.println("StopRotateTwist");
+     //       System.out.println("StopRotateTwist");
             armRotationVel.z=0;
         }
         else if(message instanceof InputMessages.MouseMovement){
             InputMessages.MouseMovement mouseMovement=(InputMessages.MouseMovement)message;
             armRotationVel.x=FastMath.cos(mouseMovement.angle);
             armRotationVel.y=FastMath.sin(mouseMovement.angle);
-            System.out.println("AngleVelx:"+armRotationVel.x+",AngleVely:"+armRotationVel.y);
+    //        System.out.println("AngleVelx:"+armRotationVel.x+",AngleVely:"+armRotationVel.y);
         }
         else if(message instanceof InputMessages.StopMouseMovement){
             armRotationVel.x=armRotationVel.y=0;
@@ -397,7 +397,7 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
     }
 
     public void messageSent(Message message) {
-        System.out.println("Message Sent");
+   //     System.out.println("Message Sent");
     }
 
     public void objectReceived(Object object) {

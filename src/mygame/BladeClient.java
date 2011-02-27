@@ -99,7 +99,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
         model.setLocalTranslation(0.0f, 0.0f, 0.0f);
 
         try{
-            client=new Client(BladeMain.serverMap.get("evan"),BladeMain.port,BladeMain.port);
+            client=new Client(BladeMain.serverMap.get("larry"),BladeMain.port,BladeMain.port);
             
             client.start();
     //        Thread.sleep(100);
@@ -288,7 +288,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
                     angle=FastMath.TWO_PI+angle;
                 }
                 client.send(new InputMessages.MouseMovement(angle));
-                System.out.println("Message sent with angle degrees:"+360*angle/FastMath.TWO_PI+",radians:"+angle);
+       //         System.out.println("Message sent with angle degrees:"+360*angle/FastMath.TWO_PI+",radians:"+angle);
             } catch (IOException ex) {
                 Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -307,14 +307,14 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
         if (evt.isPressed() != prevPressed) {
             if (evt.isPressed()) {
                 if (evt.getButtonIndex() == MouseInput.BUTTON_LEFT) {
-                    System.out.println("left mouse button");
+         //           System.out.println("left mouse button");
                     try {
                         client.send(new InputMessages.RotateArmCC());
                     } catch (IOException ex) {
                         Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 } else if (evt.getButtonIndex() == MouseInput.BUTTON_RIGHT) {
-                    System.out.println("right mouse button");
+        //            System.out.println("right mouse button");
                     try {
                         client.send(new InputMessages.RotateArmC());
                     } catch (IOException ex) {
@@ -323,7 +323,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
                 }
             }
             else{
-                System.out.println("Releasing mouse button");
+        //        System.out.println("Releasing mouse button");
                 try {
                     client.send(new InputMessages.StopRotateTwist());
                 } catch (IOException ex) {
