@@ -27,27 +27,27 @@ public class ClientCharacterEntity extends CharacterEntity {
     @Override
     public void onRemoteUpdate(float latencyDelta){
 
-        if(upperArmAngle!=null){
-       //     setTransforms(upperArmAngle.z);
-  //          float extrapolatedSelfAngle,angleDiff,extrapolatedForeignAngle,newUpperArmAngle;
+        if(upperArmAngles!=null){
+       //     setTransforms(upperArmAngles.z);
+  //          float extrapolatedSelfAngle,angleDiff,extrapolatedForeignAngle,newupperArmAngles;
             Vector3f extrapolatedSelfAngles,angleDiffs,extrapolatedForeignAngles,newUpperArmAngles=new Vector3f();
             if(prevUpArmAngle!=null){
                 extrapolatedSelfAngles=extrapolateAngles(prevUpArmAngle,((float)(System.currentTimeMillis()-timeOfLastUpdate)/1000));
   //              extrapolatedSelfAngle=extrapolateAngles(prevUpArmAngle.z,((float)(System.currentTimeMillis()-timeOfLastUpdate)/1000));
-  //              extrapolatedForeignAngle=extrapolateAngles(upperArmAngle.z,latencyDelta);
-                extrapolatedForeignAngles=extrapolateAngles(upperArmAngle,latencyDelta);
+  //              extrapolatedForeignAngle=extrapolateAngles(upperArmAngles.z,latencyDelta);
+                extrapolatedForeignAngles=extrapolateAngles(upperArmAngles,latencyDelta);
             //    System.out.println("extrapolatedAngle:"+extrapolatedSelfAngle+",actualAngle:"+extrapolatedForeignAngle);
-   //             angleDiff=upperArmAngle.z-extrapolatedSelfAngle;
-                angleDiffs=upperArmAngle.subtract(extrapolatedSelfAngles);
+   //             angleDiff=upperArmAngles.z-extrapolatedSelfAngle;
+                angleDiffs=upperArmAngles.subtract(extrapolatedSelfAngles);
 
    /*             if(Math.abs(angleDiff)<0.5){
-                    newUpperArmAngle=extrapolatedSelfAngle;
+                    newUpperArmAngles=extrapolatedSelfAngle;
                 }
                 else{
-                    newUpperArmAngle=(extrapolatedForeignAngle+extrapolatedSelfAngle)/2;
+                    newUpperArmAngles=(extrapolatedForeignAngle+extrapolatedSelfAngle)/2;
                 }
 
-                upperArmAngle=new Vector3f(0,0,newUpperArmAngle);*/
+                upperArmAngles=new Vector3f(0,0,newUpperArmAngles);*/
 
                 if(Math.abs(angleDiffs.x)<0.5){
                     newUpperArmAngles.x=extrapolatedSelfAngles.x;
@@ -70,35 +70,21 @@ public class ClientCharacterEntity extends CharacterEntity {
                     newUpperArmAngles.z=extrapolatedForeignAngles.z;
                 }
 
-                upperArmAngle=new Vector3f(newUpperArmAngles);
+                upperArmAngles=new Vector3f(newUpperArmAngles);
             }
 
             
-            prevUpArmAngle=upperArmAngle.clone();
+            prevUpArmAngle=upperArmAngles.clone();
    
 
             
 
-        //    upperArmAngle=new Vector3f(0,0,extrapolateAngles(upperArmAngle.z,latencyDelta));
+        //    upperArmAngles=new Vector3f(0,0,extrapolateAngles(upperArmAngle.z,latencyDelta));
             timeOfLastUpdate=System.currentTimeMillis();
         }
      //   System.out.println("onRemoteUpdate");
     }
-    private void setTransforms(Vector3f upArmAngles){
-    //   System.out.println("upArmAngles is "+this.currentUpArmAngle[0]+","+this.currentUpArmAngle[1]+","+this.currentUpArmAngle[2]);
-        Quaternion horiQ = new Quaternion();
-        horiQ.fromAngleAxis(upperArmAngle.x,new Vector3f(0,1,-1));
 
-        Quaternion vertQ = new Quaternion();
-        vertQ.fromAngleAxis(upperArmAngle.y,new Vector3f(0,-1,-1));
-
-        Quaternion twistQ = new Quaternion();
-        twistQ.fromAngleAxis(upperArmAngle.z,new Vector3f(0,1,0));
-
-        Bone bone=this.model.getControl(AnimControl.class).getSkeleton().getBone("UpArmL");
-        bone.setUserControl(true);
-        bone.setUserTransforms(Vector3f.ZERO, horiQ.mult(vertQ).mult(twistQ), Vector3f.UNIT_XYZ);
-    }
 
     private void setTransforms(float upArmAngle){
     //   System.out.println("upArmAngles is "+this.currentUpArmAngle[0]+","+this.currentUpArmAngle[1]+","+this.currentUpArmAngle[2]);
@@ -117,17 +103,18 @@ public class ClientCharacterEntity extends CharacterEntity {
     @Override
     public void onLocalUpdate(){
         if(prevUpArmAngle!=null){
-            setTransforms(extrapolateAngles(prevUpArmAngle,((float)(System.currentTimeMillis()-timeOfLastUpdate)/1000)));
+            CharMovement.setUpperArmTransforms(extrapolateAngles(prevUpArmAngle,((float)(System.currentTimeMillis()-timeOfLastUpdate)/1000)),
+                    this.model);
         }
 //       System.out.println("delta:"+delta);
     }
 
     @Override
     public void interpolate(float blendAmount){
-        if (prevUpArmAngle != null && upperArmAngle != null) {
+        if (prevUpArmAngle != null && upperArmAngles != null) {
             float tempUpArmAngle[] = {0, 0, 0};
 
-            tempUpArmAngle[2] = interpolateAngles(prevUpArmAngle.z, upperArmAngle.z, blendAmount);
+            tempUpArmAngle[2] = interpolateAngles(prevUpArmAngle.z, upperArmAngles.z, blendAmount);
 
             setTransforms(tempUpArmAngle[2]);
         }
@@ -149,7 +136,7 @@ public class ClientCharacterEntity extends CharacterEntity {
     }
 
     public Vector3f extrapolateAngles(Vector3f currentAngles,float tpf){
-        float speedScale=5;
+        float speedScale=3;
         Vector3f extrapolatedAngles=new Vector3f();
         extrapolatedAngles.x=currentAngles.x+(FastMath.HALF_PI / 2f) * tpf * speedScale * upperArmVelocity.x;
         extrapolatedAngles.y=currentAngles.y+(FastMath.HALF_PI / 2f) * tpf * speedScale * upperArmVelocity.y;

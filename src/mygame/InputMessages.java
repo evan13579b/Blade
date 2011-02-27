@@ -47,7 +47,7 @@ public class InputMessages{
     @Serializable(id=STOPMOUSEMOVEMENT) static public class StopMouseMovement extends Message{ public StopMouseMovement(){super(false);}}
     @Serializable(id=MOUSEMOVEMENT)
     static public class MouseMovement extends Message{
-        float angle;
+        public float angle;
         public MouseMovement() {
             super(false);
         }

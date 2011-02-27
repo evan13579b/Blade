@@ -30,6 +30,5 @@ public class BladeMain {
         else{
             System.out.println("'"+args[0]+"' is not a proper command.");
         }
-
     }
 }

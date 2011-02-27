@@ -110,7 +110,6 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
 
         clientSyncService=client.getService(ClientSyncService.class);
         clientSyncService.setEntityFactory(this);
-
       
         try {
             Thread.sleep(1000);
@@ -150,12 +149,14 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
                 } catch (IOException ex) {
                     Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
                 }
+                timeOfLastMouseMotion=System.currentTimeMillis();
             }
         }
     }
 
     public void registerInput() {
         inputManager.addRawInputListener(this);
+        inputManager.setCursorVisible(false);
     }
 
     public void initTerrain() {
@@ -270,7 +271,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
       //  throw new UnsupportedOperationException("Not supported yet.");
     }
 
-    private final int eventsPerPacket=10; // how many events should happen before next packet is sent
+    private final int eventsPerPacket=5; // how many events should happen before next packet is sent
     private final long mouseMovementTimeout=100; // how long until we propose to send a StopMouseMovement message
     private long timeOfLastMouseMotion=0; // how long since last movement
     private int currentEvents=0;
@@ -307,14 +308,14 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
         if (evt.isPressed() != prevPressed) {
             if (evt.isPressed()) {
                 if (evt.getButtonIndex() == MouseInput.BUTTON_LEFT) {
-         //           System.out.println("left mouse button");
+                    System.out.println("left mouse button");
                     try {
                         client.send(new InputMessages.RotateArmCC());
                     } catch (IOException ex) {
                         Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 } else if (evt.getButtonIndex() == MouseInput.BUTTON_RIGHT) {
-        //            System.out.println("right mouse button");
+                    System.out.println("right mouse button");
                     try {
                         client.send(new InputMessages.RotateArmC());
                     } catch (IOException ex) {
@@ -323,7 +324,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
                 }
             }
             else{
-        //        System.out.println("Releasing mouse button");
+                System.out.println("Releasing mouse button");
                 try {
                     client.send(new InputMessages.StopRotateTwist());
                 } catch (IOException ex) {
@@ -333,6 +334,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
         }
 
         prevPressed=evt.isPressed();
+        inputManager.setCursorVisible(false);
     }
 
     public void onKeyEvent(KeyInputEvent evt) {
