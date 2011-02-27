@@ -62,6 +62,7 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
     CharacterControl character;
     Vector3f walkDirection = new Vector3f(0,0,0);
 
+    Vector3f upperArmAngle = new Vector3f(0,0,0);
     Vector3f armRotationVel = new Vector3f(0,0,0);
 
     public static void main(String[] args) {
@@ -145,7 +146,7 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
         rootNode.attachChild(model);
         serverCharacter=new CharacterEntity(model);
         serverSyncService.addNpc(serverCharacter);
-   //     serverSyncService.setNetworkSimulationParams(0.0f, 100);
+//        serverSyncService.setNetworkSimulationParams(0.0f, 100);
         rootNode.attachChild(model);
         bulletAppState.getPhysicsSpace().add(character);
 
@@ -216,18 +217,27 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
     }
 
     public void updateCharacter(float tpf){
- //     if (armRotationVel.y==-1) {
-        Bone b = control.getSkeleton().getBone("UpArmL");
+        float speedScale=5;
+        upperArmAngle.x += (FastMath.HALF_PI / 2f) * tpf * speedScale * armRotationVel.x;
+        upperArmAngle.y += (FastMath.HALF_PI / 2f) * tpf * speedScale * armRotationVel.y;
+        upperArmAngle.z += (FastMath.HALF_PI / 2f) * tpf * speedScale * armRotationVel.z;
 
-        upArmAngle[2] += (FastMath.HALF_PI / 2f) * tpf * 10f * armRotationVel.z;
-
-        Quaternion q = new Quaternion();
-        q.fromAngles(0, upArmAngle[2], 0);
-
-        b.setUserControl(true);
-        b.setUserTransforms(Vector3f.ZERO, q, Vector3f.UNIT_XYZ);
-        serverCharacter.setUpArmAngle(upArmAngle);
+        serverCharacter.setUpperArmAngle(upperArmAngle);
         serverCharacter.setUpArmVelocity(armRotationVel);
+
+        Quaternion horiQ = new Quaternion();
+        horiQ.fromAngleAxis(upperArmAngle.x,new Vector3f(0,1,-1));
+
+        Quaternion vertQ = new Quaternion();
+        vertQ.fromAngleAxis(upperArmAngle.y,new Vector3f(0,-1,-1));
+        
+        Quaternion twistQ = new Quaternion();
+        twistQ.fromAngleAxis(upperArmAngle.z,new Vector3f(0,1,0));
+
+        Bone bone=this.model.getControl(AnimControl.class).getSkeleton().getBone("UpArmL");
+        bone.setUserControl(true);
+        bone.setUserTransforms(Vector3f.ZERO,horiQ.mult(vertQ).mult(twistQ), Vector3f.UNIT_XYZ);
+        
       //  }
         /* else if (armRotationVel.y==1) {
             Bone b = control.getSkeleton().getBone("UpArmL");
@@ -374,6 +384,15 @@ public class BladeServer extends SimpleApplication implements AnalogListener, Ac
         else if(message instanceof InputMessages.StopRotateTwist){
             System.out.println("StopRotateTwist");
             armRotationVel.z=0;
+        }
+        else if(message instanceof InputMessages.MouseMovement){
+            InputMessages.MouseMovement mouseMovement=(InputMessages.MouseMovement)message;
+            armRotationVel.x=FastMath.cos(mouseMovement.angle);
+            armRotationVel.y=FastMath.sin(mouseMovement.angle);
+            System.out.println("AngleVelx:"+armRotationVel.x+",AngleVely:"+armRotationVel.y);
+        }
+        else if(message instanceof InputMessages.StopMouseMovement){
+            armRotationVel.x=armRotationVel.y=0;
         }
     }
 

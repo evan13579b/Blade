@@ -24,8 +24,8 @@ public class CharacterEntity implements SyncEntity{
         this.model=model;
     }
 
-    public void setUpArmAngle(float currentUpArmAngle[]){
-        upperArmAngle=new Vector3f(currentUpArmAngle[0],currentUpArmAngle[1],currentUpArmAngle[2]);
+    public void setUpperArmAngle(Vector3f upperArmAngle){
+        this.upperArmAngle=new Vector3f(upperArmAngle);
     }
 
     public void setUpArmVelocity(Vector3f upperArmVelocity){
