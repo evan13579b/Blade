@@ -1,6 +1,7 @@
 package mygame;
 
 import java.util.HashMap;
+import javax.swing.JOptionPane;
 
 public class BladeMain {
     static int port=5010;
@@ -16,8 +17,9 @@ public class BladeMain {
     public static void main(String[] args) {
 
         if(args.length==0){
-            System.out.println("Please indicate usage as 'server' or 'client' in first argument.");
-       
+            String newArg=JOptionPane.showInputDialog("Start as server or client?", "server");
+            String newArgs[]={newArg};
+            BladeMain.main(newArgs);
         }
         else if(args[0].toLowerCase().equals("server")){
             BladeServer.main(args);
