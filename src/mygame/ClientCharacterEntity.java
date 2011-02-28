@@ -95,7 +95,6 @@ public class ClientCharacterEntity extends CharacterEntity {
             CharMovement.setUpperArmTransform(CharMovement.extrapolateUpperArmAngles(prevUpArmAngle, this.upperArmVelocity, timeDiff), this.model);
             CharMovement.setLowerArmTransform(CharMovement.extrapolateLowerArmAngles(prevElbowWristAngle, elbowWristVel, timeDiff), model);
         }
-//       System.out.println("delta:"+delta);
     }
 
     @Override
