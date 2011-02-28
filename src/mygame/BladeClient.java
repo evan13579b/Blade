@@ -96,12 +96,12 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
         model.setLocalTranslation(0.0f, 0.0f, 0.0f);
 
         try{
-<<<<<<< HEAD
-            client=new Client(BladeMain.serverMap.get("evan"),BladeMain.port,BladeMain.port);
-=======
+
+           // client=new Client(BladeMain.serverMap.get("evan"),BladeMain.port,BladeMain.port);
+
             client=new Client(BladeMain.serverMap.get("localhost"),BladeMain.port,BladeMain.port);
             
->>>>>>> d59202f620a134165faa394c9bea9ee4721f81f0
+
             client.start();
     //        Thread.sleep(100);
         }
