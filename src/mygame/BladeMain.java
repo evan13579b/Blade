@@ -6,6 +6,7 @@ import javax.swing.JOptionPane;
 public class BladeMain {
     static int port=5010;
     static final HashMap<String,String> serverMap;
+    static String serverIP="localhost";
 
     static {
         serverMap=new HashMap();
@@ -15,7 +16,6 @@ public class BladeMain {
     }
 
     public static void main(String[] args) {
-
         if(args.length==0){
             String newArg=JOptionPane.showInputDialog("Start as server or client?", "server");
             String newArgs[]={newArg};
@@ -26,6 +26,7 @@ public class BladeMain {
             System.out.println("Starting Server");
         }
         else if(args[0].toLowerCase().equals("client")){
+            serverIP=JOptionPane.showInputDialog("ServerIP?", "localhost");
             BladeClient.main(args);
             System.out.println("Starting Client");
         }
