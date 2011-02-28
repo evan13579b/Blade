@@ -5,3 +5,4 @@
 *.so
 *.zip
 /nbproject/private/config.properties
+/nbproject/private/private.properties
