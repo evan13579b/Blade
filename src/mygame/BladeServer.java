@@ -86,7 +86,7 @@ public class BladeServer extends SimpleApplication implements MessageListener{
         // Load a model from test_data (OgreXML + material + texture)
         CapsuleCollisionShape capsule = new CapsuleCollisionShape(1.5f, 2f);
         character = new CharacterControl(capsule, 0.01f);
-        model = (Node) assetManager.loadModel("Models/Fighter.mesh.xml");
+        model = (Node) assetManager.loadModel("Models/Fighter.mesh.j3o");
         model.scale(1.0f, 1.0f, 1.0f);
         model.rotate(0.0f, FastMath.HALF_PI, 0.0f);
         model.setLocalTranslation(0.0f, 0.0f, 0.0f);
@@ -94,7 +94,7 @@ public class BladeServer extends SimpleApplication implements MessageListener{
         rootNode.attachChild(model);
         serverCharacter=new CharacterEntity(model);
         serverSyncService.addNpc(serverCharacter);
-  //      serverSyncService.setNetworkSimulationParams(0.0f, 100);
+        serverSyncService.setNetworkSimulationParams(0.0f, 100);
 
         rootNode.attachChild(model);
         bulletAppState.getPhysicsSpace().add(character);

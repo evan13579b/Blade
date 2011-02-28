@@ -90,7 +90,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
         initMaterials();
         initTerrain();
 
-        model = (Node) assetManager.loadModel("Models/Fighter.mesh.xml");
+        model = (Node) assetManager.loadModel("Models/Fighter.mesh.j3o");
         model.scale(1.0f, 1.0f, 1.0f);
         model.rotate(0.0f, FastMath.HALF_PI, 0.0f);
         model.setLocalTranslation(0.0f, 0.0f, 0.0f);
