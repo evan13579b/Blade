@@ -29,7 +29,6 @@ public class CharacterEntity implements SyncEntity{
     public void setElbowWrist(Float elbowWristAngle,Float elbowWristVel){
         this.elbowWristAngle=new Float(elbowWristAngle);
         this.elbowWristVel=new Float(elbowWristVel);
-       // System.out.println("elbowWristAngle is now "+this.elbowWristAngle+",elbowWristVel is now "+this.elbowWristVel);
     }
 
     public void setUpperArmAngles(Vector3f upperArmAngles){

@@ -76,7 +76,6 @@ public class BladeServer extends SimpleApplication implements MessageListener{
         }
 
         InputMessages.addInputMessageListeners(server, this);
-//        setupKeys();
 
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
@@ -95,7 +94,7 @@ public class BladeServer extends SimpleApplication implements MessageListener{
         rootNode.attachChild(model);
         serverCharacter=new CharacterEntity(model);
         serverSyncService.addNpc(serverCharacter);
-        serverSyncService.setNetworkSimulationParams(0.0f, 100);
+  //      serverSyncService.setNetworkSimulationParams(0.0f, 100);
 
         rootNode.attachChild(model);
         bulletAppState.getPhysicsSpace().add(character);
@@ -116,7 +115,6 @@ public class BladeServer extends SimpleApplication implements MessageListener{
         chaseCam.setSmoothMotion(true);
         chaseCam.setDefaultVerticalRotation(FastMath.HALF_PI / 4f);
         chaseCam.setLookAtOffset(new Vector3f(0.0f, 4.0f, 0.0f));
-  //      registerInput();
     }
 
     @Override
@@ -144,44 +142,17 @@ public class BladeServer extends SimpleApplication implements MessageListener{
         } else {
             airTime = 0;
         }
-        /*if (walkDirection.length() == 0) {
-          //  if (!"stand".equals(animationChannel.getAnimationName())) {
-          //      animationChannel.setAnim("stand", 1f);
-            }
-        } else {
-            character.setViewDirection(walkDirection);
-            if (airTime > .3f) {
-                if (!"stand".equals(animationChannel.getAnimationName())) {
-                    animationChannel.setAnim("stand");
-                }
-            } else if (!"Walk".equals(animationChannel.getAnimationName())) {
-                animationChannel.setAnim("Walk", 0.7f);
-            }
-        }*/
+
         character.setWalkDirection(walkDirection);
-
-
 
         walkDirection.set(0, 0, 0);
 
     }
 
     public void updateCharacter(float tpf){
-        float speedScale=3;/*
-        upperArmAngles.x += (FastMath.HALF_PI / 2f) * tpf * speedScale * upperArmRotationVel.x;
-        if(upperArmAngles.x<-FastMath.QUARTER_PI){
-            upperArmAngles.x=-FastMath.QUARTER_PI;
-        }
-        upperArmAngles.y += (FastMath.HALF_PI / 2f) * tpf * speedScale * upperArmRotationVel.y;
-        if(upperArmAngles.y<0){
-            upperArmAngles.y=0;
-        }
-        upperArmAngles.z += (FastMath.HALF_PI / 2f) * tpf * speedScale * upperArmRotationVel.z;*/
-
         upperArmAngles=CharMovement.extrapolateUpperArmAngles(upperArmAngles, upperArmRotationVel, tpf);
         elbowWristAngle=CharMovement.extrapolateLowerArmAngles(elbowWristAngle, elbowWristAngle, tpf);
 
-   //     System.out.println("updateCharacter->elbowWristAngle is now "+this.elbowWristAngle+",elbowWristVel is now "+this.elbowWristVel);
         serverCharacter.setElbowWrist(new Float(elbowWristAngle), new Float(elbowWristVel));
 
         serverCharacter.setUpperArmAngles(upperArmAngles);
@@ -190,24 +161,6 @@ public class BladeServer extends SimpleApplication implements MessageListener{
         CharMovement.setUpperArmTransform(upperArmAngles, model);
         CharMovement.setLowerArmTransform(elbowWristAngle,  model);
     }
-/*
-    private void setupKeys() {
-        inputManager.addMapping("wireframe", new KeyTrigger(KeyInput.KEY_T));
-        inputManager.addListener(this, "wireframe");
-        inputManager.addMapping("CharLeft", new KeyTrigger(KeyInput.KEY_A));
-        inputManager.addMapping("CharRight", new KeyTrigger(KeyInput.KEY_D));
-        inputManager.addMapping("CharUp", new KeyTrigger(KeyInput.KEY_W));
-        inputManager.addMapping("CharDown", new KeyTrigger(KeyInput.KEY_S));
-        inputManager.addMapping("CharSpace", new KeyTrigger(KeyInput.KEY_RETURN));
-        inputManager.addMapping("CharShoot", new KeyTrigger(KeyInput.KEY_SPACE));
-        inputManager.addListener(this, "CharLeft");
-        inputManager.addListener(this, "CharRight");
-        inputManager.addListener(this, "CharUp");
-        inputManager.addListener(this, "CharDown");
-        inputManager.addListener(this, "CharSpace");
-        inputManager.addListener(this, "CharShoot");
-    }
-*/
 
     public void initTerrain() {
         mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/Terrain.j3md");
@@ -289,28 +242,14 @@ public class BladeServer extends SimpleApplication implements MessageListener{
 
     }
 
-    private void createCharacter() {
-        CapsuleCollisionShape capsule = new CapsuleCollisionShape(1.5f, 2f);
-        character = new CharacterControl(capsule, 0.01f);
-        model = (Node) assetManager.loadModel("Models/Oto/Oto.mesh.xml");
-        model.setLocalScale(0.5f);
-        model.addControl(character);
-        character.setPhysicsLocation(new Vector3f(-140, 10, -10));
-        rootNode.attachChild(model);
-        bulletAppState.getPhysicsSpace().add(character);
-    }
-
     public void messageReceived(Message message) {
         if(message instanceof InputMessages.RotateUArmCC){
-    //        System.out.println("RotateUArmCC");
             upperArmRotationVel.z=-1;
         }
         else if(message instanceof InputMessages.RotateUArmC){
-   //         System.out.println("RotateUArmC");
             upperArmRotationVel.z=1;
         }
         else if(message instanceof InputMessages.StopRotateTwist){
-    //        System.out.println("StopRotateTwist");
             upperArmRotationVel.z=0;
         }
         else if(message instanceof InputMessages.MouseMovement){
@@ -322,11 +261,9 @@ public class BladeServer extends SimpleApplication implements MessageListener{
             upperArmRotationVel.x=upperArmRotationVel.y=0;
         }
         else if(message instanceof InputMessages.LArmUp){
-    //        System.out.println("received wheelup");
             elbowWristVel=1;
         }
         else if(message instanceof InputMessages.LArmDown){
-     //       System.out.println("received wheeldown");
             elbowWristVel=-1;
         }
         else if(message instanceof InputMessages.StopLArm){
@@ -335,7 +272,6 @@ public class BladeServer extends SimpleApplication implements MessageListener{
     }
 
     public void messageSent(Message message) {
-   //     System.out.println("Message Sent");
     }
 
     public void objectReceived(Object object) {

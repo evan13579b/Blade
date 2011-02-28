@@ -2,7 +2,6 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package mygame;
 
 import com.jme3.animation.AnimControl;
@@ -17,102 +16,90 @@ import com.jme3.scene.Node;
  * @author blah
  */
 public class ClientCharacterEntity extends CharacterEntity {
+
     protected Vector3f prevUpArmAngle;
     protected float prevElbowWristAngle;
-    protected long timeOfLastUpdate=0;
+    protected long timeOfLastUpdate = 0;
 
-    public ClientCharacterEntity(Node model){
+    public ClientCharacterEntity(Node model) {
         super(model);
     }
 
     @Override
-    public void onRemoteUpdate(float latencyDelta){
+    public void onRemoteUpdate(float latencyDelta) {
 
-        if(upperArmAngles!=null){
-     //       System.out.println("angles: x:"+upperArmAngles.x+",y:"+upperArmAngles.y+",z:"+upperArmAngles.z);
+        if (upperArmAngles != null) {
 
-            Vector3f extrapolatedSelfAngles,upperArmAngleDiffs,extrapolatedForeignAngles,newUpperArmAngles=new Vector3f();
-            float lowerArmAngleDiff,extrapolatedSelfElbowWristAngle,extrapolatedForeignElbowWristAngle;
+            Vector3f extrapolatedSelfAngles, upperArmAngleDiffs, extrapolatedForeignAngles, newUpperArmAngles = new Vector3f();
+            float lowerArmAngleDiff, extrapolatedSelfElbowWristAngle, extrapolatedForeignElbowWristAngle;
             float timeDiff;
-            if(prevUpArmAngle!=null){
-                timeDiff=((float)(System.currentTimeMillis()-timeOfLastUpdate)/1000);
-                extrapolatedSelfAngles=CharMovement.extrapolateUpperArmAngles(prevUpArmAngle,this.upperArmVelocity,timeDiff);
-                extrapolatedForeignAngles=CharMovement.extrapolateUpperArmAngles(upperArmAngles,this.upperArmVelocity,latencyDelta);
-                upperArmAngleDiffs=extrapolatedForeignAngles.subtract(extrapolatedSelfAngles);
-                extrapolatedSelfElbowWristAngle=CharMovement.extrapolateLowerArmAngles(prevElbowWristAngle,elbowWristVel,timeDiff);
-                extrapolatedForeignElbowWristAngle=CharMovement.extrapolateLowerArmAngles(elbowWristAngle,elbowWristVel,latencyDelta);
-                lowerArmAngleDiff=elbowWristAngle-extrapolatedForeignElbowWristAngle;
+            if (prevUpArmAngle != null) {
+                timeDiff = ((float) (System.currentTimeMillis() - timeOfLastUpdate) / 1000);
+                extrapolatedSelfAngles = CharMovement.extrapolateUpperArmAngles(prevUpArmAngle, this.upperArmVelocity, timeDiff);
+                extrapolatedForeignAngles = CharMovement.extrapolateUpperArmAngles(upperArmAngles, this.upperArmVelocity, latencyDelta);
+                upperArmAngleDiffs = extrapolatedForeignAngles.subtract(extrapolatedSelfAngles);
+                extrapolatedSelfElbowWristAngle = CharMovement.extrapolateLowerArmAngles(prevElbowWristAngle, elbowWristVel, timeDiff);
+                extrapolatedForeignElbowWristAngle = CharMovement.extrapolateLowerArmAngles(elbowWristAngle, elbowWristVel, latencyDelta);
+                lowerArmAngleDiff = elbowWristAngle - extrapolatedForeignElbowWristAngle;
 
-                if(Math.abs(lowerArmAngleDiff)<0.5){
-                    elbowWristAngle=extrapolatedSelfElbowWristAngle;
-                }
-                else{
-                    elbowWristAngle=extrapolatedForeignElbowWristAngle;
-                }
-
-                if(Math.abs(upperArmAngleDiffs.x)<0.5){
-                    newUpperArmAngles.x=extrapolatedSelfAngles.x;
-                }
-                else{
-                    newUpperArmAngles.x=extrapolatedForeignAngles.x;
+                if (Math.abs(lowerArmAngleDiff) < 0.5) {
+                    elbowWristAngle = extrapolatedSelfElbowWristAngle;
+                } else {
+                    elbowWristAngle = extrapolatedForeignElbowWristAngle;
                 }
 
-                if(Math.abs(upperArmAngleDiffs.y)<0.5){
-                    newUpperArmAngles.y=extrapolatedSelfAngles.y;
-                }
-                else{
-                    newUpperArmAngles.y=extrapolatedForeignAngles.y;
+                if (Math.abs(upperArmAngleDiffs.x) < 0.5) {
+                    newUpperArmAngles.x = extrapolatedSelfAngles.x;
+                } else {
+                    newUpperArmAngles.x = extrapolatedForeignAngles.x;
                 }
 
-                if(Math.abs(upperArmAngleDiffs.z)<0.5){
-                    newUpperArmAngles.z=extrapolatedSelfAngles.z;
+                if (Math.abs(upperArmAngleDiffs.y) < 0.5) {
+                    newUpperArmAngles.y = extrapolatedSelfAngles.y;
+                } else {
+                    newUpperArmAngles.y = extrapolatedForeignAngles.y;
                 }
-                else{
-                    newUpperArmAngles.z=extrapolatedForeignAngles.z;
+
+                if (Math.abs(upperArmAngleDiffs.z) < 0.5) {
+                    newUpperArmAngles.z = extrapolatedSelfAngles.z;
+                } else {
+                    newUpperArmAngles.z = extrapolatedForeignAngles.z;
                 }
-                
-                upperArmAngles=new Vector3f(newUpperArmAngles);
+
+                upperArmAngles = new Vector3f(newUpperArmAngles);
             }
 
-            prevElbowWristAngle=elbowWristAngle;
-            prevUpArmAngle=upperArmAngles.clone();
-  
+            prevElbowWristAngle = elbowWristAngle;
+            prevUpArmAngle = upperArmAngles.clone();
 
-            
-
-        //    upperArmAngles=new Vector3f(0,0,extrapolateAngles(upperArmAngle.z,latencyDelta));
-            timeOfLastUpdate=System.currentTimeMillis();
+            timeOfLastUpdate = System.currentTimeMillis();
         }
-     //   System.out.println("onRemoteUpdate");
     }
 
-
-    private void setTransforms(float upArmAngle){
-    //   System.out.println("upArmAngles is "+this.currentUpArmAngle[0]+","+this.currentUpArmAngle[1]+","+this.currentUpArmAngle[2]);
+    private void setTransforms(float upArmAngle) {
         Quaternion q = new Quaternion();
         q.fromAngles(0, upArmAngle, 0);
-    //    System.out.println("in remote update");
-        Bone bone=this.model.getControl(AnimControl.class).getSkeleton().getBone("UpArmL");
+        Bone bone = this.model.getControl(AnimControl.class).getSkeleton().getBone("UpArmL");
         bone.setUserControl(true);
         bone.setUserTransforms(Vector3f.ZERO, q, Vector3f.UNIT_XYZ);
     }
 
-    private float interpolateAngles(float angle1,float angle2,float blendAmount){
-        return angle1+blendAmount*(angle2-angle1);
+    private float interpolateAngles(float angle1, float angle2, float blendAmount) {
+        return angle1 + blendAmount * (angle2 - angle1);
     }
 
     @Override
-    public void onLocalUpdate(){
-        if(prevUpArmAngle!=null){
-            float timeDiff=((float)(System.currentTimeMillis()-timeOfLastUpdate)/1000);
-            CharMovement.setUpperArmTransform(CharMovement.extrapolateUpperArmAngles(prevUpArmAngle,this.upperArmVelocity,timeDiff),this.model);
-            CharMovement.setLowerArmTransform(CharMovement.extrapolateLowerArmAngles(prevElbowWristAngle,elbowWristVel,timeDiff),  model);
+    public void onLocalUpdate() {
+        if (prevUpArmAngle != null) {
+            float timeDiff = ((float) (System.currentTimeMillis() - timeOfLastUpdate) / 1000);
+            CharMovement.setUpperArmTransform(CharMovement.extrapolateUpperArmAngles(prevUpArmAngle, this.upperArmVelocity, timeDiff), this.model);
+            CharMovement.setLowerArmTransform(CharMovement.extrapolateLowerArmAngles(prevElbowWristAngle, elbowWristVel, timeDiff), model);
         }
 //       System.out.println("delta:"+delta);
     }
 
     @Override
-    public void interpolate(float blendAmount){
+    public void interpolate(float blendAmount) {
         if (prevUpArmAngle != null && upperArmAngles != null) {
             float tempUpArmAngle[] = {0, 0, 0};
 
@@ -123,33 +110,17 @@ public class ClientCharacterEntity extends CharacterEntity {
     }
 
     @Override
-    public void extrapolate(float tpf){
-        if(prevUpArmAngle!=null){
-            setTransforms(extrapolateAngles(prevUpArmAngle.z,tpf));
+    public void extrapolate(float tpf) {
+        if (prevUpArmAngle != null) {
+            setTransforms(extrapolateAngles(prevUpArmAngle.z, tpf));
         }
     }
 
-    public float extrapolateAngles(float currentAngle,float tpf){
-       
-        float tempUpArmAngle[]={0,0,0};
-        tempUpArmAngle[2]=currentAngle+(FastMath.HALF_PI / 2f) * tpf * 5f * upperArmVelocity.z;
-        
+    public float extrapolateAngles(float currentAngle, float tpf) {
+
+        float tempUpArmAngle[] = {0, 0, 0};
+        tempUpArmAngle[2] = currentAngle + (FastMath.HALF_PI / 2f) * tpf * 5f * upperArmVelocity.z;
+
         return tempUpArmAngle[2];
     }
-
-/*
-    public Vector3f extrapolateUpperArmAngles(Vector3f currentAngles,float tpf){/*
-        float speedScale=3;
-        Vector3f extrapolatedAngles=new Vector3f();
-        extrapolatedAngles.x=currentAngles.x+(FastMath.HALF_PI / 2f) * tpf * speedScale * upperArmVelocity.x;
-        if(extrapolatedAngles.x<-FastMath.QUARTER_PI){
-            extrapolatedAngles.x=-FastMath.QUARTER_PI;
-        }
-        extrapolatedAngles.y=currentAngles.y+(FastMath.HALF_PI / 2f) * tpf * speedScale * upperArmVelocity.y;
-        if(extrapolatedAngles.y<0){
-            extrapolatedAngles.y=0;
-        }
-        extrapolatedAngles.z=currentAngles.z+(FastMath.HALF_PI / 2f) * tpf * speedScale * upperArmVelocity.z;
-        return extrapolatedAngles;
-    }*/
 }

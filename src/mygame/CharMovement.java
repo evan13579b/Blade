@@ -33,7 +33,6 @@ public class CharMovement {
 
     static private Quaternion armPosInit=(new Quaternion()).fromAngleAxis(3*FastMath.QUARTER_PI/4, new Vector3f(-1,0,0));
     static Quaternion createUpperArmTransform(Vector3f upperArmAngles){
-    //   System.out.println("upArmAngles is "+this.currentUpArmAngle[0]+","+this.currentUpArmAngle[1]+","+this.currentUpArmAngle[2]);
         Quaternion horiQ = new Quaternion();
         horiQ.fromAngleAxis(upperArmAngles.x,new Vector3f(0,1,-1));
 
@@ -43,8 +42,7 @@ public class CharMovement {
         Quaternion twistQ = new Quaternion();
         twistQ.fromAngleAxis(upperArmAngles.z,new Vector3f(0,1,-1));
 
-   //     return horiQ.mult(vertQ).mult(twistQ).mult(armPosInit);
-        return horiQ.mult(vertQ).mult(twistQ).mult(armPosInit);
+       return horiQ.mult(vertQ).mult(twistQ).mult(armPosInit);
     }
 
     static Quaternion createLowerArmTransform(Float elbowWristRotation){
@@ -54,7 +52,6 @@ public class CharMovement {
     }
 
     static void setUpperArmTransform(Vector3f upperArmAngles,Node model){
-    //   System.out.println("upArmAngles is "+this.currentUpArmAngle[0]+","+this.currentUpArmAngle[1]+","+this.currentUpArmAngle[2]);
         Bone upperArm=model.getControl(AnimControl.class).getSkeleton().getBone("UpArmL");
         upperArm.setUserControl(true);
         upperArm.setUserTransforms(Vector3f.ZERO, createUpperArmTransform(upperArmAngles), Vector3f.UNIT_XYZ);
