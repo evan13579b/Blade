@@ -94,7 +94,7 @@ public class BladeServer extends SimpleApplication implements MessageListener{
         rootNode.attachChild(model);
         serverCharacter=new CharacterEntity(model);
         serverSyncService.addNpc(serverCharacter);
-        serverSyncService.setNetworkSimulationParams(0.0f, 100);
+  //      serverSyncService.setNetworkSimulationParams(0.0f, 100);
 
         rootNode.attachChild(model);
         bulletAppState.getPhysicsSpace().add(character);
