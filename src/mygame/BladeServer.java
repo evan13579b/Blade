@@ -298,29 +298,29 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         if (clientInitializedSet.contains(new Integer(clientID))) {
             System.out.println("client "+clientID+" has been initialized");
             if (message instanceof InputMessages.RotateUArmCC) {
-                //                 System.out.println("rotateCC");
+                                 System.out.println("rotateCC");
                 upperArmRotationVelMap.get(clientID).z = -1;
             } else if (message instanceof InputMessages.RotateUArmC) {
-                //                  System.out.println("rotateC");
+                                  System.out.println("rotateC");
                 upperArmRotationVelMap.get(clientID).z = 1;
             } else if (message instanceof InputMessages.StopRotateTwist) {
-                //                 System.out.println("rotateStop");
+                                 System.out.println("rotateStop");
                 upperArmRotationVelMap.get(clientID).z = 0;
             } else if (message instanceof InputMessages.MouseMovement) {
-                //                 System.out.println("move mouse");
+                                 System.out.println("move mouse");
                 InputMessages.MouseMovement mouseMovement = (InputMessages.MouseMovement) message;
                 upperArmRotationVelMap.get(clientID).x = FastMath.cos(mouseMovement.angle);
                 upperArmRotationVelMap.get(clientID).y = FastMath.sin(mouseMovement.angle);
             } else if (message instanceof InputMessages.StopMouseMovement) {
                 upperArmRotationVelMap.get(clientID).x = upperArmRotationVelMap.get(clientID).y = 0;
             } else if (message instanceof InputMessages.LArmUp) {
-                //                  System.out.println("arm up");
+                                  System.out.println("arm up");
                 elbowWristVelMap.put(clientID, 1f);
             } else if (message instanceof InputMessages.LArmDown) {
-                //                  System.out.println("arm down");
+                                 System.out.println("arm down");
                 elbowWristVelMap.put(clientID, -1f);
             } else if (message instanceof InputMessages.StopLArm) {
-                //                 System.out.println("arm stop");
+                                 System.out.println("arm stop");
                 elbowWristVelMap.put(clientID, 0f);
             }
         }

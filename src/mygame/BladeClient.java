@@ -282,6 +282,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
     }
 
     public void messageSent(Message message) {
+        System.out.println("sending message");
     }
 
     public void objectReceived(Object object) {

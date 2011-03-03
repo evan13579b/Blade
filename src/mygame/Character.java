@@ -25,7 +25,7 @@ public class Character{
         model.rotate(0.0f, FastMath.HALF_PI, 0.0f);
         model.setLocalTranslation(0.0f, 0.0f, 0.0f);
         model.addControl(charControl);
-        bulletAppState.getPhysicsSpace().add(charControl);
+   //     bulletAppState.getPhysicsSpace().add(charControl);
         return model;
     }
 }
