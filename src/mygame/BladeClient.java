@@ -130,7 +130,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         }
 
         InputMessages.addInputMessageListeners(client, this);
-
+        client.addMessageListener(this,CharCreationMessage.class,CharDestructionMessage.class,CharPositionMessage.class);
 
         DirectionalLight sun = new DirectionalLight();
         sun.setDirection(new Vector3f(-0.1f, -0.7f, -1.0f));
@@ -249,10 +249,16 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     }
 
     public void messageReceived(Message message) {
+        if(message instanceof CharCreationMessage){
+            CharCreationMessage creationMessage=(CharCreationMessage)message;
+            if(creationMessage.clientID==client.getClientID()){
+                
+            }
+        }
     }
 
     public void messageSent(Message message) {
-        System.out.println("sending message");
+    //    System.out.println("sending message");
     }
 
     public void objectReceived(Object object) {

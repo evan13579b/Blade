@@ -32,16 +32,15 @@
 
 package mygame;
 
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import mygame.messages.InputMessages;
 import mygame.messages.CharPositionMessage;
-import com.jme3.animation.AnimControl;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.bullet.BulletAppState;
-import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
-import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.RigidBodyControl;
-import com.jme3.input.ChaseCamera;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.FastMath;
@@ -73,15 +72,12 @@ import mygame.messages.CharDestructionMessage;
 public class BladeServer extends SimpleApplication implements MessageListener,ConnectionListener{
     HashMap<Integer,Node> modelMap=new HashMap();
     HashMap<Integer,Vector3f> upperArmAnglesMap=new HashMap();
-    HashMap<Integer,Vector3f> upperArmRotationVelMap=new HashMap();
+    HashMap<Integer,Vector3f> upperArmVelsMap=new HashMap();
     HashMap<Integer,Float> elbowWristAngleMap=new HashMap();
     HashMap<Integer,Float> elbowWristVelMap=new HashMap();
     HashSet<Integer> clientInitializedSet=new HashSet();
     HashSet<Client> clientSet=new HashSet();
 
-    private AnimControl control;
-    private ChaseCamera chaseCam;
-    private Node model;
     private BulletAppState bulletAppState;
     private TerrainQuad terrain;
     Material mat_terrain;
@@ -94,8 +90,6 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     Server server;
     ServerSyncService serverSyncService;
-    CharacterEntity serverCharacter;
-    CharacterControl character;
     Vector3f walkDirection = new Vector3f(0,0,0);
 
     Vector3f upperArmAngles = new Vector3f(0,0,0);
@@ -149,22 +143,40 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         updateCharacter(tpf);
     }
 
+    private long timeOfLastSync=0;
+    private final long timeBetweenSyncs=100;
     public void updateCharacter(float tpf) {
-        for (Client client : server.getConnectors()) {
-            System.out.println("handling client "+client.getClientID());
+        List<Client> clients=server.getConnectors();
+
+        for (Client client:clients) {
+      //      System.out.println("handling client "+client.getClientID());
             
             int clientID = client.getClientID();
 
             upperArmAnglesMap.put(clientID, CharMovement.extrapolateUpperArmAngles(upperArmAnglesMap.get(clientID),
-                    upperArmRotationVelMap.get(clientID), tpf));
+                    upperArmVelsMap.get(clientID), tpf));
             elbowWristAngleMap.put(clientID, CharMovement.extrapolateLowerArmAngles(elbowWristAngleMap.get(clientID),
             elbowWristVelMap.get(clientID), tpf));
-            charEntityMap.get(clientID).setElbowWrist(new Float(elbowWristAngleMap.get(clientID)), new Float(elbowWristVelMap.get(clientID)));
-            charEntityMap.get(clientID).setUpperArmAngles(upperArmAnglesMap.get(clientID));
-            charEntityMap.get(clientID).setUpArmVelocity(upperArmRotationVelMap.get(clientID));
 
-            CharMovement.setUpperArmTransform(upperArmAnglesMap.get(clientID), charEntityMap.get(clientID).model);
-            CharMovement.setLowerArmTransform(elbowWristAngleMap.get(clientID), charEntityMap.get(clientID).model);
+            
+            
+
+            CharMovement.setUpperArmTransform(upperArmAnglesMap.get(clientID), modelMap.get(clientID));
+            CharMovement.setLowerArmTransform(elbowWristAngleMap.get(clientID), modelMap.get(clientID));
+        }
+        
+        long currentTime=System.currentTimeMillis();
+        if (currentTime - timeOfLastSync > timeBetweenSyncs) {
+            timeOfLastSync = currentTime;
+            for (Client client : clients) {
+                int clientID = client.getClientID();
+                try {
+                    client.send(new CharPositionMessage(upperArmAnglesMap.get(clientID), upperArmVelsMap.get(clientID),
+                            elbowWristAngleMap.get(clientID), elbowWristVelMap.get(clientID)));
+                } catch (IOException ex) {
+                    Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
         }
     }
 
@@ -252,41 +264,42 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         int clientID = message.getClient().getClientID();
 
         if (clientInitializedSet.contains(new Integer(clientID))) {
-            System.out.println("client "+clientID+" has been initialized");
+  //          System.out.println("client "+clientID+" has been initialized");
             if (message instanceof InputMessages.RotateUArmCC) {
-                                 System.out.println("rotateCC");
-                upperArmRotationVelMap.get(clientID).z = -1;
+     //                            System.out.println("rotateCC");
+                upperArmVelsMap.get(clientID).z = -1;
             } else if (message instanceof InputMessages.RotateUArmC) {
-                                  System.out.println("rotateC");
-                upperArmRotationVelMap.get(clientID).z = 1;
+   //                               System.out.println("rotateC");
+                upperArmVelsMap.get(clientID).z = 1;
             } else if (message instanceof InputMessages.StopRotateTwist) {
-                                 System.out.println("rotateStop");
-                upperArmRotationVelMap.get(clientID).z = 0;
+   //                              System.out.println("rotateStop");
+                upperArmVelsMap.get(clientID).z = 0;
             } else if (message instanceof InputMessages.MouseMovement) {
-                                 System.out.println("move mouse");
+  //                               System.out.println("move mouse");
                 InputMessages.MouseMovement mouseMovement = (InputMessages.MouseMovement) message;
-                upperArmRotationVelMap.get(clientID).x = FastMath.cos(mouseMovement.angle);
-                upperArmRotationVelMap.get(clientID).y = FastMath.sin(mouseMovement.angle);
+                upperArmVelsMap.get(clientID).x = FastMath.cos(mouseMovement.angle);
+                upperArmVelsMap.get(clientID).y = FastMath.sin(mouseMovement.angle);
             } else if (message instanceof InputMessages.StopMouseMovement) {
-                upperArmRotationVelMap.get(clientID).x = upperArmRotationVelMap.get(clientID).y = 0;
+                upperArmVelsMap.get(clientID).x = upperArmVelsMap.get(clientID).y = 0;
             } else if (message instanceof InputMessages.LArmUp) {
-                                  System.out.println("arm up");
+    //                              System.out.println("arm up");
                 elbowWristVelMap.put(clientID, 1f);
             } else if (message instanceof InputMessages.LArmDown) {
-                                 System.out.println("arm down");
+    //                             System.out.println("arm down");
                 elbowWristVelMap.put(clientID, -1f);
             } else if (message instanceof InputMessages.StopLArm) {
-                                 System.out.println("arm stop");
+   //                              System.out.println("arm stop");
                 elbowWristVelMap.put(clientID, 0f);
             }
         }
         else{
-            System.out.println("Client "+clientID+" not initialized");
-            System.out.println("client is "+message.getClient());
+    //        System.out.println("Client "+clientID+" not initialized");
+   //         System.out.println("client is "+message.getClient());
         }
     }
 
     public void messageSent(Message message) {
+        System.out.println("Sending message");
     }
 
     public void objectReceived(Object object) {
@@ -298,23 +311,20 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     }
 
     public void clientConnected(Client client) {
-        int clientID=client.getClientID();
-
-        CapsuleCollisionShape capsule = new CapsuleCollisionShape(1.5f, 2f);
-        character = new CharacterControl(capsule, 0.01f);
-        model=Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState);
-        rootNode.attachChild(model);
-
-        modelMap.put(clientID, serverCharacter);
-        upperArmAnglesMap.put(clientID, new Vector3f());
-        upperArmRotationVelMap.put(clientID, new Vector3f());
-        elbowWristAngleMap.put(clientID, new Float(CharMovement.Constraints.lRotMin));
-        elbowWristVelMap.put(clientID, new Float(0f));
-
-        
-        System.out.println("client connected:"+clientID);
-               
-//        charEntityMap.put(client.getClientID(), )
+        try {
+            int clientID = client.getClientID();
+            Node model = Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState);
+            rootNode.attachChild(model);
+            modelMap.put(clientID, model);
+            upperArmAnglesMap.put(clientID, new Vector3f());
+            upperArmVelsMap.put(clientID, new Vector3f());
+            elbowWristAngleMap.put(clientID, new Float(CharMovement.Constraints.lRotMin));
+            elbowWristVelMap.put(clientID, new Float(0f));
+            client.send(new CharCreationMessage(clientID));
+            System.out.println("client connected:" + clientID);
+        } catch (IOException ex) {
+            Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     public void clientDisconnected(Client client) {

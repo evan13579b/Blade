@@ -19,9 +19,18 @@ public class CharPositionMessage extends Message {
     public float elbowWristAngle,elbowWristVel;
 
     public CharPositionMessage(Vector3f upperArmAngles,Vector3f upperArmVels,float elbowWristAngle,float elbowWristVel){
+        super();
         this.upperArmAngles=upperArmAngles.clone();
         this.upperArmVels=upperArmVels.clone();
         this.elbowWristAngle=elbowWristAngle;
         this.elbowWristVel=elbowWristVel;
+    }
+
+    public CharPositionMessage(){
+        super();
+        upperArmAngles=new Vector3f();
+        upperArmVels=new Vector3f();
+        elbowWristAngle=0;
+        elbowWristVel=0;
     }
 }

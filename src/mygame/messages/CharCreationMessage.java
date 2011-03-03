@@ -17,6 +17,11 @@ public class CharCreationMessage extends Message{
     public int clientID;
 
     public CharCreationMessage(int clientID){
+        super();
         this.clientID=clientID;
+    }
+
+    public CharCreationMessage(){
+        super();
     }
 }
