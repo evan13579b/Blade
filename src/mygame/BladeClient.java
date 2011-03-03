@@ -52,6 +52,7 @@ import com.jme3.material.Material;
 import com.jme3.math.FastMath;
 import com.jme3.math.Vector3f;
 import com.jme3.network.connection.Client;
+import com.jme3.network.events.ConnectionListener;
 import com.jme3.network.events.MessageListener;
 import com.jme3.network.message.Message;
 import com.jme3.network.serializing.Serializer;
@@ -76,7 +77,7 @@ import mygame.messages.CharDestructionMessage;
  *
  * @author blah
  */
-public class BladeClient extends SimpleApplication implements MessageListener, RawInputListener{
+public class BladeClient extends SimpleApplication implements MessageListener, RawInputListener, ConnectionListener{
     private ChaseCamera chaseCam;
     private Node model;
     
@@ -118,6 +119,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         try{
             client=new Client(BladeMain.serverIP,BladeMain.port,BladeMain.port);
             client.start();
+            client.addMessageListener(this,CharCreationMessage.class,CharDestructionMessage.class,CharPositionMessage.class);
         }
         catch(Exception e){
             e.printStackTrace();
@@ -130,7 +132,8 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         }
 
         InputMessages.addInputMessageListeners(client, this);
-        client.addMessageListener(this,CharCreationMessage.class,CharDestructionMessage.class,CharPositionMessage.class);
+        client.addConnectionListener(this);
+        
 
         DirectionalLight sun = new DirectionalLight();
         sun.setDirection(new Vector3f(-0.1f, -0.7f, -1.0f));
@@ -149,10 +152,18 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
     @Override
     public void simpleUpdate(float tpf){
-
+        try {
+            client.send(new CharCreationMessage(1));
+            client.send(new CharDestructionMessage());
+            client.send(new CharPositionMessage());
+        } catch (IOException ex) {
+            Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
+        }
         if(clientSet){
+            characterUpdate(tpf);
             if((System.currentTimeMillis()-timeOfLastMouseMotion)>mouseMovementTimeout){
                 try {
+                    
                     client.send(new InputMessages.StopMouseMovement());                   
                 } catch (IOException ex) {
                     Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
@@ -161,6 +172,12 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 timeOfLastMouseMotion=System.currentTimeMillis();
             }
         }
+    }
+
+    public void characterUpdate(float tpf){
+        System.out.println("character update");
+        CharMovement.setUpperArmTransform(upperArmAngles, model);
+        CharMovement.setLowerArmTransform(elbowWristAngle, model);
     }
 
     public void registerInput() {
@@ -250,15 +267,29 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
     public void messageReceived(Message message) {
         if(message instanceof CharCreationMessage){
+            System.out.println("Creating character");
             CharCreationMessage creationMessage=(CharCreationMessage)message;
-            if(creationMessage.clientID==client.getClientID()){
-                
+            if(creationMessage.getClient().getPlayerID()==client.getPlayerID()){
+                model = Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState);
+                rootNode.attachChild(model);
+                clientSet=true;
             }
         }
+        else if(message instanceof CharPositionMessage){
+            System.out.println("modifying position");
+            if (clientSet) {
+                CharPositionMessage charPosition = (CharPositionMessage) message;
+                this.upperArmAngles = charPosition.upperArmAngles.clone();
+                this.upperArmVels = charPosition.upperArmVels.clone();
+                this.elbowWristAngle = charPosition.elbowWristAngle;
+                this.elbowWristVel = charPosition.elbowWristVel;
+            }
+        }
+        System.out.println(message.getClass()+" recieved");
     }
 
     public void messageSent(Message message) {
-    //    System.out.println("sending message");
+  //      System.out.println(message.getClass());
     }
 
     public void objectReceived(Object object) {
@@ -386,5 +417,13 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         } catch (Throwable ex) {
             Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+
+    public void clientConnected(Client client) {
+
+    }
+
+    public void clientDisconnected(Client client) {
+        
     }
 }

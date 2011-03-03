@@ -12,7 +12,7 @@ import com.jme3.network.serializing.Serializable;
  *
  * @author blah
  */
-@Serializable()
+@Serializable(id=700)
 public class CharDestructionMessage extends Message{
 
 }

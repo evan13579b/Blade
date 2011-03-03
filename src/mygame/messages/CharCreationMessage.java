@@ -12,13 +12,13 @@ import com.jme3.network.serializing.Serializable;
  *
  * @author blah
  */
-@Serializable()
+@Serializable(id=30)
 public class CharCreationMessage extends Message{
-    public int clientID;
+    public long playerID;
 
-    public CharCreationMessage(int clientID){
+    public CharCreationMessage(long playerID){
         super();
-        this.clientID=clientID;
+        this.playerID=playerID;
     }
 
     public CharCreationMessage(){
