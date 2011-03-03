@@ -76,9 +76,6 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     HashSet<Integer> clientInitializedSet=new HashSet();
     HashSet<Client> clientSet=new HashSet();
 
-    private AnimControl control;
-    private ChaseCamera chaseCam;
-    private Node model;
     private BulletAppState bulletAppState;
     private TerrainQuad terrain;
     Material mat_terrain;
@@ -91,8 +88,6 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     Server server;
     ServerSyncService serverSyncService;
-    CharacterEntity serverCharacter;
-    CharacterControl character;
     Vector3f walkDirection = new Vector3f(0,0,0);
 
     Vector3f upperArmAngles = new Vector3f(0,0,0);
@@ -347,10 +342,10 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         int clientID=client.getClientID();
         clientSet.add(client);
         CapsuleCollisionShape capsule = new CapsuleCollisionShape(1.5f, 2f);
-        character = new CharacterControl(capsule, 0.01f);
-        model=Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState);
+        CharacterControl character = new CharacterControl(capsule, 0.01f);
+        Node model=Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState);
         rootNode.attachChild(model);
-        serverCharacter=new CharacterEntity(model);
+        CharacterEntity serverCharacter=new CharacterEntity(model);
         charEntityMap.put(clientID, serverCharacter);
         upperArmAnglesMap.put(clientID, new Vector3f());
         upperArmRotationVelMap.put(clientID, new Vector3f());
