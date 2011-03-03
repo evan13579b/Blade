@@ -36,6 +36,8 @@ import com.jme3.animation.AnimControl;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.bullet.BulletAppState;
+import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
+import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.input.ChaseCamera;
 import com.jme3.input.MouseInput;
@@ -88,7 +90,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
     Material stone_mat;
     Material floor_mat;
     private RigidBodyControl terrain_phy;
-
+    CharacterControl character;
     Client client;
     ClientCharacterEntity clientCharacter;
     ClientSyncService clientSyncService;
@@ -97,9 +99,15 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
 
 
     public SyncEntity createEntity(Class<? extends SyncEntity> entityType){
+        model=Character.createCharacter("Models/Fighter.mesh.j3o", assetManager, bulletAppState);
         clientCharacter=new ClientCharacterEntity(model);
         rootNode.attachChild(model);
+        chaseCam = new ChaseCamera(cam, model, inputManager);
+        chaseCam.setSmoothMotion(true);
+        chaseCam.setDefaultVerticalRotation(FastMath.HALF_PI / 4f);
+        chaseCam.setLookAtOffset(new Vector3f(0.0f, 4.0f, 0.0f));
         clientSet=true;
+        registerInput();
         return clientCharacter;
     }
 
@@ -119,12 +127,12 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
         stateManager.attach(bulletAppState);
         initMaterials();
         initTerrain();
-
+/*
         model = (Node) assetManager.loadModel("Models/Fighter.mesh.j3o");
         model.scale(1.0f, 1.0f, 1.0f);
         model.rotate(0.0f, FastMath.HALF_PI, 0.0f);
         model.setLocalTranslation(0.0f, 0.0f, 0.0f);
-
+*/
         try{
             client=new Client(BladeMain.serverIP,BladeMain.port,BladeMain.port);
             client.start();
@@ -156,11 +164,8 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
 
         flyCam.setEnabled(false);
 
-        chaseCam = new ChaseCamera(cam, model, inputManager);
-        chaseCam.setSmoothMotion(true);
-        chaseCam.setDefaultVerticalRotation(FastMath.HALF_PI / 4f);
-        chaseCam.setLookAtOffset(new Vector3f(0.0f, 4.0f, 0.0f));
-        registerInput();
+        
+        
     }
 
     @Override

@@ -33,6 +33,7 @@ public class CharacterEntity implements SyncEntity{
 
     public void setUpperArmAngles(Vector3f upperArmAngles){
         this.upperArmAngles=new Vector3f(upperArmAngles);
+  //      System.out.println("set upperArmAngles:"+upperArmAngles.x+","+upperArmAngles.y+","+upperArmAngles.z);
     }
 
     public void setUpArmVelocity(Vector3f upperArmVelocity){

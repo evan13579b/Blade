@@ -44,7 +44,9 @@ import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.FastMath;
 import com.jme3.math.Vector3f;
+import com.jme3.network.connection.Client;
 import com.jme3.network.connection.Server;
+import com.jme3.network.events.ConnectionListener;
 import com.jme3.network.events.MessageListener;
 import com.jme3.network.message.Message;
 import com.jme3.network.serializing.Serializer;
@@ -60,10 +62,17 @@ import com.jme3.terrain.heightmap.ImageBasedHeightMap;
 import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.WrapMode;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import jme3tools.converters.ImageToAwt;
 
-public class BladeServer extends SimpleApplication implements MessageListener{
+public class BladeServer extends SimpleApplication implements MessageListener,ConnectionListener{
+    HashMap<Integer,CharacterEntity> charEntityMap=new HashMap();
+    HashMap<Integer,Vector3f> upperArmAnglesMap=new HashMap();
+    HashMap<Integer,Vector3f> upperArmRotationVelMap=new HashMap();
+    HashMap<Integer,Float> elbowWristAngleMap=new HashMap();
+    HashMap<Integer,Float> elbowWristVelMap=new HashMap();
+
     private AnimControl control;
     private ChaseCamera chaseCam;
     private Node model;
@@ -86,7 +95,7 @@ public class BladeServer extends SimpleApplication implements MessageListener{
     Vector3f upperArmAngles = new Vector3f(0,0,0);
     Vector3f upperArmRotationVel = new Vector3f(0,0,0);
     float elbowWristAngle=CharMovement.Constraints.lRotMin;
-    int elbowWristVel=0;
+    float elbowWristVel=0;
 
     public static void main(String[] args) {
         BladeServer app = new BladeServer();
@@ -102,35 +111,30 @@ public class BladeServer extends SimpleApplication implements MessageListener{
             server = new Server(BladeMain.port,BladeMain.port);
             server.start();
             serverSyncService=server.getService(ServerSyncService.class);
+            serverSyncService.setNetworkSimulationParams(0.0f, 100);
         }
         catch(Exception e){
             e.printStackTrace();
         }
 
         InputMessages.addInputMessageListeners(server, this);
+        server.addConnectionListener(this);
 
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
         stateManager.attach(bulletAppState);
         initMaterials();
         initTerrain();
-        /** 1. Create terrain material and load four textures into it. */
-        // Load a model from test_data (OgreXML + material + texture)
+/*
         CapsuleCollisionShape capsule = new CapsuleCollisionShape(1.5f, 2f);
         character = new CharacterControl(capsule, 0.01f);
-        model = (Node) assetManager.loadModel("Models/Fighter.mesh.j3o");
-        model.scale(1.0f, 1.0f, 1.0f);
-        model.rotate(0.0f, FastMath.HALF_PI, 0.0f);
-        model.setLocalTranslation(0.0f, 0.0f, 0.0f);
-        model.addControl(character);
+        model=Character.createCharacter("Models/Fighter.mesh.j3o", assetManager, bulletAppState,character);
         rootNode.attachChild(model);
         serverCharacter=new CharacterEntity(model);
+        
         serverSyncService.addNpc(serverCharacter);
-  //      serverSyncService.setNetworkSimulationParams(0.0f, 100);
-
-        rootNode.attachChild(model);
-        bulletAppState.getPhysicsSpace().add(character);
-
+        serverSyncService.setNetworkSimulationParams(0.0f, 100);
+*/
         DirectionalLight sun = new DirectionalLight();
         sun.setDirection(new Vector3f(-0.1f, -0.7f, -1.0f));
         rootNode.addLight(sun);
@@ -139,20 +143,20 @@ public class BladeServer extends SimpleApplication implements MessageListener{
         sun2.setDirection(new Vector3f(0.1f, 0.7f, 1.0f));
         rootNode.addLight(sun2);
 
-        control = model.getControl(AnimControl.class);
+//        control = model.getControl(AnimControl.class);
 
         flyCam.setEnabled(false);
-
+/*
         chaseCam = new ChaseCamera(cam, model, inputManager);
         chaseCam.setSmoothMotion(true);
         chaseCam.setDefaultVerticalRotation(FastMath.HALF_PI / 4f);
         chaseCam.setLookAtOffset(new Vector3f(0.0f, 4.0f, 0.0f));
-    }
+  */  }
 
     @Override
     public void simpleUpdate(float tpf){
         updateCharacter(tpf);
-        serverSyncService.update(tpf);
+        serverSyncService.update(tpf);/*
         Vector3f camDir = cam.getDirection().clone().multLocal(0.2f);
         Vector3f camLeft = cam.getLeft().clone().multLocal(0.2f);
         camDir.y = 0;
@@ -169,29 +173,41 @@ public class BladeServer extends SimpleApplication implements MessageListener{
         if (down) {
             walkDirection.addLocal(camDir.negate());
         }
-        if (!character.onGround()) {
+ /*       if (!character.onGround()) {
             airTime = airTime + tpf;
         } else {
             airTime = 0;
         }
+   */
+//        character.setWalkDirection(walkDirection);
 
-        character.setWalkDirection(walkDirection);
-
-        walkDirection.set(0, 0, 0);
+//        walkDirection.set(0, 0, 0);
 
     }
 
-    public void updateCharacter(float tpf){
-        upperArmAngles=CharMovement.extrapolateUpperArmAngles(upperArmAngles, upperArmRotationVel, tpf);
-        elbowWristAngle=CharMovement.extrapolateLowerArmAngles(elbowWristAngle, elbowWristAngle, tpf);
+    public void updateCharacter(float tpf) {
+        for (Client client : server.getConnectors()) {
+ //           System.out.println("updating for "+client.getClientID());
+            int clientID=client.getClientID();
+     //       System.out.println("upperArmVel:"+upperArmRotationVelMap.get(clientID).x+","+upperArmRotationVelMap.get(clientID).y+","+upperArmRotationVelMap.get(clientID).z);
+    //        System.out.println("upperArmAngles before:"+upperArmAnglesMap.get(clientID).x+","+upperArmAnglesMap.get(clientID).y+","+upperArmAnglesMap.get(clientID).z);
+            upperArmAnglesMap.put(clientID, CharMovement.extrapolateUpperArmAngles(upperArmAnglesMap.get(clientID),
+                    upperArmRotationVelMap.get(clientID), tpf));
+  //          System.out.println("upperArmAngles after:"+upperArmAnglesMap.get(clientID).x+","+upperArmAnglesMap.get(clientID).y+","+upperArmAnglesMap.get(clientID).z);
+            elbowWristAngleMap.put(clientID,CharMovement.extrapolateLowerArmAngles(elbowWristAngleMap.get(clientID),
+                    elbowWristVelMap.get(clientID), tpf));
+            charEntityMap.get(clientID).setElbowWrist(new Float(elbowWristAngleMap.get(clientID)), new Float(elbowWristVelMap.get(clientID)));
+            charEntityMap.get(clientID).setUpperArmAngles(upperArmAnglesMap.get(clientID));
+            charEntityMap.get(clientID).setUpArmVelocity(upperArmRotationVelMap.get(clientID));
+   //         upperArmAngles = CharMovement.extrapolateUpperArmAngles(upperArmAngles, upperArmRotationVel, tpf);
+  //          elbowWristAngle = CharMovement.extrapolateLowerArmAngles(elbowWristAngle, elbowWristAngle, tpf);
+  //          serverCharacter.setElbowWrist(new Float(elbowWristAngle), new Float(elbowWristVel));
+  //          serverCharacter.setUpperArmAngles(upperArmAngles);
+  //          serverCharacter.setUpArmVelocity(upperArmRotationVel);
 
-        serverCharacter.setElbowWrist(new Float(elbowWristAngle), new Float(elbowWristVel));
-
-        serverCharacter.setUpperArmAngles(upperArmAngles);
-        serverCharacter.setUpArmVelocity(upperArmRotationVel);
-
-        CharMovement.setUpperArmTransform(upperArmAngles, model);
-        CharMovement.setLowerArmTransform(elbowWristAngle,  model);
+            CharMovement.setUpperArmTransform(upperArmAnglesMap.get(clientID), charEntityMap.get(clientID).model);
+            CharMovement.setLowerArmTransform(elbowWristAngleMap.get(clientID), charEntityMap.get(clientID).model);
+        }
     }
 
     public void initTerrain() {
@@ -275,31 +291,34 @@ public class BladeServer extends SimpleApplication implements MessageListener{
     }
 
     public void messageReceived(Message message) {
+    //    System.out.println("message received");
+        int clientID=message.getClient().getClientID();
+
         if(message instanceof InputMessages.RotateUArmCC){
-            upperArmRotationVel.z=-1;
+            upperArmRotationVelMap.get(clientID).z=-1;
         }
         else if(message instanceof InputMessages.RotateUArmC){
-            upperArmRotationVel.z=1;
+            upperArmRotationVelMap.get(clientID).z=1;
         }
         else if(message instanceof InputMessages.StopRotateTwist){
-            upperArmRotationVel.z=0;
+            upperArmRotationVelMap.get(clientID).z=0;
         }
         else if(message instanceof InputMessages.MouseMovement){
             InputMessages.MouseMovement mouseMovement=(InputMessages.MouseMovement)message;
-            upperArmRotationVel.x=FastMath.cos(mouseMovement.angle);
-            upperArmRotationVel.y=FastMath.sin(mouseMovement.angle);
+            upperArmRotationVelMap.get(clientID).x=FastMath.cos(mouseMovement.angle);
+            upperArmRotationVelMap.get(clientID).y=FastMath.sin(mouseMovement.angle);
         }
         else if(message instanceof InputMessages.StopMouseMovement){
-            upperArmRotationVel.x=upperArmRotationVel.y=0;
+            upperArmRotationVelMap.get(clientID).x=upperArmRotationVelMap.get(clientID).y=0;
         }
         else if(message instanceof InputMessages.LArmUp){
-            elbowWristVel=1;
+            elbowWristVelMap.put(clientID,1f);
         }
         else if(message instanceof InputMessages.LArmDown){
-            elbowWristVel=-1;
+            elbowWristVelMap.put(clientID,-1f);
         }
         else if(message instanceof InputMessages.StopLArm){
-            elbowWristVel=0;
+            elbowWristVelMap.put(clientID,0f);
         }
     }
 
@@ -312,5 +331,27 @@ public class BladeServer extends SimpleApplication implements MessageListener{
 
     public void objectSent(Object object) {
         throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    public void clientConnected(Client client) {
+        int clientID=client.getClientID();
+        CapsuleCollisionShape capsule = new CapsuleCollisionShape(1.5f, 2f);
+        character = new CharacterControl(capsule, 0.01f);
+        model=Character.createCharacter("Models/Fighter.mesh.j3o", assetManager, bulletAppState);
+        rootNode.attachChild(model);
+        serverCharacter=new CharacterEntity(model);
+        charEntityMap.put(clientID, serverCharacter);
+        upperArmAnglesMap.put(clientID, new Vector3f());
+        upperArmRotationVelMap.put(clientID, new Vector3f());
+        elbowWristAngleMap.put(clientID, CharMovement.Constraints.lRotMin);
+        elbowWristVelMap.put(clientID, 0f);
+        serverSyncService.addNpc(serverCharacter);
+        
+               
+//        charEntityMap.put(client.getClientID(), )
+    }
+
+    public void clientDisconnected(Client client) {
+        
     }
 }

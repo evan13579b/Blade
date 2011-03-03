@@ -48,6 +48,7 @@ public class CharMovement {
     static Quaternion createLowerArmTransform(Float elbowWristRotation){
         Quaternion rotation=new Quaternion();
         rotation.fromAngles(elbowWristRotation, 0,0);
+ //       System.out.println(rotation);
         return rotation;
     }
 

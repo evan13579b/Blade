@@ -27,7 +27,7 @@ public class ClientCharacterEntity extends CharacterEntity {
 
     @Override
     public void onRemoteUpdate(float latencyDelta) {
-
+  //      System.out.println("remoteUpdate");
         if (upperArmAngles != null) {
 
             Vector3f extrapolatedSelfAngles, upperArmAngleDiffs, extrapolatedForeignAngles, newUpperArmAngles = new Vector3f();
@@ -73,6 +73,7 @@ public class ClientCharacterEntity extends CharacterEntity {
             prevUpArmAngle = upperArmAngles.clone();
 
             timeOfLastUpdate = System.currentTimeMillis();
+ //           System.out.println("upperArmAngles:"+upperArmAngles.x+","+upperArmAngles.y+","+upperArmAngles.z);
         }
     }
 
