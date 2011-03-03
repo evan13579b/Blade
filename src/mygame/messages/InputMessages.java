@@ -3,7 +3,7 @@
  * and open the template in the editor.
  */
 
-package mygame;
+package mygame.messages;
 
 import com.jme3.network.connection.Client;
 import com.jme3.network.connection.Server;

@@ -32,6 +32,8 @@
 
 package mygame;
 
+import mygame.messages.InputMessages;
+import mygame.messages.CharPositionMessage;
 import com.jme3.animation.AnimControl;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
@@ -51,7 +53,6 @@ import com.jme3.network.events.MessageListener;
 import com.jme3.network.message.Message;
 import com.jme3.network.serializing.Serializer;
 import com.jme3.network.sync.ServerSyncService;
-import com.jme3.network.sync.SyncMessage;
 import com.jme3.renderer.Camera;
 import com.jme3.scene.Node;
 import com.jme3.system.JmeContext;
@@ -66,9 +67,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import jme3tools.converters.ImageToAwt;
+import mygame.messages.CharCreationMessage;
+import mygame.messages.CharDestructionMessage;
 
 public class BladeServer extends SimpleApplication implements MessageListener,ConnectionListener{
-    HashMap<Integer,CharacterEntity> charEntityMap=new HashMap();
+    HashMap<Integer,Node> modelMap=new HashMap();
     HashMap<Integer,Vector3f> upperArmAnglesMap=new HashMap();
     HashMap<Integer,Vector3f> upperArmRotationVelMap=new HashMap();
     HashMap<Integer,Float> elbowWristAngleMap=new HashMap();
@@ -107,14 +110,14 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     @Override
     public void simpleInitApp() {
-        Serializer.registerClass(SyncMessage.class);
+        Serializer.registerClass(CharPositionMessage.class);
+        Serializer.registerClass(CharCreationMessage.class);
+        Serializer.registerClass(CharDestructionMessage.class);
         InputMessages.registerInputClasses();
         
         try {
             server = new Server(BladeMain.port,BladeMain.port);
             server.start();
-            serverSyncService=server.getService(ServerSyncService.class);
-            serverSyncService.setNetworkSimulationParams(0.0f, 100);
         }
         catch(Exception e){
             e.printStackTrace();
@@ -122,22 +125,14 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
         InputMessages.addInputMessageListeners(server, this);
         server.addConnectionListener(this);
+        server.addMessageListener(this,CharCreationMessage.class,CharDestructionMessage.class,CharPositionMessage.class);
 
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
         stateManager.attach(bulletAppState);
         initMaterials();
         initTerrain();
-/*
-        CapsuleCollisionShape capsule = new CapsuleCollisionShape(1.5f, 2f);
-        character = new CharacterControl(capsule, 0.01f);
-        model=Character.createCharacter("Models/Fighter.mesh.j3o", assetManager, bulletAppState,character);
-        rootNode.attachChild(model);
-        serverCharacter=new CharacterEntity(model);
-        
-        serverSyncService.addNpc(serverCharacter);
-        serverSyncService.setNetworkSimulationParams(0.0f, 100);
-*/
+
         DirectionalLight sun = new DirectionalLight();
         sun.setDirection(new Vector3f(-0.1f, -0.7f, -1.0f));
         rootNode.addLight(sun);
@@ -146,68 +141,27 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         sun2.setDirection(new Vector3f(0.1f, 0.7f, 1.0f));
         rootNode.addLight(sun2);
 
-//        control = model.getControl(AnimControl.class);
-
         flyCam.setEnabled(false);
-/*
-        chaseCam = new ChaseCamera(cam, model, inputManager);
-        chaseCam.setSmoothMotion(true);
-        chaseCam.setDefaultVerticalRotation(FastMath.HALF_PI / 4f);
-        chaseCam.setLookAtOffset(new Vector3f(0.0f, 4.0f, 0.0f));
-  */  }
+    }
 
     @Override
     public void simpleUpdate(float tpf){
         updateCharacter(tpf);
-        serverSyncService.update(tpf);/*
-        Vector3f camDir = cam.getDirection().clone().multLocal(0.2f);
-        Vector3f camLeft = cam.getLeft().clone().multLocal(0.2f);
-        camDir.y = 0;
-        camLeft.y = 0;
-        if (left) {
-        walkDirection.addLocal(camLeft);
-        }
-        if (right) {
-        walkDirection.addLocal(camLeft.negate());
-        }
-        if (up) {
-        walkDirection.addLocal(camDir);
-        }
-        if (down) {
-        walkDirection.addLocal(camDir.negate());
-        }
-        /*       if (!character.onGround()) {
-        airTime = airTime + tpf;
-        } else {
-        airTime = 0;
-        }
-         */
-//        character.setWalkDirection(walkDirection);
-
-//        walkDirection.set(0, 0, 0);
-
     }
 
     public void updateCharacter(float tpf) {
         for (Client client : server.getConnectors()) {
             System.out.println("handling client "+client.getClientID());
-            //           System.out.println("updating for "+client.getClientID());
+            
             int clientID = client.getClientID();
-            //       System.out.println("upperArmVel:"+upperArmRotationVelMap.get(clientID).x+","+upperArmRotationVelMap.get(clientID).y+","+upperArmRotationVelMap.get(clientID).z);
-            //        System.out.println("upperArmAngles before:"+upperArmAnglesMap.get(clientID).x+","+upperArmAnglesMap.get(clientID).y+","+upperArmAnglesMap.get(clientID).z);
+
             upperArmAnglesMap.put(clientID, CharMovement.extrapolateUpperArmAngles(upperArmAnglesMap.get(clientID),
                     upperArmRotationVelMap.get(clientID), tpf));
-            //          System.out.println("upperArmAngles after:"+upperArmAnglesMap.get(clientID).x+","+upperArmAnglesMap.get(clientID).y+","+upperArmAnglesMap.get(clientID).z);
             elbowWristAngleMap.put(clientID, CharMovement.extrapolateLowerArmAngles(elbowWristAngleMap.get(clientID),
-                    elbowWristVelMap.get(clientID), tpf));
+            elbowWristVelMap.get(clientID), tpf));
             charEntityMap.get(clientID).setElbowWrist(new Float(elbowWristAngleMap.get(clientID)), new Float(elbowWristVelMap.get(clientID)));
             charEntityMap.get(clientID).setUpperArmAngles(upperArmAnglesMap.get(clientID));
             charEntityMap.get(clientID).setUpArmVelocity(upperArmRotationVelMap.get(clientID));
-            //         upperArmAngles = CharMovement.extrapolateUpperArmAngles(upperArmAngles, upperArmRotationVel, tpf);
-            //          elbowWristAngle = CharMovement.extrapolateLowerArmAngles(elbowWristAngle, elbowWristAngle, tpf);
-            //          serverCharacter.setElbowWrist(new Float(elbowWristAngle), new Float(elbowWristVel));
-            //          serverCharacter.setUpperArmAngles(upperArmAngles);
-            //          serverCharacter.setUpArmVelocity(upperArmRotationVel);
 
             CharMovement.setUpperArmTransform(upperArmAnglesMap.get(clientID), charEntityMap.get(clientID).model);
             CharMovement.setLowerArmTransform(elbowWristAngleMap.get(clientID), charEntityMap.get(clientID).model);
@@ -345,20 +299,19 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     public void clientConnected(Client client) {
         int clientID=client.getClientID();
-        clientSet.add(client);
+
         CapsuleCollisionShape capsule = new CapsuleCollisionShape(1.5f, 2f);
         character = new CharacterControl(capsule, 0.01f);
         model=Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState);
         rootNode.attachChild(model);
-        serverCharacter=new CharacterEntity(model);
-        charEntityMap.put(clientID, serverCharacter);
+
+        modelMap.put(clientID, serverCharacter);
         upperArmAnglesMap.put(clientID, new Vector3f());
         upperArmRotationVelMap.put(clientID, new Vector3f());
         elbowWristAngleMap.put(clientID, new Float(CharMovement.Constraints.lRotMin));
         elbowWristVelMap.put(clientID, new Float(0f));
-        serverSyncService.addNpc(serverCharacter);
-        clientInitializedSet.add(clientID);
 
+        
         System.out.println("client connected:"+clientID);
                
 //        charEntityMap.put(client.getClientID(), )

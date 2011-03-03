@@ -32,11 +32,11 @@
 
 package mygame;
 
-import com.jme3.animation.AnimControl;
+import mygame.messages.InputMessages;
+import mygame.messages.CharPositionMessage;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.bullet.BulletAppState;
-import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.input.ChaseCamera;
@@ -55,10 +55,6 @@ import com.jme3.network.connection.Client;
 import com.jme3.network.events.MessageListener;
 import com.jme3.network.message.Message;
 import com.jme3.network.serializing.Serializer;
-import com.jme3.network.sync.ClientSyncService;
-import com.jme3.network.sync.EntityFactory;
-import com.jme3.network.sync.SyncEntity;
-import com.jme3.network.sync.SyncMessage;
 import com.jme3.renderer.Camera;
 import com.jme3.scene.Node;
 import com.jme3.terrain.geomipmap.TerrainLodControl;
@@ -73,13 +69,14 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jme3tools.converters.ImageToAwt;
+import mygame.messages.CharCreationMessage;
+import mygame.messages.CharDestructionMessage;
 
 /**
  *
  * @author blah
  */
-public class BladeClient extends SimpleApplication implements EntityFactory, MessageListener, RawInputListener{
-    private AnimControl control;
+public class BladeClient extends SimpleApplication implements MessageListener, RawInputListener{
     private ChaseCamera chaseCam;
     private Node model;
     
@@ -92,32 +89,12 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
     private RigidBodyControl terrain_phy;
     CharacterControl character;
     Client client;
-    ClientCharacterEntity clientCharacter;
-    ClientSyncService clientSyncService;
     boolean clientSet=false;
 
-
-
-    public SyncEntity createEntity(Class<? extends SyncEntity> entityType){
-        if (model == null) {
-            model = Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState);
-            clientCharacter = new ClientCharacterEntity(model);
-            rootNode.attachChild(model);
-            chaseCam = new ChaseCamera(cam, model, inputManager);
-            chaseCam.setSmoothMotion(true);
-            chaseCam.setDefaultVerticalRotation(FastMath.HALF_PI / 4f);
-            chaseCam.setLookAtOffset(new Vector3f(0.0f, 4.0f, 0.0f));
-            clientSet = true;
-            return clientCharacter;
-        }
-        else{
-            Node newModel=Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState);
-            ClientCharacterEntity newCharacter=new ClientCharacterEntity(newModel);
-            rootNode.attachChild(newModel);
-
-            return newCharacter;
-        }
-    }
+    private Vector3f upperArmAngles=new Vector3f();
+    private Vector3f upperArmVels=new Vector3f();
+    private float elbowWristAngle=CharMovement.Constraints.lRotMin;
+    private float elbowWristVel=0;
 
     public static void main(String[] args) {
         BladeClient app = new BladeClient();
@@ -126,7 +103,9 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
 
     @Override
     public void simpleInitApp() {
-        Serializer.registerClass(SyncMessage.class);
+        Serializer.registerClass(CharPositionMessage.class);
+        Serializer.registerClass(CharCreationMessage.class);
+        Serializer.registerClass(CharDestructionMessage.class);
         InputMessages.registerInputClasses();
 
         
@@ -135,12 +114,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
         stateManager.attach(bulletAppState);
         initMaterials();
         initTerrain();
-/*
-        model = (Node) assetManager.loadModel("Models/Fighter.mesh.j3o");
-        model.scale(1.0f, 1.0f, 1.0f);
-        model.rotate(0.0f, FastMath.HALF_PI, 0.0f);
-        model.setLocalTranslation(0.0f, 0.0f, 0.0f);
-*/
+
         try{
             client=new Client(BladeMain.serverIP,BladeMain.port,BladeMain.port);
             client.start();
@@ -148,9 +122,6 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
         catch(Exception e){
             e.printStackTrace();
         }
-
-        clientSyncService=client.getService(ClientSyncService.class);
-        clientSyncService.setEntityFactory(this);
       
         try {
             Thread.sleep(1000);
@@ -178,9 +149,8 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
 
     @Override
     public void simpleUpdate(float tpf){
-        clientSyncService.update(tpf);
+
         if(clientSet){
-            clientCharacter.onLocalUpdate();
             if((System.currentTimeMillis()-timeOfLastMouseMotion)>mouseMovementTimeout){
                 try {
                     client.send(new InputMessages.StopMouseMovement());                   
@@ -339,14 +309,14 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
 
         try {
             if (evt.getDeltaWheel() > 0) {
-                if (prevDeltaWheel < 0 && !(clientCharacter.elbowWristAngle==CharMovement.Constraints.lRotMax)) {
+                if (prevDeltaWheel < 0 && !(elbowWristAngle==CharMovement.Constraints.lRotMax)) {
                     client.send(new InputMessages.StopLArm());
                 } else {
                     client.send(new InputMessages.LArmDown());
                 }
                 prevDeltaWheel=1;
             } else if (evt.getDeltaWheel() < 0) {
-                if (prevDeltaWheel > 0  && !(clientCharacter.elbowWristAngle==CharMovement.Constraints.lRotMin)) {
+                if (prevDeltaWheel > 0  && !(elbowWristAngle==CharMovement.Constraints.lRotMin)) {
                     client.send(new InputMessages.StopLArm());
                 } else {
                     client.send(new InputMessages.LArmUp());
