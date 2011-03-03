@@ -256,34 +256,35 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     public void messageReceived(Message message) {
         long playerID = message.getClient().getPlayerID();
-    //    System.out.println("message from "+playerID);
-    //    System.out.println("message from client "+message.getClient());
+        System.out.println("message from "+playerID);
+        System.out.println("message from client "+message.getClient());
+        System.out.println("message is "+message.getClass());
 
         if (playerInitializedSet.contains(playerID)) {
             if (message instanceof InputMessages.RotateUArmCC) {
-                //                            System.out.println("rotateCC");
+                                            System.out.println("rotateCC");
                 upperArmVelsMap.get(playerID).z = -1;
             } else if (message instanceof InputMessages.RotateUArmC) {
-                //                               System.out.println("rotateC");
+                                               System.out.println("rotateC");
                 upperArmVelsMap.get(playerID).z = 1;
             } else if (message instanceof InputMessages.StopRotateTwist) {
-                //                              System.out.println("rotateStop");
+                                              System.out.println("rotateStop");
                 upperArmVelsMap.get(playerID).z = 0;
             } else if (message instanceof InputMessages.MouseMovement) {
-                //                               System.out.println("move mouse");
+                                               System.out.println("move mouse");
                 InputMessages.MouseMovement mouseMovement = (InputMessages.MouseMovement) message;
                 upperArmVelsMap.get(playerID).x = FastMath.cos(mouseMovement.angle);
                 upperArmVelsMap.get(playerID).y = FastMath.sin(mouseMovement.angle);
             } else if (message instanceof InputMessages.StopMouseMovement) {
                 upperArmVelsMap.get(playerID).x = upperArmVelsMap.get(playerID).y = 0;
             } else if (message instanceof InputMessages.LArmUp) {
-                //                              System.out.println("arm up");
+                                              System.out.println("arm up");
                 elbowWristVelMap.put(playerID, 1f);
             } else if (message instanceof InputMessages.LArmDown) {
-                //                             System.out.println("arm down");
+                                            System.out.println("arm down");
                 elbowWristVelMap.put(playerID, -1f);
             } else if (message instanceof InputMessages.StopLArm) {
-                //                              System.out.println("arm stop");
+                                              System.out.println("arm stop");
                 elbowWristVelMap.put(playerID, 0f);
             }
         }

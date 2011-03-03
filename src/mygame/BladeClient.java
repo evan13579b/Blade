@@ -96,6 +96,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     private Vector3f upperArmVels=new Vector3f();
     private float elbowWristAngle=CharMovement.Constraints.lRotMin;
     private float elbowWristVel=0;
+    private long playerID=0;
 
     public static void main(String[] args) {
         BladeClient app = new BladeClient();
@@ -152,13 +153,13 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
     @Override
     public void simpleUpdate(float tpf){
-        try {
+   /*     try {
             client.send(new CharCreationMessage(1));
             client.send(new CharDestructionMessage());
             client.send(new CharPositionMessage());
         } catch (IOException ex) {
             Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        }*/
         if(clientSet){
             characterUpdate(tpf);
             if((System.currentTimeMillis()-timeOfLastMouseMotion)>mouseMovementTimeout){
@@ -420,7 +421,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     }
 
     public void clientConnected(Client client) {
-
+        playerID=client.getPlayerID();
     }
 
     public void clientDisconnected(Client client) {
