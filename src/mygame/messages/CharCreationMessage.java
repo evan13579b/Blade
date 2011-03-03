@@ -15,10 +15,12 @@ import com.jme3.network.serializing.Serializable;
 @Serializable(id=30)
 public class CharCreationMessage extends Message{
     public long playerID;
+    public boolean controllable;
 
-    public CharCreationMessage(long playerID){
+    public CharCreationMessage(long playerID,boolean controllable){
         super();
         this.playerID=playerID;
+        this.controllable=controllable;
     }
 
     public CharCreationMessage(){

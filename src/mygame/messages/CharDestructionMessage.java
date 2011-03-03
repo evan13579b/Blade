@@ -14,5 +14,10 @@ import com.jme3.network.serializing.Serializable;
  */
 @Serializable(id=700)
 public class CharDestructionMessage extends Message{
+    public long playerID;
 
+    public CharDestructionMessage(long playerID){
+        super();
+        this.playerID=playerID;
+    }
 }

@@ -15,13 +15,14 @@ import com.jme3.network.serializing.Serializable;
  */
 @Serializable(id=40)
 public class CharPositionMessage extends Message {
-    long playerID
+    public long playerID;
     public Vector3f upperArmAngles,upperArmVels;
     public float elbowWristAngle,elbowWristVel;
 
     public CharPositionMessage(Vector3f upperArmAngles,Vector3f upperArmVels,
             float elbowWristAngle,float elbowWristVel,long playerID){
         super();
+        this.playerID=playerID;
         this.upperArmAngles=upperArmAngles.clone();
         this.upperArmVels=upperArmVels.clone();
         this.elbowWristAngle=elbowWristAngle;

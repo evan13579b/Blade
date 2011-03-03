@@ -120,7 +120,9 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         try{
             client=new Client(BladeMain.serverIP,BladeMain.port,BladeMain.port);
             client.start();
+            
             client.addMessageListener(this,CharCreationMessage.class,CharDestructionMessage.class,CharPositionMessage.class);
+            
         }
         catch(Exception e){
             e.printStackTrace();
@@ -133,9 +135,8 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         }
 
         InputMessages.addInputMessageListeners(client, this);
-        client.addConnectionListener(this);
         
-
+        client.addConnectionListener(this);
         DirectionalLight sun = new DirectionalLight();
         sun.setDirection(new Vector3f(-0.1f, -0.7f, -1.0f));
         rootNode.addLight(sun);
@@ -148,24 +149,17 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         flyCam.setEnabled(false);
 
         
-        registerInput();
+   
     }
 
     @Override
     public void simpleUpdate(float tpf){
-   /*     try {
-            client.send(new CharCreationMessage(1));
-            client.send(new CharDestructionMessage());
-            client.send(new CharPositionMessage());
-        } catch (IOException ex) {
-            Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
-        }*/
         if(clientSet){
             characterUpdate(tpf);
             if((System.currentTimeMillis()-timeOfLastMouseMotion)>mouseMovementTimeout){
                 try {
                     
-                    client.send(new InputMessages.StopMouseMovement());                   
+                    client.send(new InputMessages.StopMouseMovement(playerID));
                 } catch (IOException ex) {
                     Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -176,7 +170,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     }
 
     public void characterUpdate(float tpf){
-        System.out.println("character update");
+ //       System.out.println("character update");
         CharMovement.setUpperArmTransform(upperArmAngles, model);
         CharMovement.setLowerArmTransform(elbowWristAngle, model);
     }
@@ -263,21 +257,23 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         Texture tex3 = assetManager.loadTexture(key3);
         tex3.setWrap(WrapMode.Repeat);
         floor_mat.setTexture("ColorMap", tex3);
-
     }
 
     public void messageReceived(Message message) {
         if(message instanceof CharCreationMessage){
             System.out.println("Creating character");
             CharCreationMessage creationMessage=(CharCreationMessage)message;
-            if(creationMessage.getClient().getPlayerID()==client.getPlayerID()){
+            if(creationMessage.controllable){
+                playerID=creationMessage.playerID;
                 model = Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState);
                 rootNode.attachChild(model);
+                System.out.println("claiming player id "+playerID);
+                registerInput();
                 clientSet=true;
             }
         }
         else if(message instanceof CharPositionMessage){
-            System.out.println("modifying position");
+         //   System.out.println("modifying position");
             if (clientSet) {
                 CharPositionMessage charPosition = (CharPositionMessage) message;
                 this.upperArmAngles = charPosition.upperArmAngles.clone();
@@ -286,7 +282,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 this.elbowWristVel = charPosition.elbowWristVel;
             }
         }
-        System.out.println(message.getClass()+" recieved");
+   //     System.out.println(message.getClass()+" recieved");
     }
 
     public void messageSent(Message message) {
@@ -332,7 +328,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                     if (angle < 0) {
                         angle = FastMath.TWO_PI + angle;
                     }
-                    client.send(new InputMessages.MouseMovement(angle));
+                    client.send(new InputMessages.MouseMovement(angle,playerID));
                 } catch (IOException ex) {
                     Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -348,16 +344,16 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         try {
             if (evt.getDeltaWheel() > 0) {
                 if (prevDeltaWheel < 0 && !(elbowWristAngle==CharMovement.Constraints.lRotMax)) {
-                    client.send(new InputMessages.StopLArm());
+                    client.send(new InputMessages.StopLArm(playerID));
                 } else {
-                    client.send(new InputMessages.LArmDown());
+                    client.send(new InputMessages.LArmDown(playerID));
                 }
                 prevDeltaWheel=1;
             } else if (evt.getDeltaWheel() < 0) {
                 if (prevDeltaWheel > 0  && !(elbowWristAngle==CharMovement.Constraints.lRotMin)) {
-                    client.send(new InputMessages.StopLArm());
+                    client.send(new InputMessages.StopLArm(playerID));
                 } else {
-                    client.send(new InputMessages.LArmUp());
+                    client.send(new InputMessages.LArmUp(playerID));
                 }
                 prevDeltaWheel=-1;
             }
@@ -374,13 +370,13 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             if (evt.isPressed()) {
                 if (evt.getButtonIndex() == MouseInput.BUTTON_LEFT) {
                     try {
-                        client.send(new InputMessages.RotateUArmCC());
+                        client.send(new InputMessages.RotateUArmCC(playerID));
                     } catch (IOException ex) {
                         Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 } else if (evt.getButtonIndex() == MouseInput.BUTTON_RIGHT) {
                     try {
-                        client.send(new InputMessages.RotateUArmC());
+                        client.send(new InputMessages.RotateUArmC(playerID));
                     } catch (IOException ex) {
                         Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
                     }
@@ -388,7 +384,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             }
             else{
                 try {
-                    client.send(new InputMessages.StopRotateTwist());
+                    client.send(new InputMessages.StopRotateTwist(playerID));
                 } catch (IOException ex) {
                     Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -400,7 +396,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
         if(evt.getButtonIndex()==MouseInput.BUTTON_MIDDLE){
             try {
-                client.send(new InputMessages.StopLArm());
+                client.send(new InputMessages.StopLArm(playerID));
             } catch (IOException ex) {
                 Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -421,7 +417,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     }
 
     public void clientConnected(Client client) {
-        playerID=client.getPlayerID();
+
     }
 
     public void clientDisconnected(Client client) {
