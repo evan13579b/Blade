@@ -185,7 +185,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     public void updateCharacter(float tpf) {
         for (Client client : server.getConnectors()) {
-            System.out.println("handling client "+client.getClientID());
+  //          System.out.println("handling client "+client.getClientID());
             //           System.out.println("updating for "+client.getClientID());
             int clientID = client.getClientID();
             //       System.out.println("upperArmVel:"+upperArmRotationVelMap.get(clientID).x+","+upperArmRotationVelMap.get(clientID).y+","+upperArmRotationVelMap.get(clientID).z);
@@ -291,7 +291,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     public void messageReceived(Message message) {
         int clientID = message.getClient().getClientID();
-
+        System.out.println("Message received from player "+message.getClient().getPlayerID());
+        
         if (clientInitializedSet.contains(new Integer(clientID))) {
             System.out.println("client "+clientID+" has been initialized");
             if (message instanceof InputMessages.RotateUArmCC) {
@@ -355,6 +356,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         clientInitializedSet.add(clientID);
 
         System.out.println("client connected:"+clientID);
+        System.out.println("player connected:"+client.getPlayerID());
                
 //        charEntityMap.put(client.getClientID(), )
     }
