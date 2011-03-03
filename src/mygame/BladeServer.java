@@ -295,29 +295,37 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         int clientID=message.getClient().getClientID();
 
         if(message instanceof InputMessages.RotateUArmCC){
+            System.out.println("rotateCC");
             upperArmRotationVelMap.get(clientID).z=-1;
         }
         else if(message instanceof InputMessages.RotateUArmC){
+            System.out.println("rotateC");
             upperArmRotationVelMap.get(clientID).z=1;
         }
         else if(message instanceof InputMessages.StopRotateTwist){
+            System.out.println("rotateStop");
             upperArmRotationVelMap.get(clientID).z=0;
         }
         else if(message instanceof InputMessages.MouseMovement){
+            System.out.println("move mouse");
             InputMessages.MouseMovement mouseMovement=(InputMessages.MouseMovement)message;
             upperArmRotationVelMap.get(clientID).x=FastMath.cos(mouseMovement.angle);
             upperArmRotationVelMap.get(clientID).y=FastMath.sin(mouseMovement.angle);
         }
         else if(message instanceof InputMessages.StopMouseMovement){
+            System.out.println("stop mouse");
             upperArmRotationVelMap.get(clientID).x=upperArmRotationVelMap.get(clientID).y=0;
         }
         else if(message instanceof InputMessages.LArmUp){
+            System.out.println("arm up");
             elbowWristVelMap.put(clientID,1f);
         }
         else if(message instanceof InputMessages.LArmDown){
+            System.out.println("arm down");
             elbowWristVelMap.put(clientID,-1f);
         }
         else if(message instanceof InputMessages.StopLArm){
+            System.out.println("arm stop");
             elbowWristVelMap.put(clientID,0f);
         }
     }
@@ -337,7 +345,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         int clientID=client.getClientID();
         CapsuleCollisionShape capsule = new CapsuleCollisionShape(1.5f, 2f);
         character = new CharacterControl(capsule, 0.01f);
-        model=Character.createCharacter("Models/Fighter.mesh.j3o", assetManager, bulletAppState);
+        model=Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState);
         rootNode.attachChild(model);
         serverCharacter=new CharacterEntity(model);
         charEntityMap.put(clientID, serverCharacter);

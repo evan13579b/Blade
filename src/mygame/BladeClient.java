@@ -99,16 +99,24 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
 
 
     public SyncEntity createEntity(Class<? extends SyncEntity> entityType){
-        model=Character.createCharacter("Models/Fighter.mesh.j3o", assetManager, bulletAppState);
-        clientCharacter=new ClientCharacterEntity(model);
-        rootNode.attachChild(model);
-        chaseCam = new ChaseCamera(cam, model, inputManager);
-        chaseCam.setSmoothMotion(true);
-        chaseCam.setDefaultVerticalRotation(FastMath.HALF_PI / 4f);
-        chaseCam.setLookAtOffset(new Vector3f(0.0f, 4.0f, 0.0f));
-        clientSet=true;
-        registerInput();
-        return clientCharacter;
+        if (model == null) {
+            model = Character.createCharacter("Models/Fighter.mesh.j3o", assetManager, bulletAppState);
+            clientCharacter = new ClientCharacterEntity(model);
+            rootNode.attachChild(model);
+            chaseCam = new ChaseCamera(cam, model, inputManager);
+            chaseCam.setSmoothMotion(true);
+            chaseCam.setDefaultVerticalRotation(FastMath.HALF_PI / 4f);
+            chaseCam.setLookAtOffset(new Vector3f(0.0f, 4.0f, 0.0f));
+            clientSet = true;
+            return clientCharacter;
+        }
+        else{
+            Node newModel=Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState);
+            ClientCharacterEntity newCharacter=new ClientCharacterEntity(newModel);
+            rootNode.attachChild(newModel);
+
+            return newCharacter;
+        }
     }
 
     public static void main(String[] args) {
@@ -165,7 +173,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
         flyCam.setEnabled(false);
 
         
-        
+        registerInput();
     }
 
     @Override
