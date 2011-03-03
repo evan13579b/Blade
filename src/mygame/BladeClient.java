@@ -100,7 +100,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
 
     public SyncEntity createEntity(Class<? extends SyncEntity> entityType){
         if (model == null) {
-            model = Character.createCharacter("Models/Fighter.mesh.j3o", assetManager, bulletAppState);
+            model = Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState);
             clientCharacter = new ClientCharacterEntity(model);
             rootNode.attachChild(model);
             chaseCam = new ChaseCamera(cam, model, inputManager);
