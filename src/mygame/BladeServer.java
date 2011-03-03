@@ -74,6 +74,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     HashMap<Integer,Float> elbowWristAngleMap=new HashMap();
     HashMap<Integer,Float> elbowWristVelMap=new HashMap();
     HashSet<Integer> clientInitializedSet=new HashSet();
+    HashSet<Client> clientSet=new HashSet();
 
     private AnimControl control;
     private ChaseCamera chaseCam;
@@ -189,6 +190,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     public void updateCharacter(float tpf) {
         for (Client client : server.getConnectors()) {
+            System.out.println("handling client "+client.getClientID());
             //           System.out.println("updating for "+client.getClientID());
             int clientID = client.getClientID();
             //       System.out.println("upperArmVel:"+upperArmRotationVelMap.get(clientID).x+","+upperArmRotationVelMap.get(clientID).y+","+upperArmRotationVelMap.get(clientID).z);
@@ -324,6 +326,10 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                 elbowWristVelMap.put(clientID, 0f);
             }
         }
+        else{
+            System.out.println("Client "+clientID+" not initialized");
+            System.out.println("client is "+message.getClient());
+        }
     }
 
     public void messageSent(Message message) {
@@ -339,6 +345,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     public void clientConnected(Client client) {
         int clientID=client.getClientID();
+        clientSet.add(client);
         CapsuleCollisionShape capsule = new CapsuleCollisionShape(1.5f, 2f);
         character = new CharacterControl(capsule, 0.01f);
         model=Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState);
