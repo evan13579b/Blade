@@ -66,6 +66,9 @@ import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.WrapMode;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -80,7 +83,14 @@ import mygame.messages.CharDestructionMessage;
 public class BladeClient extends SimpleApplication implements MessageListener, RawInputListener, ConnectionListener{
     private ChaseCamera chaseCam;
     private Node model;
-    
+
+    HashMap<Long,Node> modelMap=new HashMap();
+    HashMap<Long,Vector3f> upperArmAnglesMap=new HashMap();
+    HashMap<Long,Vector3f> upperArmVelsMap=new HashMap();
+    HashMap<Long,Float> elbowWristAngleMap=new HashMap();
+    HashMap<Long,Float> elbowWristVelMap=new HashMap();
+    HashSet<Long> playerSet=new HashSet();
+
     private BulletAppState bulletAppState;
     private TerrainQuad terrain;
     Material mat_terrain;
@@ -171,8 +181,11 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
     public void characterUpdate(float tpf){
  //       System.out.println("character update");
-        CharMovement.setUpperArmTransform(upperArmAngles, model);
-        CharMovement.setLowerArmTransform(elbowWristAngle, model);
+        for(Iterator<Long> playerIterator=playerSet.iterator();playerIterator.hasNext();){
+            long nextPlayerID=playerIterator.next();
+            CharMovement.setUpperArmTransform(upperArmAnglesMap.get(nextPlayerID), modelMap.get(nextPlayerID));
+            CharMovement.setLowerArmTransform(elbowWristAngleMap.get(nextPlayerID), modelMap.get(nextPlayerID));
+        }
     }
 
     public void registerInput() {
@@ -263,23 +276,34 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         if(message instanceof CharCreationMessage){
             System.out.println("Creating character");
             CharCreationMessage creationMessage=(CharCreationMessage)message;
+            long newPlayerID=creationMessage.playerID;
+            Node newModel=Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState);
+            rootNode.attachChild(newModel);
             if(creationMessage.controllable){
-                playerID=creationMessage.playerID;
-                model = Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState);
-                rootNode.attachChild(model);
+                playerID=newPlayerID;
+                model=newModel;
                 System.out.println("claiming player id "+playerID);
                 registerInput();
                 clientSet=true;
             }
+            modelMap.put(newPlayerID, newModel);
+            playerSet.add(newPlayerID);
+            upperArmAnglesMap.put(newPlayerID, new Vector3f());
+            upperArmVelsMap.put(newPlayerID, new Vector3f());
+            elbowWristAngleMap.put(newPlayerID, new Float(CharMovement.Constraints.lRotMin));
+            elbowWristVelMap.put(newPlayerID, new Float(0f));
         }
         else if(message instanceof CharPositionMessage){
          //   System.out.println("modifying position");
             if (clientSet) {
+
                 CharPositionMessage charPosition = (CharPositionMessage) message;
-                this.upperArmAngles = charPosition.upperArmAngles.clone();
-                this.upperArmVels = charPosition.upperArmVels.clone();
-                this.elbowWristAngle = charPosition.elbowWristAngle;
-                this.elbowWristVel = charPosition.elbowWristVel;
+                long messagePlayerID=charPosition.playerID;
+
+                upperArmAnglesMap.put(messagePlayerID,charPosition.upperArmAngles.clone());
+                upperArmVelsMap.put(messagePlayerID, charPosition.upperArmVels.clone());
+                elbowWristAngleMap.put(messagePlayerID,charPosition.elbowWristAngle);
+                elbowWristVelMap.put(messagePlayerID,charPosition.elbowWristVel);
             }
         }
    //     System.out.println(message.getClass()+" recieved");

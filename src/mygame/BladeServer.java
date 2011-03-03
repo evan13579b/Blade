@@ -77,7 +77,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     HashMap<Long,Vector3f> upperArmVelsMap=new HashMap();
     HashMap<Long,Float> elbowWristAngleMap=new HashMap();
     HashMap<Long,Float> elbowWristVelMap=new HashMap();
-    HashSet<Long> connectedPlayers=new HashSet();
+    HashSet<Long> playerSet=new HashSet();
     HashMap<Long,Client> clientMap=new HashMap();
 
     private long currentPlayerID=0;
@@ -144,14 +144,14 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     @Override
     public void simpleUpdate(float tpf){
-        updateCharacter(tpf);
+        updateCharacters(tpf);
     }
 
     private long timeOfLastSync=0;
     private final long timeBetweenSyncs=100;
-    public void updateCharacter(float tpf) {
+    public void updateCharacters(float tpf) {
 
-        for(Iterator<Long> playerIterator=connectedPlayers.iterator(); playerIterator.hasNext();){
+        for(Iterator<Long> playerIterator=playerSet.iterator(); playerIterator.hasNext();){
             long playerID = playerIterator.next();
 
             upperArmAnglesMap.put(playerID, CharMovement.extrapolateUpperArmAngles(upperArmAnglesMap.get(playerID),
@@ -163,16 +163,19 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             CharMovement.setLowerArmTransform(elbowWristAngleMap.get(playerID), modelMap.get(playerID));
         }
         
-        long currentTime=System.currentTimeMillis();
+        long currentTime = System.currentTimeMillis();
         if (currentTime - timeOfLastSync > timeBetweenSyncs) {
             timeOfLastSync = currentTime;
-            for(Iterator<Long> playerIterator=connectedPlayers.iterator(); playerIterator.hasNext();){
-                long playerID = playerIterator.next();
-                try {
-                    clientMap.get(playerID).send(new CharPositionMessage(upperArmAnglesMap.get(playerID), upperArmVelsMap.get(playerID),
-                            elbowWristAngleMap.get(playerID), elbowWristVelMap.get(playerID),playerID));
-                } catch (IOException ex) {
-                    Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
+            for (Iterator<Long> sourcePlayerIterator = playerSet.iterator(); sourcePlayerIterator.hasNext();) {
+                long sourcePlayerID = sourcePlayerIterator.next();
+                for (Iterator<Long> destPlayerIterator = playerSet.iterator(); destPlayerIterator.hasNext();) {
+                    long destPlayerID = destPlayerIterator.next();
+                    try {
+                        clientMap.get(destPlayerID).send(new CharPositionMessage(upperArmAnglesMap.get(sourcePlayerID), upperArmVelsMap.get(sourcePlayerID),
+                                elbowWristAngleMap.get(sourcePlayerID), elbowWristVelMap.get(sourcePlayerID), sourcePlayerID));
+                    } catch (IOException ex) {
+                        Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                 }
             }
         }
@@ -263,7 +266,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         long playerID=hasID.getID();
         
 
-        if (connectedPlayers.contains(playerID)) {
+        if (playerSet.contains(playerID)) {
             if (message instanceof InputMessages.RotateUArmCC) {
                 System.out.println("rotateCC");
                 InputMessages.RotateUArmCC rCC = (InputMessages.RotateUArmCC) message;
@@ -329,8 +332,13 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             elbowWristAngleMap.put(playerID, new Float(CharMovement.Constraints.lRotMin));
             elbowWristVelMap.put(playerID, new Float(0f));
             client.send(new CharCreationMessage(playerID,true));
+            for(Iterator<Long> playerIterator=playerSet.iterator();playerIterator.hasNext();){
+                long destPlayerID=playerIterator.next();
+                clientMap.get(destPlayerID).send(new CharCreationMessage(playerID,false)); // send this new character to all other clients
+                client.send(new CharCreationMessage(destPlayerID,false)); // send all other client's characters to this client
+            }
             System.out.println("client connected:" + playerID+","+client);
-            connectedPlayers.add(playerID);
+            playerSet.add(playerID);
             clientMap.put(playerID, client);
         } catch (IOException ex) {
             Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
