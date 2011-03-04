@@ -137,7 +137,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         catch(Exception e){
             e.printStackTrace();
         }
-      
+        
         try {
             Thread.sleep(1000);
         } catch (InterruptedException ex) {
@@ -156,7 +156,8 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         rootNode.addLight(sun2);
 
 
-        flyCam.setEnabled(false);
+       // flyCam.setEnabled(true);
+   
 
         
    
@@ -283,6 +284,11 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 playerID=newPlayerID;
                 model=newModel;
                 System.out.println("claiming player id "+playerID);
+                
+                chaseCam = new ChaseCamera(cam, model, inputManager);
+                chaseCam.setSmoothMotion(true);
+                chaseCam.setDefaultVerticalRotation(FastMath.HALF_PI / 4f);
+                chaseCam.setLookAtOffset(new Vector3f(0.0f, 4.0f, 0.0f));
                 registerInput();
                 clientSet=true;
             }
