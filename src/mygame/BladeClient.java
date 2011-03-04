@@ -86,10 +86,14 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
     HashMap<Long,Node> modelMap=new HashMap();
     HashMap<Long,Vector3f> upperArmAnglesMap=new HashMap();
-    HashMap<Long,Vector3f> upperArmVelsMap=new HashMap();
-    HashMap<Long,Float> elbowWristAngleMap=new HashMap();
-    HashMap<Long,Float> elbowWristVelMap=new HashMap();
-    HashSet<Long> playerSet=new HashSet();
+    HashMap<Long, Vector3f> upperArmVelsMap = new HashMap();
+    HashMap<Long, Float> elbowWristAngleMap = new HashMap();
+    HashMap<Long, Float> elbowWristVelMap = new HashMap();
+    HashSet<Long> playerSet = new HashSet();
+    HashMap<Long, Vector3f> charPositionMap = new HashMap();
+    HashMap<Long, Vector3f> charVelocityMap = new HashMap();
+    HashMap<Long, Float> charAngleMap = new HashMap();
+    HashMap<Long, Float> charTurnVelMap = new HashMap();
 
     private BulletAppState bulletAppState;
     private TerrainQuad terrain;
@@ -298,6 +302,10 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             upperArmVelsMap.put(newPlayerID, new Vector3f());
             elbowWristAngleMap.put(newPlayerID, new Float(CharMovement.Constraints.lRotMin));
             elbowWristVelMap.put(newPlayerID, new Float(0f));
+            charPositionMap.put(newPlayerID, new Vector3f());
+            charVelocityMap.put(newPlayerID, new Vector3f());
+            charAngleMap.put(newPlayerID, 0f);
+            charTurnVelMap.put(newPlayerID, 0f);
         }
         else if(message instanceof CharPositionMessage){
          //   System.out.println("modifying position");
@@ -310,6 +318,10 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 upperArmVelsMap.put(messagePlayerID, charPosition.upperArmVels.clone());
                 elbowWristAngleMap.put(messagePlayerID,charPosition.elbowWristAngle);
                 elbowWristVelMap.put(messagePlayerID,charPosition.elbowWristVel);
+                charPositionMap.put(messagePlayerID, charPosition.charPosition);
+                charVelocityMap.put(messagePlayerID, charPosition.charVelocity);
+                charAngleMap.put(messagePlayerID, charPosition.charAngle);
+                charTurnVelMap.put(messagePlayerID, charPosition.charTurnVel);
             }
         }
    //     System.out.println(message.getClass()+" recieved");
@@ -434,6 +446,31 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     }
 
     public void onKeyEvent(KeyInputEvent evt) {
+        try {
+            char key = evt.getKeyChar();
+            switch (key) {
+                case 'e':
+                    client.send(new InputMessages.MoveCharForward(playerID));
+                    break;
+                case 's':
+                    client.send(new InputMessages.MoveCharLeft(playerID));
+                    break;
+                case 'd':
+                    client.send(new InputMessages.MoveCharBackword(playerID));
+                    break;
+                case 'f':
+                    client.send(new InputMessages.MoveCharRight(playerID));
+                    break;
+                case 'w':
+                    client.send(new InputMessages.TurnCharLeft(playerID));
+                    break;
+                case 'r':
+                    client.send(new InputMessages.TurnCharRight(playerID));
+                    break;
+            }
+        } catch (IOException ex) {
+            Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     @Override

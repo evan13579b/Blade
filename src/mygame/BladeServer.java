@@ -40,6 +40,7 @@ import mygame.messages.CharPositionMessage;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.bullet.BulletAppState;
+import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
@@ -79,6 +80,10 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     HashMap<Long,Float> elbowWristVelMap=new HashMap();
     HashSet<Long> playerSet=new HashSet();
     HashMap<Long,Client> clientMap=new HashMap();
+    HashMap<Long,Vector3f> charPositionMap=new HashMap();
+    HashMap<Long,Vector3f> charVelocityMap=new HashMap();
+    HashMap<Long,Float> charAngleMap=new HashMap();
+    HashMap<Long,Float> charTurnVelMap=new HashMap();
 
     private long currentPlayerID=0;
 
@@ -155,9 +160,12 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             long playerID = playerIterator.next();
 
             upperArmAnglesMap.put(playerID, CharMovement.extrapolateUpperArmAngles(upperArmAnglesMap.get(playerID),
-                    upperArmVelsMap.get(playerID), tpf));
+            upperArmVelsMap.get(playerID), tpf));
             elbowWristAngleMap.put(playerID, CharMovement.extrapolateLowerArmAngles(elbowWristAngleMap.get(playerID),
             elbowWristVelMap.get(playerID), tpf));
+
+            CharacterControl control=modelMap.get(playerID).getControl(CharacterControl.class);
+            control.setWalkDirection(charVelocityMap.get(playerID).clone());
 
             CharMovement.setUpperArmTransform(upperArmAnglesMap.get(playerID), modelMap.get(playerID));
             CharMovement.setLowerArmTransform(elbowWristAngleMap.get(playerID), modelMap.get(playerID));
@@ -171,8 +179,11 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                 for (Iterator<Long> destPlayerIterator = playerSet.iterator(); destPlayerIterator.hasNext();) {
                     long destPlayerID = destPlayerIterator.next();
                     try {
-                        clientMap.get(destPlayerID).send(new CharPositionMessage(upperArmAnglesMap.get(sourcePlayerID), upperArmVelsMap.get(sourcePlayerID),
-                                elbowWristAngleMap.get(sourcePlayerID), elbowWristVelMap.get(sourcePlayerID), sourcePlayerID));
+                        clientMap.get(destPlayerID).send(new CharPositionMessage(upperArmAnglesMap.get(sourcePlayerID), 
+                                upperArmVelsMap.get(sourcePlayerID),charPositionMap.get(sourcePlayerID),
+                                charVelocityMap.get(sourcePlayerID),elbowWristVelMap.get(sourcePlayerID),
+                                elbowWristAngleMap.get(sourcePlayerID),charAngleMap.get(sourcePlayerID),
+                                charTurnVelMap.get(sourcePlayerID),sourcePlayerID));
                     } catch (IOException ex) {
                         Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
                     }
@@ -269,38 +280,47 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         if (playerSet.contains(playerID)) {
             if (message instanceof InputMessages.RotateUArmCC) {
                 System.out.println("rotateCC");
-                InputMessages.RotateUArmCC rCC = (InputMessages.RotateUArmCC) message;
-                upperArmVelsMap.get(rCC.playerID).z = -1;
+                upperArmVelsMap.get(playerID).z = -1;
             } else if (message instanceof InputMessages.RotateUArmC) {
                 System.out.println("rotateC");
-                InputMessages.RotateUArmC rC=(InputMessages.RotateUArmC)message;
-                upperArmVelsMap.get(rC.playerID).z = 1;
+                upperArmVelsMap.get(playerID).z = 1;
             } else if (message instanceof InputMessages.StopRotateTwist) {
                 System.out.println("rotateStop");
-                InputMessages.StopRotateTwist sRT=(InputMessages.StopRotateTwist)message;
-                upperArmVelsMap.get(sRT.playerID).z = 0;
+                upperArmVelsMap.get(playerID).z = 0;
             } else if (message instanceof InputMessages.MouseMovement) {
-   //             System.out.println("move mouse");
                 InputMessages.MouseMovement mouseMovement = (InputMessages.MouseMovement) message;
-    //            System.out.println("client claims player id of "+mouseMovement.playerID);
-                upperArmVelsMap.get(mouseMovement.playerID).x = FastMath.cos(mouseMovement.angle);
-                upperArmVelsMap.get(mouseMovement.playerID).y = FastMath.sin(mouseMovement.angle);
+                upperArmVelsMap.get(playerID).x = FastMath.cos(mouseMovement.angle);
+                upperArmVelsMap.get(playerID).y = FastMath.sin(mouseMovement.angle);
             } else if (message instanceof InputMessages.StopMouseMovement) {
-                InputMessages.StopMouseMovement sMM=(InputMessages.StopMouseMovement)message;
-     //           System.out.println("client claims player id of "+sMM.playerID);
-                upperArmVelsMap.get(sMM.playerID).x = upperArmVelsMap.get(playerID).y = 0;
+                upperArmVelsMap.get(playerID).x = upperArmVelsMap.get(playerID).y = 0;
             } else if (message instanceof InputMessages.LArmUp) {
                 System.out.println("arm up");
-                InputMessages.LArmUp lAU=(InputMessages.LArmUp)message;
-                elbowWristVelMap.put(lAU.playerID, 1f);
+                elbowWristVelMap.put(playerID, 1f);
             } else if (message instanceof InputMessages.LArmDown) {
                 System.out.println("arm down");
-                InputMessages.LArmDown lAD=(InputMessages.LArmDown)message;
-                elbowWristVelMap.put(lAD.playerID, -1f);
+                elbowWristVelMap.put(playerID, -1f);
             } else if (message instanceof InputMessages.StopLArm) {
                 System.out.println("arm stop");
-                InputMessages.StopLArm sLA=(InputMessages.StopLArm)message;
-                elbowWristVelMap.put(sLA.playerID, 0f);
+                elbowWristVelMap.put(playerID, 0f);
+            } else if (message instanceof InputMessages.MoveCharBackword) {
+                System.out.println("Move foreward");
+                charVelocityMap.get(playerID).x=1;
+            } else if (message instanceof InputMessages.MoveCharForward) {
+                System.out.println("Move backword");
+                charVelocityMap.get(playerID).x=-1;
+            } else if (message instanceof InputMessages.MoveCharLeft) {
+                System.out.println("Move left");
+                charVelocityMap.get(playerID).y=-1;
+            } else if (message instanceof InputMessages.MoveCharRight) {
+                System.out.println("Move right");
+                charVelocityMap.get(playerID).y=1;
+            } else if (message instanceof InputMessages.TurnCharLeft) {
+            } else if (message instanceof InputMessages.TurnCharRight) {
+            } else if (message instanceof InputMessages.StopCharTurn) {
+            } else if (message instanceof InputMessages.StopForwardMove) {
+                charVelocityMap.get(playerID).x=0;
+            } else if (message instanceof InputMessages.StopLeftRightMove) {
+                charVelocityMap.get(playerID).y=0;
             }
         }
         else{
@@ -331,6 +351,10 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             upperArmVelsMap.put(playerID, new Vector3f());
             elbowWristAngleMap.put(playerID, new Float(CharMovement.Constraints.lRotMin));
             elbowWristVelMap.put(playerID, new Float(0f));
+            charPositionMap.put(playerID, new Vector3f());
+            charVelocityMap.put(playerID, new Vector3f());
+            charAngleMap.put(playerID, 0f);
+            charTurnVelMap.put(playerID, 0f);
             client.send(new CharCreationMessage(playerID,true));
             for(Iterator<Long> playerIterator=playerSet.iterator();playerIterator.hasNext();){
                 long destPlayerID=playerIterator.next();
