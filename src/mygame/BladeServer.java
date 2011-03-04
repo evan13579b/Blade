@@ -181,8 +181,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     try {
                         clientMap.get(destPlayerID).send(new CharPositionMessage(upperArmAnglesMap.get(sourcePlayerID), 
                                 upperArmVelsMap.get(sourcePlayerID),charPositionMap.get(sourcePlayerID),
-                                charVelocityMap.get(sourcePlayerID),elbowWristVelMap.get(sourcePlayerID),
-                                elbowWristAngleMap.get(sourcePlayerID),charAngleMap.get(sourcePlayerID),
+                                charVelocityMap.get(sourcePlayerID),elbowWristAngleMap.get(sourcePlayerID),
+                                elbowWristVelMap.get(sourcePlayerID),charAngleMap.get(sourcePlayerID),
                                 charTurnVelMap.get(sourcePlayerID),sourcePlayerID));
                     } catch (IOException ex) {
                         Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);

@@ -160,7 +160,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         rootNode.addLight(sun2);
 
 
-       // flyCam.setEnabled(true);
+        flyCam.setEnabled(false);
    
 
         
