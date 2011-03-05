@@ -29,9 +29,11 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package mygame;
 
+import com.jme3.animation.AnimChannel;
+import com.jme3.animation.AnimControl;
+import com.jme3.animation.AnimEventListener;
 import mygame.messages.InputMessages;
 import mygame.messages.CharPositionMessage;
 import com.jme3.app.SimpleApplication;
@@ -82,12 +84,12 @@ import mygame.messages.CharDestructionMessage;
  *
  * @author blah
  */
-public class BladeClient extends SimpleApplication implements MessageListener, RawInputListener, ConnectionListener{
+public class BladeClient extends SimpleApplication implements MessageListener, RawInputListener, ConnectionListener, AnimEventListener {
+
     private ChaseCamera chaseCam;
     private Node model;
-
-    HashMap<Long,Node> modelMap=new HashMap();
-    HashMap<Long,Vector3f> upperArmAnglesMap=new HashMap();
+    HashMap<Long, Node> modelMap = new HashMap();
+    HashMap<Long, Vector3f> upperArmAnglesMap = new HashMap();
     HashMap<Long, Vector3f> upperArmVelsMap = new HashMap();
     HashMap<Long, Float> elbowWristAngleMap = new HashMap();
     HashMap<Long, Float> elbowWristVelMap = new HashMap();
@@ -96,7 +98,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     HashMap<Long, Vector3f> charVelocityMap = new HashMap();
     HashMap<Long, Float> charAngleMap = new HashMap();
     HashMap<Long, Float> charTurnVelMap = new HashMap();
-
+    HashMap<Long, AnimChannel> animChannelMap = new HashMap();
     private BulletAppState bulletAppState;
     private TerrainQuad terrain;
     Material mat_terrain;
@@ -106,13 +108,12 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     private RigidBodyControl terrain_phy;
     CharacterControl character;
     Client client;
-    boolean clientSet=false;
-
-    private Vector3f upperArmAngles=new Vector3f();
-    private Vector3f upperArmVels=new Vector3f();
-    private float elbowWristAngle=CharMovement.Constraints.lRotMin;
-    private float elbowWristVel=0;
-    private long playerID=0;
+    boolean clientSet = false;
+    private Vector3f upperArmAngles = new Vector3f();
+    private Vector3f upperArmVels = new Vector3f();
+    private float elbowWristAngle = CharMovement.Constraints.lRotMin;
+    private float elbowWristVel = 0;
+    private long playerID = 0;
 
     public static void main(String[] args) {
         BladeClient app = new BladeClient();
@@ -126,24 +127,23 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         Serializer.registerClass(CharDestructionMessage.class);
         InputMessages.registerInputClasses();
 
-        
+
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
         stateManager.attach(bulletAppState);
         initMaterials();
         initTerrain();
 
-        try{
-            client=new Client(BladeMain.serverIP,BladeMain.port,BladeMain.port);
+        try {
+            client = new Client(BladeMain.serverIP, BladeMain.port, BladeMain.port);
             client.start();
-            
-            client.addMessageListener(this,CharCreationMessage.class,CharDestructionMessage.class,CharPositionMessage.class);
-            
-        }
-        catch(Exception e){
+
+            client.addMessageListener(this, CharCreationMessage.class, CharDestructionMessage.class, CharPositionMessage.class);
+
+        } catch (Exception e) {
             e.printStackTrace();
         }
-        
+
         try {
             Thread.sleep(1000);
         } catch (InterruptedException ex) {
@@ -151,7 +151,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         }
 
         InputMessages.addInputMessageListeners(client, this);
-        
+
         client.addConnectionListener(this);
         DirectionalLight sun = new DirectionalLight();
         sun.setDirection(new Vector3f(-0.1f, -0.7f, -1.0f));
@@ -163,43 +163,43 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
 
         flyCam.setEnabled(false);
-   
 
-        
-   
+
+
+
     }
+    private boolean mouseCurrentlyStopped = true;
 
-    private boolean mouseCurrentlyStopped=true;
     @Override
-    public void simpleUpdate(float tpf){
-        if(clientSet){
+    public void simpleUpdate(float tpf) {
+        if (clientSet) {
             characterUpdate(tpf);
-            if((System.currentTimeMillis()-timeOfLastMouseMotion)>mouseMovementTimeout && !mouseCurrentlyStopped){
+            if ((System.currentTimeMillis() - timeOfLastMouseMotion) > mouseMovementTimeout && !mouseCurrentlyStopped) {
                 try {
-                    
+
                     client.send(new InputMessages.StopMouseMovement(playerID));
                 } catch (IOException ex) {
                     Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
                 }
-                currentMouseEvents=0;
-                timeOfLastMouseMotion=System.currentTimeMillis();
-                mouseCurrentlyStopped=true;
+                currentMouseEvents = 0;
+                timeOfLastMouseMotion = System.currentTimeMillis();
+                mouseCurrentlyStopped = true;
             }
         }
     }
 
-    public void characterUpdate(float tpf){
- //       System.out.println("character update");
-        for(Iterator<Long> playerIterator=playerSet.iterator();playerIterator.hasNext();){
-            long nextPlayerID=playerIterator.next();
+    public void characterUpdate(float tpf) {
+        //       System.out.println("character update");
+        for (Iterator<Long> playerIterator = playerSet.iterator(); playerIterator.hasNext();) {
+            long nextPlayerID = playerIterator.next();
             CharMovement.setUpperArmTransform(upperArmAnglesMap.get(nextPlayerID), modelMap.get(nextPlayerID));
             CharMovement.setLowerArmTransform(elbowWristAngleMap.get(nextPlayerID), modelMap.get(nextPlayerID));
 
-       //     modelMap.get(nextPlayerID).setLocalTranslation(new Vector3f(100,100,100));
+            //     modelMap.get(nextPlayerID).setLocalTranslation(new Vector3f(100,100,100));
             modelMap.get(nextPlayerID).setLocalTranslation(charPositionMap.get(nextPlayerID));
-            modelMap.get(nextPlayerID).setLocalRotation((new Quaternion()).fromAngleAxis(charAngleMap.get(nextPlayerID), new Vector3f(0,1,0)));
+            modelMap.get(nextPlayerID).setLocalRotation((new Quaternion()).fromAngleAxis(charAngleMap.get(nextPlayerID), new Vector3f(0, 1, 0)));
 
-    //        System.out.println("Char position is "+charPositionMap.get(nextPlayerID)+", local tranlsation "+modelMap.get(nextPlayerID).getLocalTranslation());
+            //        System.out.println("Char position is "+charPositionMap.get(nextPlayerID)+", local tranlsation "+modelMap.get(nextPlayerID).getLocalTranslation());
         }
     }
 
@@ -288,23 +288,23 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     }
 
     public void messageReceived(Message message) {
-        if(message instanceof CharCreationMessage){
+        if (message instanceof CharCreationMessage) {
             System.out.println("Creating character");
-            CharCreationMessage creationMessage=(CharCreationMessage)message;
-            long newPlayerID=creationMessage.playerID;
-            Node newModel=Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState,false);
+            CharCreationMessage creationMessage = (CharCreationMessage) message;
+            long newPlayerID = creationMessage.playerID;
+            Node newModel = Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState, false);
             rootNode.attachChild(newModel);
-            if(creationMessage.controllable){
-                playerID=newPlayerID;
-                model=newModel;
-                System.out.println("claiming player id "+playerID);
-                
+            if (creationMessage.controllable) {
+                playerID = newPlayerID;
+                model = newModel;
+                System.out.println("claiming player id " + playerID);
+
                 chaseCam = new ChaseCamera(cam, model, inputManager);
                 chaseCam.setSmoothMotion(true);
                 chaseCam.setDefaultVerticalRotation(FastMath.HALF_PI / 4f);
                 chaseCam.setLookAtOffset(new Vector3f(0.0f, 4.0f, 0.0f));
                 registerInput();
-                clientSet=true;
+                clientSet = true;
             }
             modelMap.put(newPlayerID, newModel);
             playerSet.add(newPlayerID);
@@ -316,26 +316,38 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             charVelocityMap.put(newPlayerID, new Vector3f());
             charAngleMap.put(newPlayerID, 0f);
             charTurnVelMap.put(newPlayerID, 0f);
-        }
-        else if(message instanceof CharPositionMessage){
-         //   System.out.println("modifying position");
+            modelMap.get(newPlayerID).getControl(AnimControl.class).addListener(this);
+            animChannelMap.put(newPlayerID, modelMap.get(newPlayerID).getControl(AnimControl.class).createChannel());
+            animChannelMap.get(newPlayerID).setAnim("stand");
+        } else if (message instanceof CharPositionMessage) {
+            //   System.out.println("modifying position");
             if (clientSet) {
 
                 CharPositionMessage charPosition = (CharPositionMessage) message;
-                long messagePlayerID=charPosition.playerID;
+                long messagePlayerID = charPosition.playerID;
 
-                upperArmAnglesMap.put(messagePlayerID,charPosition.upperArmAngles.clone());
+                upperArmAnglesMap.put(messagePlayerID, charPosition.upperArmAngles.clone());
                 upperArmVelsMap.put(messagePlayerID, charPosition.upperArmVels.clone());
-                elbowWristAngleMap.put(messagePlayerID,charPosition.elbowWristAngle);
-                elbowWristVelMap.put(messagePlayerID,charPosition.elbowWristVel);
-      //          System.out.println("new position received is "+charPosition.charPosition);
+                elbowWristAngleMap.put(messagePlayerID, charPosition.elbowWristAngle);
+                elbowWristVelMap.put(messagePlayerID, charPosition.elbowWristVel);
+                //          System.out.println("new position received is "+charPosition.charPosition);
                 charPositionMap.put(messagePlayerID, charPosition.charPosition);
                 charVelocityMap.put(messagePlayerID, charPosition.charVelocity);
                 charAngleMap.put(messagePlayerID, charPosition.charAngle);
                 charTurnVelMap.put(messagePlayerID, charPosition.charTurnVel);
+                if (animChannelMap.get(messagePlayerID) != null) {
+                    if (charVelocityMap.get(messagePlayerID).equals(new Vector3f(0, 0, 0))) {
+                        if (animChannelMap.get(messagePlayerID).getAnimationName().equals("walk")) {
+                            animChannelMap.get(messagePlayerID).setAnim("stand");
+                        }
+                    } else {
+                        if (animChannelMap.get(messagePlayerID).getAnimationName().equals("stand")) {
+                            animChannelMap.get(messagePlayerID).setAnim("walk");
+                        }
+                    }
+                }
             }
         }
-   //     System.out.println(message.getClass()+" recieved");
     }
 
     public void messageSent(Message message) {
@@ -359,18 +371,18 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
     public void onJoyButtonEvent(JoyButtonEvent evt) {
     }
+    private final int eventsPerPacket = 10; // how many events should happen before next packet is sent
+    private final long mouseMovementTimeout = 100; // how long until we propose to send a StopMouseMovement message
+    private long timeOfLastMouseMotion = 0; // how long since last movement
+    private int currentMouseEvents = 0;
+    private int currentDX = 0;
+    private int currentDY = 0;
+    private int prevDeltaWheel = 0;
 
-    private final int eventsPerPacket=10; // how many events should happen before next packet is sent
-    private final long mouseMovementTimeout=100; // how long until we propose to send a StopMouseMovement message
-    private long timeOfLastMouseMotion=0; // how long since last movement
-    private int currentMouseEvents=0;
-    private int currentDX=0;
-    private int currentDY=0;
-    private int prevDeltaWheel=0;
     public void onMouseMotionEvent(MouseMotionEvent evt) {
 
-        float dy=evt.getDY(),dx=evt.getDX();
-        if(dy!=0||dx!=0){
+        float dy = evt.getDY(), dx = evt.getDX();
+        if (dy != 0 || dx != 0) {
             currentMouseEvents++;
             currentDX += dx;
             currentDY += dy;
@@ -381,7 +393,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                     if (angle < 0) {
                         angle = FastMath.TWO_PI + angle;
                     }
-                    client.send(new InputMessages.MouseMovement(angle,playerID));
+                    client.send(new InputMessages.MouseMovement(angle, playerID));
                 } catch (IOException ex) {
                     Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -392,31 +404,30 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             }
 
             timeOfLastMouseMotion = System.currentTimeMillis();
-            mouseCurrentlyStopped=false;
+            mouseCurrentlyStopped = false;
         }
 
         try {
             if (evt.getDeltaWheel() > 0) {
-                if (prevDeltaWheel < 0 && !(elbowWristAngle==CharMovement.Constraints.lRotMax)) {
+                if (prevDeltaWheel < 0 && !(elbowWristAngle == CharMovement.Constraints.lRotMax)) {
                     client.send(new InputMessages.StopLArm(playerID));
                 } else {
                     client.send(new InputMessages.LArmDown(playerID));
                 }
-                prevDeltaWheel=1;
+                prevDeltaWheel = 1;
             } else if (evt.getDeltaWheel() < 0) {
-                if (prevDeltaWheel > 0  && !(elbowWristAngle==CharMovement.Constraints.lRotMin)) {
+                if (prevDeltaWheel > 0 && !(elbowWristAngle == CharMovement.Constraints.lRotMin)) {
                     client.send(new InputMessages.StopLArm(playerID));
                 } else {
                     client.send(new InputMessages.LArmUp(playerID));
                 }
-                prevDeltaWheel=-1;
+                prevDeltaWheel = -1;
             }
         } catch (IOException ex) {
             Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
         }
 
     }
-
     private boolean prevPressed = false;
 
     public void onMouseButtonEvent(MouseButtonEvent evt) {
@@ -435,8 +446,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                         Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 }
-            }
-            else{
+            } else {
                 try {
                     client.send(new InputMessages.StopRotateTwist(playerID));
                 } catch (IOException ex) {
@@ -445,10 +455,10 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             }
         }
 
-        prevPressed=evt.isPressed();
+        prevPressed = evt.isPressed();
         inputManager.setCursorVisible(false);
 
-        if(evt.getButtonIndex()==MouseInput.BUTTON_MIDDLE){
+        if (evt.getButtonIndex() == MouseInput.BUTTON_MIDDLE) {
             try {
                 client.send(new InputMessages.StopLArm(playerID));
             } catch (IOException ex) {
@@ -463,44 +473,44 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
             switch (key) {
                 case KeyInput.KEY_E:
-                    if(evt.isPressed()){
+                    if (evt.isPressed()) {
                         client.send(new InputMessages.MoveCharForward(playerID));
-                    }else{
+                    } else {
                         client.send(new InputMessages.StopForwardMove(playerID));
                     }
                     break;
                 case KeyInput.KEY_S:
-                    if(evt.isPressed()){
+                    if (evt.isPressed()) {
                         client.send(new InputMessages.MoveCharLeft(playerID));
-                    }else{
+                    } else {
                         client.send(new InputMessages.StopLeftRightMove(playerID));
                     }
                     break;
                 case KeyInput.KEY_D:
-                    if(evt.isPressed()){
+                    if (evt.isPressed()) {
                         client.send(new InputMessages.MoveCharBackword(playerID));
-                    }else{
+                    } else {
                         client.send(new InputMessages.StopForwardMove(playerID));
                     }
                     break;
                 case KeyInput.KEY_F:
-                    if(evt.isPressed()){
+                    if (evt.isPressed()) {
                         client.send(new InputMessages.MoveCharRight(playerID));
-                    }else{
+                    } else {
                         client.send(new InputMessages.StopLeftRightMove(playerID));
                     }
                     break;
                 case KeyInput.KEY_W:
-                    if(evt.isPressed()){
+                    if (evt.isPressed()) {
                         client.send(new InputMessages.TurnCharLeft(playerID));
-                    }else{
+                    } else {
                         client.send(new InputMessages.StopCharTurn(playerID));
                     }
                     break;
                 case KeyInput.KEY_R:
-                    if(evt.isPressed()){
+                    if (evt.isPressed()) {
                         client.send(new InputMessages.TurnCharRight(playerID));
-                    }else{
+                    } else {
                         client.send(new InputMessages.StopCharTurn(playerID));
                     }
                     break;
@@ -511,7 +521,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     }
 
     @Override
-    public void destroy(){
+    public void destroy() {
         super.destroy();
         try {
             client.disconnect();
@@ -521,10 +531,16 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     }
 
     public void clientConnected(Client client) {
-
     }
 
     public void clientDisconnected(Client client) {
+    }
+
+    public void onAnimCycleDone(AnimControl control, AnimChannel channel, String animName) {
+
+    }
+
+    public void onAnimChange(AnimControl control, AnimChannel channel, String animName) {
         
     }
 }
