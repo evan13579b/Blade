@@ -197,7 +197,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
        //     modelMap.get(nextPlayerID).setLocalTranslation(new Vector3f(100,100,100));
             modelMap.get(nextPlayerID).setLocalTranslation(charPositionMap.get(nextPlayerID));
-            modelMap.get(playerID).setLocalRotation((new Quaternion()).fromAngleAxis(charAngleMap.get(nextPlayerID), new Vector3f(0,1,0)));
+            modelMap.get(nextPlayerID).setLocalRotation((new Quaternion()).fromAngleAxis(charAngleMap.get(nextPlayerID), new Vector3f(0,1,0)));
 
     //        System.out.println("Char position is "+charPositionMap.get(nextPlayerID)+", local tranlsation "+modelMap.get(nextPlayerID).getLocalTranslation());
         }

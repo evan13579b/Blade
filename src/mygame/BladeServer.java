@@ -95,7 +95,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     Material stone_mat;
     Material floor_mat;
     private RigidBodyControl terrain_phy;
-    boolean left = false, right = false, up = false, down = false;
+//    boolean left = false, right = false, up = false, down = false;
     float airTime = 0;
 
     Server server;
@@ -109,7 +109,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     public static void main(String[] args) {
         BladeServer app = new BladeServer();
-   //     app.start(/*JmeContext.Type.Headless*/);
+    //    app.start();
         app.start(JmeContext.Type.Headless);
     }
 
@@ -165,12 +165,31 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             upperArmVelsMap.get(playerID), tpf));
             elbowWristAngleMap.put(playerID, CharMovement.extrapolateLowerArmAngles(elbowWristAngleMap.get(playerID),
             elbowWristVelMap.get(playerID), tpf));
+            charAngleMap.put(playerID, CharMovement.extrapolateCharTurn(charAngleMap.get(playerID),
+                    charTurnVelMap.get(playerID), tpf));
 
             CharacterControl control=modelMap.get(playerID).getControl(CharacterControl.class);
-            control.setWalkDirection(charVelocityMap.get(playerID).clone());
+
+            float xDir,zDir;
+            zDir=FastMath.cos(charAngleMap.get(playerID));
+            xDir=FastMath.sin(charAngleMap.get(playerID));
+            Vector3f viewDirection=new Vector3f(xDir,0,zDir);
+            control.setViewDirection(viewDirection);
+
+      //      Vector3f walkDirection=new Vector3f(
+
+
+            Vector3f forward,up,left;
+            float xVel,zVel;
+            xVel=charVelocityMap.get(playerID).x;
+            zVel=charVelocityMap.get(playerID).z;
+            forward=new Vector3f(viewDirection);
+            up=new Vector3f(0,1,0);
+            left=up.cross(forward);
+
+            control.setWalkDirection(left.mult(xVel).add(forward.mult(zVel)));
     //        System.out.println("char position is "+charPositionMap.get(playerID));
             charPositionMap.get(playerID).set(modelMap.get(playerID).getLocalTranslation());
-            modelMap.get(playerID).setLocalRotation((new Quaternion()).fromAngleAxis(FastMath.QUARTER_PI, new Vector3f(0,1,0)));
 
             CharMovement.setUpperArmTransform(upperArmAnglesMap.get(playerID), modelMap.get(playerID));
             CharMovement.setLowerArmTransform(elbowWristAngleMap.get(playerID), modelMap.get(playerID));
@@ -319,9 +338,9 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                 System.out.println("Move right");
                 charVelocityMap.get(playerID).x=-0.1f;
             } else if (message instanceof InputMessages.TurnCharLeft) {
-                charTurnVelMap.put(playerID, -0.1f);
+                charTurnVelMap.put(playerID, 1f);
             } else if (message instanceof InputMessages.TurnCharRight) {
-                charTurnVelMap.put(playerID, 0.1f);
+                charTurnVelMap.put(playerID, -1f);
             } else if (message instanceof InputMessages.StopCharTurn) {
                 charTurnVelMap.put(playerID,0f);
             } else if (message instanceof InputMessages.StopForwardMove) {

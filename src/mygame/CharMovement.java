@@ -19,6 +19,10 @@ import com.jme3.scene.Node;
 public class CharMovement {
     static public final float upperArmSpeed=3;
     static public final float lowerArmSpeed=3;
+    static public final float charTurnSpeed=3;
+    static public final float charStrafeSpeed=3;
+    static public final float charForwardSpeed=3;
+    static public final float charBackwordSpeed=3;
 
     static public final class Constraints{
         static public final float uYRotMax=FastMath.PI-FastMath.QUARTER_PI;
@@ -103,5 +107,9 @@ public class CharMovement {
             elbowWristVel=0f;
         }
         return newElbowWristAngle;
+    }
+
+    static public float extrapolateCharTurn(float charAngle,float charTurnVel,float tpf){
+        return charAngle+(FastMath.HALF_PI / 2f) * tpf * charTurnSpeed * charTurnVel;
     }
 }
