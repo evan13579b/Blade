@@ -45,6 +45,7 @@ import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.FastMath;
+import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.network.connection.Client;
 import com.jme3.network.connection.Server;
@@ -108,6 +109,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     public static void main(String[] args) {
         BladeServer app = new BladeServer();
+   //     app.start(/*JmeContext.Type.Headless*/);
         app.start(JmeContext.Type.Headless);
     }
 
@@ -144,7 +146,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         sun2.setDirection(new Vector3f(0.1f, 0.7f, 1.0f));
         rootNode.addLight(sun2);
 
-        flyCam.setEnabled(false);
+        flyCam.setEnabled(true);
     }
 
     @Override
@@ -166,6 +168,9 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
             CharacterControl control=modelMap.get(playerID).getControl(CharacterControl.class);
             control.setWalkDirection(charVelocityMap.get(playerID).clone());
+    //        System.out.println("char position is "+charPositionMap.get(playerID));
+            charPositionMap.get(playerID).set(modelMap.get(playerID).getLocalTranslation());
+            modelMap.get(playerID).setLocalRotation((new Quaternion()).fromAngleAxis(FastMath.QUARTER_PI, new Vector3f(0,1,0)));
 
             CharMovement.setUpperArmTransform(upperArmAnglesMap.get(playerID), modelMap.get(playerID));
             CharMovement.setLowerArmTransform(elbowWristAngleMap.get(playerID), modelMap.get(playerID));
@@ -275,7 +280,6 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     public void messageReceived(Message message) {
         HasID hasID=(HasID)message;
         long playerID=hasID.getID();
-        
 
         if (playerSet.contains(playerID)) {
             if (message instanceof InputMessages.RotateUArmCC) {
@@ -304,23 +308,27 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                 elbowWristVelMap.put(playerID, 0f);
             } else if (message instanceof InputMessages.MoveCharBackword) {
                 System.out.println("Move foreward");
-                charVelocityMap.get(playerID).x=1;
+                charVelocityMap.get(playerID).z=-0.1f;
             } else if (message instanceof InputMessages.MoveCharForward) {
                 System.out.println("Move backword");
-                charVelocityMap.get(playerID).x=-1;
+                charVelocityMap.get(playerID).z=0.1f;
             } else if (message instanceof InputMessages.MoveCharLeft) {
                 System.out.println("Move left");
-                charVelocityMap.get(playerID).y=-1;
+                charVelocityMap.get(playerID).x=0.1f;
             } else if (message instanceof InputMessages.MoveCharRight) {
                 System.out.println("Move right");
-                charVelocityMap.get(playerID).y=1;
+                charVelocityMap.get(playerID).x=-0.1f;
             } else if (message instanceof InputMessages.TurnCharLeft) {
+                charTurnVelMap.put(playerID, -0.1f);
             } else if (message instanceof InputMessages.TurnCharRight) {
+                charTurnVelMap.put(playerID, 0.1f);
             } else if (message instanceof InputMessages.StopCharTurn) {
+                charTurnVelMap.put(playerID,0f);
             } else if (message instanceof InputMessages.StopForwardMove) {
-                charVelocityMap.get(playerID).x=0;
+                charVelocityMap.get(playerID).z=0;
             } else if (message instanceof InputMessages.StopLeftRightMove) {
-                charVelocityMap.get(playerID).y=0;
+                System.out.println("Stop Left Right Move");
+                charVelocityMap.get(playerID).x=0;
             }
         }
         else{
@@ -344,7 +352,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     public void clientConnected(Client client) {
         try {
             long playerID=currentPlayerID++;
-            Node model = Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState);
+            Node model = Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState,true);
             rootNode.attachChild(model);
             modelMap.put(playerID, model);
             upperArmAnglesMap.put(playerID, new Vector3f());

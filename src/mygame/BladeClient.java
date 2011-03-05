@@ -40,6 +40,7 @@ import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.input.ChaseCamera;
+import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
 import com.jme3.input.RawInputListener;
 import com.jme3.input.event.JoyAxisEvent;
@@ -50,6 +51,7 @@ import com.jme3.input.event.MouseMotionEvent;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.FastMath;
+import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.network.connection.Client;
 import com.jme3.network.events.ConnectionListener;
@@ -167,11 +169,12 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
    
     }
 
+    private boolean mouseCurrentlyStopped=true;
     @Override
     public void simpleUpdate(float tpf){
         if(clientSet){
             characterUpdate(tpf);
-            if((System.currentTimeMillis()-timeOfLastMouseMotion)>mouseMovementTimeout){
+            if((System.currentTimeMillis()-timeOfLastMouseMotion)>mouseMovementTimeout && !mouseCurrentlyStopped){
                 try {
                     
                     client.send(new InputMessages.StopMouseMovement(playerID));
@@ -180,6 +183,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 }
                 currentMouseEvents=0;
                 timeOfLastMouseMotion=System.currentTimeMillis();
+                mouseCurrentlyStopped=true;
             }
         }
     }
@@ -190,6 +194,12 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             long nextPlayerID=playerIterator.next();
             CharMovement.setUpperArmTransform(upperArmAnglesMap.get(nextPlayerID), modelMap.get(nextPlayerID));
             CharMovement.setLowerArmTransform(elbowWristAngleMap.get(nextPlayerID), modelMap.get(nextPlayerID));
+
+       //     modelMap.get(nextPlayerID).setLocalTranslation(new Vector3f(100,100,100));
+            modelMap.get(nextPlayerID).setLocalTranslation(charPositionMap.get(nextPlayerID));
+            modelMap.get(playerID).setLocalRotation((new Quaternion()).fromAngleAxis(charAngleMap.get(nextPlayerID), new Vector3f(0,1,0)));
+
+    //        System.out.println("Char position is "+charPositionMap.get(nextPlayerID)+", local tranlsation "+modelMap.get(nextPlayerID).getLocalTranslation());
         }
     }
 
@@ -282,7 +292,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             System.out.println("Creating character");
             CharCreationMessage creationMessage=(CharCreationMessage)message;
             long newPlayerID=creationMessage.playerID;
-            Node newModel=Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState);
+            Node newModel=Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState,false);
             rootNode.attachChild(newModel);
             if(creationMessage.controllable){
                 playerID=newPlayerID;
@@ -318,6 +328,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 upperArmVelsMap.put(messagePlayerID, charPosition.upperArmVels.clone());
                 elbowWristAngleMap.put(messagePlayerID,charPosition.elbowWristAngle);
                 elbowWristVelMap.put(messagePlayerID,charPosition.elbowWristVel);
+      //          System.out.println("new position received is "+charPosition.charPosition);
                 charPositionMap.put(messagePlayerID, charPosition.charPosition);
                 charVelocityMap.put(messagePlayerID, charPosition.charVelocity);
                 charAngleMap.put(messagePlayerID, charPosition.charAngle);
@@ -328,7 +339,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     }
 
     public void messageSent(Message message) {
-  //      System.out.println(message.getClass());
+        System.out.println(message.getClass());
     }
 
     public void objectReceived(Object object) {
@@ -381,6 +392,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             }
 
             timeOfLastMouseMotion = System.currentTimeMillis();
+            mouseCurrentlyStopped=false;
         }
 
         try {
@@ -447,25 +459,50 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
     public void onKeyEvent(KeyInputEvent evt) {
         try {
-            char key = evt.getKeyChar();
+            int key = evt.getKeyCode();
+
             switch (key) {
-                case 'e':
-                    client.send(new InputMessages.MoveCharForward(playerID));
+                case KeyInput.KEY_E:
+                    if(evt.isPressed()){
+                        client.send(new InputMessages.MoveCharForward(playerID));
+                    }else{
+                        client.send(new InputMessages.StopForwardMove(playerID));
+                    }
                     break;
-                case 's':
-                    client.send(new InputMessages.MoveCharLeft(playerID));
+                case KeyInput.KEY_S:
+                    if(evt.isPressed()){
+                        client.send(new InputMessages.MoveCharLeft(playerID));
+                    }else{
+                        client.send(new InputMessages.StopLeftRightMove(playerID));
+                    }
                     break;
-                case 'd':
-                    client.send(new InputMessages.MoveCharBackword(playerID));
+                case KeyInput.KEY_D:
+                    if(evt.isPressed()){
+                        client.send(new InputMessages.MoveCharBackword(playerID));
+                    }else{
+                        client.send(new InputMessages.StopForwardMove(playerID));
+                    }
                     break;
-                case 'f':
-                    client.send(new InputMessages.MoveCharRight(playerID));
+                case KeyInput.KEY_F:
+                    if(evt.isPressed()){
+                        client.send(new InputMessages.MoveCharRight(playerID));
+                    }else{
+                        client.send(new InputMessages.StopLeftRightMove(playerID));
+                    }
                     break;
-                case 'w':
-                    client.send(new InputMessages.TurnCharLeft(playerID));
+                case KeyInput.KEY_W:
+                    if(evt.isPressed()){
+                        client.send(new InputMessages.TurnCharLeft(playerID));
+                    }else{
+                        client.send(new InputMessages.StopCharTurn(playerID));
+                    }
                     break;
-                case 'r':
-                    client.send(new InputMessages.TurnCharRight(playerID));
+                case KeyInput.KEY_R:
+                    if(evt.isPressed()){
+                        client.send(new InputMessages.TurnCharRight(playerID));
+                    }else{
+                        client.send(new InputMessages.StopCharTurn(playerID));
+                    }
                     break;
             }
         } catch (IOException ex) {
