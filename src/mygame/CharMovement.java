@@ -21,7 +21,7 @@ public class CharMovement {
     static public final float lowerArmSpeed=3;
     static public final float charTurnSpeed=3;
     static public final float charStrafeSpeed=3;
-    static public final float charForwardSpeed=3;
+    static public final float charForwardSpeed=60;
     static public final float charBackwordSpeed=3;
 
     static public final class Constraints{
@@ -111,5 +111,26 @@ public class CharMovement {
 
     static public float extrapolateCharTurn(float charAngle,float charTurnVel,float tpf){
         return charAngle+(FastMath.HALF_PI / 2f) * tpf * charTurnSpeed * charTurnVel;
+    }
+
+    static public Vector3f extrapolateCharMovement(Vector3f charPosition,Vector3f charVelocity,float charAngle,float tpf){
+            float xDir,zDir;
+            zDir=FastMath.cos(charAngle);
+            xDir=FastMath.sin(charAngle);
+            Vector3f viewDirection=new Vector3f(xDir,0,zDir);
+
+      //      Vector3f walkDirection=new Vector3f(
+
+
+            Vector3f forward,up,left;
+            float xVel,zVel;
+            xVel=charVelocity.x;
+            zVel=charVelocity.z;
+            forward=new Vector3f(viewDirection);
+            up=new Vector3f(0,1,0);
+            left=up.cross(forward);
+
+
+            return charPosition.add((left.mult(xVel).add(forward.mult(zVel)).mult(0.2f)));
     }
 }

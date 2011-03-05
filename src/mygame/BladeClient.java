@@ -192,6 +192,13 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         //       System.out.println("character update");
         for (Iterator<Long> playerIterator = playerSet.iterator(); playerIterator.hasNext();) {
             long nextPlayerID = playerIterator.next();
+            upperArmAnglesMap.put(nextPlayerID, CharMovement.extrapolateUpperArmAngles(upperArmAnglesMap.get(nextPlayerID), upperArmVelsMap.get(nextPlayerID), tpf));
+            elbowWristAngleMap.put(nextPlayerID, CharMovement.extrapolateLowerArmAngles(elbowWristAngleMap.get(nextPlayerID), elbowWristVelMap.get(nextPlayerID), tpf));
+            charAngleMap.put(nextPlayerID, CharMovement.extrapolateCharTurn(charAngleMap.get(nextPlayerID), charTurnVelMap.get(nextPlayerID), tpf));
+      //      System.out.println("previous position:"+charPositionMap.get(nextPlayerID)+",extrapolated position:"+CharMovement.extrapolateCharMovement(charPositionMap.get(nextPlayerID), charVelocityMap.get(nextPlayerID), tpf));
+            charPositionMap.put(nextPlayerID, CharMovement.extrapolateCharMovement(charPositionMap.get(nextPlayerID), 
+                    charVelocityMap.get(nextPlayerID), charAngleMap.get(nextPlayerID),tpf));
+
             CharMovement.setUpperArmTransform(upperArmAnglesMap.get(nextPlayerID), modelMap.get(nextPlayerID));
             CharMovement.setLowerArmTransform(elbowWristAngleMap.get(nextPlayerID), modelMap.get(nextPlayerID));
 
@@ -331,6 +338,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 elbowWristAngleMap.put(messagePlayerID, charPosition.elbowWristAngle);
                 elbowWristVelMap.put(messagePlayerID, charPosition.elbowWristVel);
                 //          System.out.println("new position received is "+charPosition.charPosition);
+       //         System.out.println("estimated position:"+charPositionMap.get(messagePlayerID)+",update from server:"+charPosition.charPosition);
                 charPositionMap.put(messagePlayerID, charPosition.charPosition);
                 charVelocityMap.put(messagePlayerID, charPosition.charVelocity);
                 charAngleMap.put(messagePlayerID, charPosition.charAngle);
