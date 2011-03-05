@@ -100,12 +100,6 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     Server server;
     ServerSyncService serverSyncService;
-    Vector3f walkDirection = new Vector3f(0,0,0);
-
-    Vector3f upperArmAngles = new Vector3f(0,0,0);
-    Vector3f upperArmRotationVel = new Vector3f(0,0,0);
-    float elbowWristAngle=CharMovement.Constraints.lRotMin;
-    float elbowWristVel=0;
 
     public static void main(String[] args) {
         BladeServer app = new BladeServer();
@@ -131,6 +125,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         InputMessages.addInputMessageListeners(server, this);
         server.addConnectionListener(this);
         server.addMessageListener(this,CharCreationMessage.class,CharDestructionMessage.class,CharPositionMessage.class);
+
+        
 
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
@@ -160,16 +156,15 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
         for(Iterator<Long> playerIterator=playerSet.iterator(); playerIterator.hasNext();){
             long playerID = playerIterator.next();
-
-            upperArmAnglesMap.put(playerID, CharMovement.extrapolateUpperArmAngles(upperArmAnglesMap.get(playerID),
-            upperArmVelsMap.get(playerID), tpf));
+            Vector3f upperArmAngles=upperArmAnglesMap.get(playerID);
+            upperArmAnglesMap.put(playerID, CharMovement.extrapolateUpperArmAngles(upperArmAngles,
+                    upperArmVelsMap.get(playerID), tpf));
             elbowWristAngleMap.put(playerID, CharMovement.extrapolateLowerArmAngles(elbowWristAngleMap.get(playerID),
             elbowWristVelMap.get(playerID), tpf));
             charAngleMap.put(playerID, CharMovement.extrapolateCharTurn(charAngleMap.get(playerID),
                     charTurnVelMap.get(playerID), tpf));
 
             CharacterControl control=modelMap.get(playerID).getControl(CharacterControl.class);
-
             float xDir,zDir;
             zDir=FastMath.cos(charAngleMap.get(playerID));
             xDir=FastMath.sin(charAngleMap.get(playerID));
@@ -189,7 +184,12 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
             control.setWalkDirection(left.mult(xVel).add(forward.mult(zVel)));
     //        System.out.println("char position is "+charPositionMap.get(playerID));
+ //           float prevCharPosY=charPositionMap.get(playerID).y;
             charPositionMap.get(playerID).set(modelMap.get(playerID).getLocalTranslation());
+  //          float nextCharPosY=charPositionMap.get(playerID).y;
+            
+ //           float charPosYVel=(nextCharPosY-prevCharPosY)/tpf;
+   //         charVelocityMap.get(playerID).y=charPosYVel;
 
             CharMovement.setUpperArmTransform(upperArmAnglesMap.get(playerID), modelMap.get(playerID));
             CharMovement.setLowerArmTransform(elbowWristAngleMap.get(playerID), modelMap.get(playerID));
@@ -391,6 +391,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             System.out.println("client connected:" + playerID+","+client);
             playerSet.add(playerID);
             clientMap.put(playerID, client);
+            
         } catch (IOException ex) {
             Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
         }

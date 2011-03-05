@@ -30,6 +30,7 @@ public class Character{
             model.addControl(charControl);
             bulletAppState.getPhysicsSpace().add(charControl);
         }
+        
         return model;
     }
 }

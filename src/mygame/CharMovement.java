@@ -21,7 +21,7 @@ public class CharMovement {
     static public final float lowerArmSpeed=3;
     static public final float charTurnSpeed=3;
     static public final float charStrafeSpeed=3;
-    static public final float charForwardSpeed=60;
+    static public final float charForwardSpeed=0.2f;
     static public final float charBackwordSpeed=3;
 
     static public final class Constraints{
@@ -131,6 +131,6 @@ public class CharMovement {
             left=up.cross(forward);
 
 
-            return charPosition.add((left.mult(xVel).add(forward.mult(zVel)).mult(0.2f)));
+            return charPosition.add((left.mult(xVel).add(forward.mult(zVel)).mult(charForwardSpeed)));
     }
 }

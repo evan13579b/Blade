@@ -99,6 +99,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     HashMap<Long, Float> charAngleMap = new HashMap();
     HashMap<Long, Float> charTurnVelMap = new HashMap();
     HashMap<Long, AnimChannel> animChannelMap = new HashMap();
+    
     private BulletAppState bulletAppState;
     private TerrainQuad terrain;
     Material mat_terrain;
@@ -196,17 +197,54 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             elbowWristAngleMap.put(nextPlayerID, CharMovement.extrapolateLowerArmAngles(elbowWristAngleMap.get(nextPlayerID), elbowWristVelMap.get(nextPlayerID), tpf));
             charAngleMap.put(nextPlayerID, CharMovement.extrapolateCharTurn(charAngleMap.get(nextPlayerID), charTurnVelMap.get(nextPlayerID), tpf));
       //      System.out.println("previous position:"+charPositionMap.get(nextPlayerID)+",extrapolated position:"+CharMovement.extrapolateCharMovement(charPositionMap.get(nextPlayerID), charVelocityMap.get(nextPlayerID), tpf));
-            charPositionMap.put(nextPlayerID, CharMovement.extrapolateCharMovement(charPositionMap.get(nextPlayerID), 
+            charPositionMap.put(nextPlayerID, CharMovement.extrapolateCharMovement(charPositionMap.get(nextPlayerID),
                     charVelocityMap.get(nextPlayerID), charAngleMap.get(nextPlayerID),tpf));
 
             CharMovement.setUpperArmTransform(upperArmAnglesMap.get(nextPlayerID), modelMap.get(nextPlayerID));
             CharMovement.setLowerArmTransform(elbowWristAngleMap.get(nextPlayerID), modelMap.get(nextPlayerID));
 
             //     modelMap.get(nextPlayerID).setLocalTranslation(new Vector3f(100,100,100));
-            modelMap.get(nextPlayerID).setLocalTranslation(charPositionMap.get(nextPlayerID));
-            modelMap.get(nextPlayerID).setLocalRotation((new Quaternion()).fromAngleAxis(charAngleMap.get(nextPlayerID), new Vector3f(0, 1, 0)));
+   //         Vector3f charPosition=charPositionMap.get(nextPlayerID);
+  //          javax.vecmath.Vector3f warpLoc=new javax.vecmath.Vector3f(charPosition.x,modelMap.get(nextPlayerID).getLocalTranslation().y,charPosition.z);
+            //Vector3f localTrans=modelMap.get(nextPlayerID).getLocalTranslation();
+            //  javax.vecmath.Vector3f warpLoc=new javax.vecmath.Vector3f(localTrans.x,localTrans.y,localTrans.z);
+   //  System.out.println("local translation y:"+modelMap.get(nextPlayerID).getLocalTranslation().y+",charPosition:"+charPositionMap.get(nextPlayerID).y);
+            Vector3f extrapolatedPosition,currentPosition;
+            extrapolatedPosition=charPositionMap.get(nextPlayerID);currentPosition=modelMap.get(nextPlayerID).getLocalTranslation();
+            float diffLength=FastMath.sqrt(FastMath.sqr(extrapolatedPosition.x-currentPosition.x)+FastMath.sqr(extrapolatedPosition.z-currentPosition.z));
+    //        System.out.println("Length of diff is "+diffLength);
+            CharacterControl control=modelMap.get(nextPlayerID).getControl(CharacterControl.class);
+            if(diffLength>5){
+      //          modelMap.get(nextPlayerID).getControl(CharacterControl.class).setEnabled(false);
+      //          modelMap.get(nextPlayerID).setLocalTranslation(charPositionMap.get(nextPlayerID).x,modelMap.get(nextPlayerID).getLocalTranslation().y,charPositionMap.get(nextPlayerID).z);
+     //           modelMap.get(nextPlayerID).getControl(CharacterControl.class).setEnabled(true);
+                  control.setPhysicsLocation(new Vector3f(extrapolatedPosition.x,currentPosition.y,extrapolatedPosition.z));
+            }
+     //      
+       //     modelMap.get(nextPlayerID).getControl(CharacterControl.class).setPhysicsLocation(new Vector3f(charPositionMap.get(nextPlayerID).x,modelMap.get(nextPlayerID).getLocalTranslation().y,charPositionMap.get(nextPlayerID).z));
+      //      CharacterControl control=modelMap.get(nextPlayerID).getControl(CharacterControl.class);
+            float xDir,zDir;
+            zDir=FastMath.cos(charAngleMap.get(nextPlayerID));
+            xDir=FastMath.sin(charAngleMap.get(nextPlayerID));
+            Vector3f viewDirection=new Vector3f(xDir,0,zDir);
+            modelMap.get(nextPlayerID).getControl(CharacterControl.class).setViewDirection(viewDirection);
+       //     modelMap.get(nextPlayerID).setLocalTranslation(charPositionMap.get(nextPlayerID));
+      //      modelMap.get(nextPlayerID).setLocalRotation((new Quaternion()).fromAngleAxis(charAngleMap.get(nextPlayerID), new Vector3f(0, 1, 0)));
 
             //        System.out.println("Char position is "+charPositionMap.get(nextPlayerID)+", local tranlsation "+modelMap.get(nextPlayerID).getLocalTranslation());
+
+
+            Vector3f forward,up,left;
+            float xVel,zVel;
+            xVel=charVelocityMap.get(nextPlayerID).x;
+            zVel=charVelocityMap.get(nextPlayerID).z;
+            forward=new Vector3f(viewDirection);
+            up=new Vector3f(0,1,0);
+            left=up.cross(forward);
+
+
+            control.setWalkDirection(left.mult(xVel).add(forward.mult(zVel)));
+
         }
     }
 
@@ -299,7 +337,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             System.out.println("Creating character");
             CharCreationMessage creationMessage = (CharCreationMessage) message;
             long newPlayerID = creationMessage.playerID;
-            Node newModel = Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState, false);
+            Node newModel = Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState, true);
             rootNode.attachChild(newModel);
             if (creationMessage.controllable) {
                 playerID = newPlayerID;
@@ -326,6 +364,10 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
       //      modelMap.get(newPlayerID).getControl(AnimControl.class).addListener(this);
             animChannelMap.put(newPlayerID, modelMap.get(newPlayerID).getControl(AnimControl.class).createChannel());
             animChannelMap.get(newPlayerID).setAnim("stand");
+      //      Vector3f charPosition=charPositionMap.get(newPlayerID);
+     //       javax.vecmath.Vector3f warpLoc=new javax.vecmath.Vector3f(charPosition.x,modelMap.get(newPlayerID).getLocalTranslation().y,charPosition.z);
+  //   System.out.println("local translation y:"+modelMap.get(newPlayerID).getLocalTranslation().y);
+      //      modelMap.get(nextPlayerID).getControl(CharacterControl.class).getControllerId().warp(warpLoc);
         } else if (message instanceof CharPositionMessage) {
             //   System.out.println("modifying position");
             if (clientSet) {
@@ -338,8 +380,11 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 elbowWristAngleMap.put(messagePlayerID, charPosition.elbowWristAngle);
                 elbowWristVelMap.put(messagePlayerID, charPosition.elbowWristVel);
                 //          System.out.println("new position received is "+charPosition.charPosition);
-       //         System.out.println("estimated position:"+charPositionMap.get(messagePlayerID)+",update from server:"+charPosition.charPosition);
-                charPositionMap.put(messagePlayerID, charPosition.charPosition);
+        //       System.out.println("estimated position:"+charPositionMap.get(messagePlayerID)+",update from server:"+charPosition.charPosition);
+     //           System.out.println("new char vel:"+charVelocityMap.get(messagePlayerID));
+               charPositionMap.put(messagePlayerID, charPosition.charPosition);
+       //         charPositionMap.get(messagePlayerID).x=charPosition.charPosition.x;
+         //       charPositionMap.get(messagePlayerID).z=charPosition.charPosition.z;
                 charVelocityMap.put(messagePlayerID, charPosition.charVelocity);
                 charAngleMap.put(messagePlayerID, charPosition.charAngle);
                 charTurnVelMap.put(messagePlayerID, charPosition.charTurnVel);
