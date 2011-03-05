@@ -316,7 +316,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             charVelocityMap.put(newPlayerID, new Vector3f());
             charAngleMap.put(newPlayerID, 0f);
             charTurnVelMap.put(newPlayerID, 0f);
-            modelMap.get(newPlayerID).getControl(AnimControl.class).addListener(this);
+      //      modelMap.get(newPlayerID).getControl(AnimControl.class).addListener(this);
             animChannelMap.put(newPlayerID, modelMap.get(newPlayerID).getControl(AnimControl.class).createChannel());
             animChannelMap.get(newPlayerID).setAnim("stand");
         } else if (message instanceof CharPositionMessage) {
