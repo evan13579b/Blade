@@ -523,50 +523,51 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     public void onKeyEvent(KeyInputEvent evt) {
         try {
             int key = evt.getKeyCode();
-
-            switch (key) {
-                case KeyInput.KEY_E:
-                    if (evt.isPressed()) {
-                        client.send(new InputMessages.MoveCharForward(playerID));
-                    } else {
-                        client.send(new InputMessages.StopForwardMove(playerID));
-                    }
-                    break;
-                case KeyInput.KEY_S:
-                    if (evt.isPressed()) {
-                        client.send(new InputMessages.MoveCharLeft(playerID));
-                    } else {
-                        client.send(new InputMessages.StopLeftRightMove(playerID));
-                    }
-                    break;
-                case KeyInput.KEY_D:
-                    if (evt.isPressed()) {
-                        client.send(new InputMessages.MoveCharBackword(playerID));
-                    } else {
-                        client.send(new InputMessages.StopForwardMove(playerID));
-                    }
-                    break;
-                case KeyInput.KEY_F:
-                    if (evt.isPressed()) {
-                        client.send(new InputMessages.MoveCharRight(playerID));
-                    } else {
-                        client.send(new InputMessages.StopLeftRightMove(playerID));
-                    }
-                    break;
-                case KeyInput.KEY_W:
-                    if (evt.isPressed()) {
-                        client.send(new InputMessages.TurnCharLeft(playerID));
-                    } else {
-                        client.send(new InputMessages.StopCharTurn(playerID));
-                    }
-                    break;
-                case KeyInput.KEY_R:
-                    if (evt.isPressed()) {
-                        client.send(new InputMessages.TurnCharRight(playerID));
-                    } else {
-                        client.send(new InputMessages.StopCharTurn(playerID));
-                    }
-                    break;
+            if (!evt.isRepeating()) {
+                switch (key) {
+                    case KeyInput.KEY_E:
+                        if (evt.isPressed()) {
+                            client.send(new InputMessages.MoveCharForward(playerID));
+                        } else {
+                            client.send(new InputMessages.StopForwardMove(playerID));
+                        }
+                        break;
+                    case KeyInput.KEY_S:
+                        if (evt.isPressed()) {
+                            client.send(new InputMessages.MoveCharLeft(playerID));
+                        } else {
+                            client.send(new InputMessages.StopLeftRightMove(playerID));
+                        }
+                        break;
+                    case KeyInput.KEY_D:
+                        if (evt.isPressed()) {
+                            client.send(new InputMessages.MoveCharBackword(playerID));
+                        } else {
+                            client.send(new InputMessages.StopForwardMove(playerID));
+                        }
+                        break;
+                    case KeyInput.KEY_F:
+                        if (evt.isPressed()) {
+                            client.send(new InputMessages.MoveCharRight(playerID));
+                        } else {
+                            client.send(new InputMessages.StopLeftRightMove(playerID));
+                        }
+                        break;
+                    case KeyInput.KEY_W:
+                        if (evt.isPressed()) {
+                            client.send(new InputMessages.TurnCharLeft(playerID));
+                        } else {
+                            client.send(new InputMessages.StopCharTurn(playerID));
+                        }
+                        break;
+                    case KeyInput.KEY_R:
+                        if (evt.isPressed()) {
+                            client.send(new InputMessages.TurnCharRight(playerID));
+                        } else {
+                            client.send(new InputMessages.StopCharTurn(playerID));
+                        }
+                        break;
+                }
             }
         } catch (IOException ex) {
             Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
