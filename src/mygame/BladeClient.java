@@ -29,17 +29,20 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package mygame;
 
+import com.jme3.animation.AnimChannel;
 import com.jme3.animation.AnimControl;
+import com.jme3.animation.AnimEventListener;
+import mygame.messages.InputMessages;
+import mygame.messages.CharPositionMessage;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.bullet.BulletAppState;
-import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.input.ChaseCamera;
+import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
 import com.jme3.input.RawInputListener;
 import com.jme3.input.event.JoyAxisEvent;
@@ -50,15 +53,13 @@ import com.jme3.input.event.MouseMotionEvent;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.FastMath;
+import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.network.connection.Client;
+import com.jme3.network.events.ConnectionListener;
 import com.jme3.network.events.MessageListener;
 import com.jme3.network.message.Message;
 import com.jme3.network.serializing.Serializer;
-import com.jme3.network.sync.ClientSyncService;
-import com.jme3.network.sync.EntityFactory;
-import com.jme3.network.sync.SyncEntity;
-import com.jme3.network.sync.SyncMessage;
 import com.jme3.renderer.Camera;
 import com.jme3.scene.Node;
 import com.jme3.terrain.geomipmap.TerrainLodControl;
@@ -69,19 +70,35 @@ import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.WrapMode;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jme3tools.converters.ImageToAwt;
+import mygame.messages.CharCreationMessage;
+import mygame.messages.CharDestructionMessage;
 
 /**
  *
  * @author blah
  */
-public class BladeClient extends SimpleApplication implements EntityFactory, MessageListener, RawInputListener{
-    private AnimControl control;
+public class BladeClient extends SimpleApplication implements MessageListener, RawInputListener, ConnectionListener, AnimEventListener {
+
     private ChaseCamera chaseCam;
     private Node model;
+    HashMap<Long, Node> modelMap = new HashMap();
+    HashMap<Long, Vector3f> upperArmAnglesMap = new HashMap();
+    HashMap<Long, Vector3f> upperArmVelsMap = new HashMap();
+    HashMap<Long, Float> elbowWristAngleMap = new HashMap();
+    HashMap<Long, Float> elbowWristVelMap = new HashMap();
+    HashSet<Long> playerSet = new HashSet();
+    HashMap<Long, Vector3f> charPositionMap = new HashMap();
+    HashMap<Long, Vector3f> charVelocityMap = new HashMap();
+    HashMap<Long, Float> charAngleMap = new HashMap();
+    HashMap<Long, Float> charTurnVelMap = new HashMap();
+    HashMap<Long, AnimChannel> animChannelMap = new HashMap();
     
     private BulletAppState bulletAppState;
     private TerrainQuad terrain;
@@ -92,32 +109,12 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
     private RigidBodyControl terrain_phy;
     CharacterControl character;
     Client client;
-    ClientCharacterEntity clientCharacter;
-    ClientSyncService clientSyncService;
-    boolean clientSet=false;
-
-
-
-    public SyncEntity createEntity(Class<? extends SyncEntity> entityType){
-        if (model == null) {
-            model = Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState);
-            clientCharacter = new ClientCharacterEntity(model);
-            rootNode.attachChild(model);
-            chaseCam = new ChaseCamera(cam, model, inputManager);
-            chaseCam.setSmoothMotion(true);
-            chaseCam.setDefaultVerticalRotation(FastMath.HALF_PI / 4f);
-            chaseCam.setLookAtOffset(new Vector3f(0.0f, 4.0f, 0.0f));
-            clientSet = true;
-            return clientCharacter;
-        }
-        else{
-            Node newModel=Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState);
-            ClientCharacterEntity newCharacter=new ClientCharacterEntity(newModel);
-            rootNode.attachChild(newModel);
-
-            return newCharacter;
-        }
-    }
+    boolean clientSet = false;
+    private Vector3f upperArmAngles = new Vector3f();
+    private Vector3f upperArmVels = new Vector3f();
+    private float elbowWristAngle = CharMovement.Constraints.lRotMin;
+    private float elbowWristVel = 0;
+    private long playerID = 0;
 
     public static void main(String[] args) {
         BladeClient app = new BladeClient();
@@ -126,32 +123,28 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
 
     @Override
     public void simpleInitApp() {
-        Serializer.registerClass(SyncMessage.class);
+        Serializer.registerClass(CharPositionMessage.class);
+        Serializer.registerClass(CharCreationMessage.class);
+        Serializer.registerClass(CharDestructionMessage.class);
         InputMessages.registerInputClasses();
 
-        
+
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
         stateManager.attach(bulletAppState);
         initMaterials();
         initTerrain();
-/*
-        model = (Node) assetManager.loadModel("Models/Fighter.mesh.j3o");
-        model.scale(1.0f, 1.0f, 1.0f);
-        model.rotate(0.0f, FastMath.HALF_PI, 0.0f);
-        model.setLocalTranslation(0.0f, 0.0f, 0.0f);
-*/
-        try{
-            client=new Client(BladeMain.serverIP,BladeMain.port,BladeMain.port);
+
+        try {
+            client = new Client(BladeMain.serverIP, BladeMain.port, BladeMain.port);
             client.start();
-        }
-        catch(Exception e){
+
+            client.addMessageListener(this, CharCreationMessage.class, CharDestructionMessage.class, CharPositionMessage.class);
+
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
-        clientSyncService=client.getService(ClientSyncService.class);
-        clientSyncService.setEntityFactory(this);
-      
         try {
             Thread.sleep(1000);
         } catch (InterruptedException ex) {
@@ -160,7 +153,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
 
         InputMessages.addInputMessageListeners(client, this);
 
-
+        client.addConnectionListener(this);
         DirectionalLight sun = new DirectionalLight();
         sun.setDirection(new Vector3f(-0.1f, -0.7f, -1.0f));
         rootNode.addLight(sun);
@@ -172,24 +165,86 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
 
         flyCam.setEnabled(false);
 
-        
-        registerInput();
+
+
+
     }
+    private boolean mouseCurrentlyStopped = true;
 
     @Override
-    public void simpleUpdate(float tpf){
-        clientSyncService.update(tpf);
-        if(clientSet){
-            clientCharacter.onLocalUpdate();
-            if((System.currentTimeMillis()-timeOfLastMouseMotion)>mouseMovementTimeout){
+    public void simpleUpdate(float tpf) {
+        if (clientSet) {
+            characterUpdate(tpf);
+            if ((System.currentTimeMillis() - timeOfLastMouseMotion) > mouseMovementTimeout && !mouseCurrentlyStopped) {
                 try {
-                    client.send(new InputMessages.StopMouseMovement());                   
+
+                    client.send(new InputMessages.StopMouseMovement(playerID));
                 } catch (IOException ex) {
                     Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
                 }
-                currentMouseEvents=0;
-                timeOfLastMouseMotion=System.currentTimeMillis();
+                currentMouseEvents = 0;
+                timeOfLastMouseMotion = System.currentTimeMillis();
+                mouseCurrentlyStopped = true;
             }
+        }
+    }
+
+    public void characterUpdate(float tpf) {
+        //       System.out.println("character update");
+        for (Iterator<Long> playerIterator = playerSet.iterator(); playerIterator.hasNext();) {
+            long nextPlayerID = playerIterator.next();
+            upperArmAnglesMap.put(nextPlayerID, CharMovement.extrapolateUpperArmAngles(upperArmAnglesMap.get(nextPlayerID), upperArmVelsMap.get(nextPlayerID), tpf));
+            elbowWristAngleMap.put(nextPlayerID, CharMovement.extrapolateLowerArmAngles(elbowWristAngleMap.get(nextPlayerID), elbowWristVelMap.get(nextPlayerID), tpf));
+            charAngleMap.put(nextPlayerID, CharMovement.extrapolateCharTurn(charAngleMap.get(nextPlayerID), charTurnVelMap.get(nextPlayerID), tpf));
+      //      System.out.println("previous position:"+charPositionMap.get(nextPlayerID)+",extrapolated position:"+CharMovement.extrapolateCharMovement(charPositionMap.get(nextPlayerID), charVelocityMap.get(nextPlayerID), tpf));
+            charPositionMap.put(nextPlayerID, CharMovement.extrapolateCharMovement(charPositionMap.get(nextPlayerID),
+                    charVelocityMap.get(nextPlayerID), charAngleMap.get(nextPlayerID),tpf));
+
+            CharMovement.setUpperArmTransform(upperArmAnglesMap.get(nextPlayerID), modelMap.get(nextPlayerID));
+            CharMovement.setLowerArmTransform(elbowWristAngleMap.get(nextPlayerID), modelMap.get(nextPlayerID));
+
+            //     modelMap.get(nextPlayerID).setLocalTranslation(new Vector3f(100,100,100));
+   //         Vector3f charPosition=charPositionMap.get(nextPlayerID);
+  //          javax.vecmath.Vector3f warpLoc=new javax.vecmath.Vector3f(charPosition.x,modelMap.get(nextPlayerID).getLocalTranslation().y,charPosition.z);
+            //Vector3f localTrans=modelMap.get(nextPlayerID).getLocalTranslation();
+            //  javax.vecmath.Vector3f warpLoc=new javax.vecmath.Vector3f(localTrans.x,localTrans.y,localTrans.z);
+   //  System.out.println("local translation y:"+modelMap.get(nextPlayerID).getLocalTranslation().y+",charPosition:"+charPositionMap.get(nextPlayerID).y);
+            Vector3f extrapolatedPosition,currentPosition;
+            extrapolatedPosition=charPositionMap.get(nextPlayerID);currentPosition=modelMap.get(nextPlayerID).getLocalTranslation();
+            float diffLength=FastMath.sqrt(FastMath.sqr(extrapolatedPosition.x-currentPosition.x)+FastMath.sqr(extrapolatedPosition.z-currentPosition.z));
+    //        System.out.println("Length of diff is "+diffLength);
+            CharacterControl control=modelMap.get(nextPlayerID).getControl(CharacterControl.class);
+            if(diffLength>5){
+      //          modelMap.get(nextPlayerID).getControl(CharacterControl.class).setEnabled(false);
+      //          modelMap.get(nextPlayerID).setLocalTranslation(charPositionMap.get(nextPlayerID).x,modelMap.get(nextPlayerID).getLocalTranslation().y,charPositionMap.get(nextPlayerID).z);
+     //           modelMap.get(nextPlayerID).getControl(CharacterControl.class).setEnabled(true);
+                  control.setPhysicsLocation(new Vector3f(extrapolatedPosition.x,currentPosition.y,extrapolatedPosition.z));
+            }
+     //      
+       //     modelMap.get(nextPlayerID).getControl(CharacterControl.class).setPhysicsLocation(new Vector3f(charPositionMap.get(nextPlayerID).x,modelMap.get(nextPlayerID).getLocalTranslation().y,charPositionMap.get(nextPlayerID).z));
+      //      CharacterControl control=modelMap.get(nextPlayerID).getControl(CharacterControl.class);
+            float xDir,zDir;
+            zDir=FastMath.cos(charAngleMap.get(nextPlayerID));
+            xDir=FastMath.sin(charAngleMap.get(nextPlayerID));
+            Vector3f viewDirection=new Vector3f(xDir,0,zDir);
+            modelMap.get(nextPlayerID).getControl(CharacterControl.class).setViewDirection(viewDirection);
+       //     modelMap.get(nextPlayerID).setLocalTranslation(charPositionMap.get(nextPlayerID));
+      //      modelMap.get(nextPlayerID).setLocalRotation((new Quaternion()).fromAngleAxis(charAngleMap.get(nextPlayerID), new Vector3f(0, 1, 0)));
+
+            //        System.out.println("Char position is "+charPositionMap.get(nextPlayerID)+", local tranlsation "+modelMap.get(nextPlayerID).getLocalTranslation());
+
+
+            Vector3f forward,up,left;
+            float xVel,zVel;
+            xVel=charVelocityMap.get(nextPlayerID).x;
+            zVel=charVelocityMap.get(nextPlayerID).z;
+            forward=new Vector3f(viewDirection);
+            up=new Vector3f(0,1,0);
+            left=up.cross(forward);
+
+
+            control.setWalkDirection(left.mult(xVel).add(forward.mult(zVel)));
+
         }
     }
 
@@ -275,14 +330,81 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
         Texture tex3 = assetManager.loadTexture(key3);
         tex3.setWrap(WrapMode.Repeat);
         floor_mat.setTexture("ColorMap", tex3);
-
     }
 
     public void messageReceived(Message message) {
+        if (message instanceof CharCreationMessage) {
+            System.out.println("Creating character");
+            CharCreationMessage creationMessage = (CharCreationMessage) message;
+            long newPlayerID = creationMessage.playerID;
+            Node newModel = Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState, true);
+            rootNode.attachChild(newModel);
+            if (creationMessage.controllable) {
+                playerID = newPlayerID;
+                model = newModel;
+                System.out.println("claiming player id " + playerID);
+
+                chaseCam = new ChaseCamera(cam, model, inputManager);
+                chaseCam.setSmoothMotion(true);
+                chaseCam.setDefaultVerticalRotation(FastMath.HALF_PI / 4f);
+                chaseCam.setLookAtOffset(new Vector3f(0.0f, 4.0f, 0.0f));
+                registerInput();
+                clientSet = true;
+            }
+            modelMap.put(newPlayerID, newModel);
+            playerSet.add(newPlayerID);
+            upperArmAnglesMap.put(newPlayerID, new Vector3f());
+            upperArmVelsMap.put(newPlayerID, new Vector3f());
+            elbowWristAngleMap.put(newPlayerID, new Float(CharMovement.Constraints.lRotMin));
+            elbowWristVelMap.put(newPlayerID, new Float(0f));
+            charPositionMap.put(newPlayerID, new Vector3f());
+            charVelocityMap.put(newPlayerID, new Vector3f());
+            charAngleMap.put(newPlayerID, 0f);
+            charTurnVelMap.put(newPlayerID, 0f);
+      //      modelMap.get(newPlayerID).getControl(AnimControl.class).addListener(this);
+            animChannelMap.put(newPlayerID, modelMap.get(newPlayerID).getControl(AnimControl.class).createChannel());
+            animChannelMap.get(newPlayerID).setAnim("stand");
+      //      Vector3f charPosition=charPositionMap.get(newPlayerID);
+     //       javax.vecmath.Vector3f warpLoc=new javax.vecmath.Vector3f(charPosition.x,modelMap.get(newPlayerID).getLocalTranslation().y,charPosition.z);
+  //   System.out.println("local translation y:"+modelMap.get(newPlayerID).getLocalTranslation().y);
+      //      modelMap.get(nextPlayerID).getControl(CharacterControl.class).getControllerId().warp(warpLoc);
+        } else if (message instanceof CharPositionMessage) {
+            //   System.out.println("modifying position");
+            if (clientSet) {
+
+                CharPositionMessage charPosition = (CharPositionMessage) message;
+                long messagePlayerID = charPosition.playerID;
+
+                upperArmAnglesMap.put(messagePlayerID, charPosition.upperArmAngles.clone());
+                upperArmVelsMap.put(messagePlayerID, charPosition.upperArmVels.clone());
+                elbowWristAngleMap.put(messagePlayerID, charPosition.elbowWristAngle);
+                elbowWristVelMap.put(messagePlayerID, charPosition.elbowWristVel);
+                //          System.out.println("new position received is "+charPosition.charPosition);
+        //       System.out.println("estimated position:"+charPositionMap.get(messagePlayerID)+",update from server:"+charPosition.charPosition);
+     //           System.out.println("new char vel:"+charVelocityMap.get(messagePlayerID));
+               charPositionMap.put(messagePlayerID, charPosition.charPosition);
+       //         charPositionMap.get(messagePlayerID).x=charPosition.charPosition.x;
+         //       charPositionMap.get(messagePlayerID).z=charPosition.charPosition.z;
+                charVelocityMap.put(messagePlayerID, charPosition.charVelocity);
+                charAngleMap.put(messagePlayerID, charPosition.charAngle);
+                charTurnVelMap.put(messagePlayerID, charPosition.charTurnVel);
+                if (animChannelMap.get(messagePlayerID) != null) {
+                    if (charVelocityMap.get(messagePlayerID).equals(new Vector3f(0, 0, 0))) {
+                        if (animChannelMap.get(messagePlayerID).getAnimationName().equals("walk")) {
+                            animChannelMap.get(messagePlayerID).setAnim("stand");
+                        }
+                    } else {
+                        if (animChannelMap.get(messagePlayerID).getAnimationName().equals("stand")) {
+                            animChannelMap.get(messagePlayerID).setAnim("walk");
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public void messageSent(Message message) {
-        System.out.println("sending message");
+        System.out.println(message.getClass());
     }
 
     public void objectReceived(Object object) {
@@ -302,18 +424,18 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
 
     public void onJoyButtonEvent(JoyButtonEvent evt) {
     }
+    private final int eventsPerPacket = 10; // how many events should happen before next packet is sent
+    private final long mouseMovementTimeout = 100; // how long until we propose to send a StopMouseMovement message
+    private long timeOfLastMouseMotion = 0; // how long since last movement
+    private int currentMouseEvents = 0;
+    private int currentDX = 0;
+    private int currentDY = 0;
+    private int prevDeltaWheel = 0;
 
-    private final int eventsPerPacket=10; // how many events should happen before next packet is sent
-    private final long mouseMovementTimeout=100; // how long until we propose to send a StopMouseMovement message
-    private long timeOfLastMouseMotion=0; // how long since last movement
-    private int currentMouseEvents=0;
-    private int currentDX=0;
-    private int currentDY=0;
-    private int prevDeltaWheel=0;
     public void onMouseMotionEvent(MouseMotionEvent evt) {
 
-        float dy=evt.getDY(),dx=evt.getDX();
-        if(dy!=0||dx!=0){
+        float dy = evt.getDY(), dx = evt.getDX();
+        if (dy != 0 || dx != 0) {
             currentMouseEvents++;
             currentDX += dx;
             currentDY += dy;
@@ -324,7 +446,7 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
                     if (angle < 0) {
                         angle = FastMath.TWO_PI + angle;
                     }
-                    client.send(new InputMessages.MouseMovement(angle));
+                    client.send(new InputMessages.MouseMovement(angle, playerID));
                 } catch (IOException ex) {
                     Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -335,30 +457,30 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
             }
 
             timeOfLastMouseMotion = System.currentTimeMillis();
+            mouseCurrentlyStopped = false;
         }
 
         try {
             if (evt.getDeltaWheel() > 0) {
-                if (prevDeltaWheel < 0 && !(clientCharacter.elbowWristAngle==CharMovement.Constraints.lRotMax)) {
-                    client.send(new InputMessages.StopLArm());
+                if (prevDeltaWheel < 0 && !(elbowWristAngle == CharMovement.Constraints.lRotMax)) {
+                    client.send(new InputMessages.StopLArm(playerID));
                 } else {
-                    client.send(new InputMessages.LArmDown());
+                    client.send(new InputMessages.LArmDown(playerID));
                 }
-                prevDeltaWheel=1;
+                prevDeltaWheel = 1;
             } else if (evt.getDeltaWheel() < 0) {
-                if (prevDeltaWheel > 0  && !(clientCharacter.elbowWristAngle==CharMovement.Constraints.lRotMin)) {
-                    client.send(new InputMessages.StopLArm());
+                if (prevDeltaWheel > 0 && !(elbowWristAngle == CharMovement.Constraints.lRotMin)) {
+                    client.send(new InputMessages.StopLArm(playerID));
                 } else {
-                    client.send(new InputMessages.LArmUp());
+                    client.send(new InputMessages.LArmUp(playerID));
                 }
-                prevDeltaWheel=-1;
+                prevDeltaWheel = -1;
             }
         } catch (IOException ex) {
             Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
         }
 
     }
-
     private boolean prevPressed = false;
 
     public void onMouseButtonEvent(MouseButtonEvent evt) {
@@ -366,33 +488,32 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
             if (evt.isPressed()) {
                 if (evt.getButtonIndex() == MouseInput.BUTTON_LEFT) {
                     try {
-                        client.send(new InputMessages.RotateUArmCC());
+                        client.send(new InputMessages.RotateUArmCC(playerID));
                     } catch (IOException ex) {
                         Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 } else if (evt.getButtonIndex() == MouseInput.BUTTON_RIGHT) {
                     try {
-                        client.send(new InputMessages.RotateUArmC());
+                        client.send(new InputMessages.RotateUArmC(playerID));
                     } catch (IOException ex) {
                         Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 }
-            }
-            else{
+            } else {
                 try {
-                    client.send(new InputMessages.StopRotateTwist());
+                    client.send(new InputMessages.StopRotateTwist(playerID));
                 } catch (IOException ex) {
                     Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
         }
 
-        prevPressed=evt.isPressed();
+        prevPressed = evt.isPressed();
         inputManager.setCursorVisible(false);
 
-        if(evt.getButtonIndex()==MouseInput.BUTTON_MIDDLE){
+        if (evt.getButtonIndex() == MouseInput.BUTTON_MIDDLE) {
             try {
-                client.send(new InputMessages.StopLArm());
+                client.send(new InputMessages.StopLArm(playerID));
             } catch (IOException ex) {
                 Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -400,15 +521,80 @@ public class BladeClient extends SimpleApplication implements EntityFactory, Mes
     }
 
     public void onKeyEvent(KeyInputEvent evt) {
+        try {
+            int key = evt.getKeyCode();
+            if (!evt.isRepeating()) {
+                switch (key) {
+                    case KeyInput.KEY_E:
+                        if (evt.isPressed()) {
+                            client.send(new InputMessages.MoveCharForward(playerID));
+                        } else {
+                            client.send(new InputMessages.StopForwardMove(playerID));
+                        }
+                        break;
+                    case KeyInput.KEY_S:
+                        if (evt.isPressed()) {
+                            client.send(new InputMessages.MoveCharLeft(playerID));
+                        } else {
+                            client.send(new InputMessages.StopLeftRightMove(playerID));
+                        }
+                        break;
+                    case KeyInput.KEY_D:
+                        if (evt.isPressed()) {
+                            client.send(new InputMessages.MoveCharBackword(playerID));
+                        } else {
+                            client.send(new InputMessages.StopForwardMove(playerID));
+                        }
+                        break;
+                    case KeyInput.KEY_F:
+                        if (evt.isPressed()) {
+                            client.send(new InputMessages.MoveCharRight(playerID));
+                        } else {
+                            client.send(new InputMessages.StopLeftRightMove(playerID));
+                        }
+                        break;
+                    case KeyInput.KEY_W:
+                        if (evt.isPressed()) {
+                            client.send(new InputMessages.TurnCharLeft(playerID));
+                        } else {
+                            client.send(new InputMessages.StopCharTurn(playerID));
+                        }
+                        break;
+                    case KeyInput.KEY_R:
+                        if (evt.isPressed()) {
+                            client.send(new InputMessages.TurnCharRight(playerID));
+                        } else {
+                            client.send(new InputMessages.StopCharTurn(playerID));
+                        }
+                        break;
+                }
+            }
+        } catch (IOException ex) {
+            Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     @Override
-    public void destroy(){
+    public void destroy() {
         super.destroy();
         try {
             client.disconnect();
         } catch (Throwable ex) {
             Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+
+    public void clientConnected(Client client) {
+    }
+
+    public void clientDisconnected(Client client) {
+    }
+
+    public void onAnimCycleDone(AnimControl control, AnimChannel channel, String animName) {
+
+    }
+
+    public void onAnimChange(AnimControl control, AnimChannel channel, String animName) {
+        
     }
 }
