@@ -40,7 +40,10 @@ import mygame.messages.CharPositionMessage;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.bullet.BulletAppState;
+import com.jme3.bullet.collision.PhysicsCollisionEvent;
+import com.jme3.bullet.collision.PhysicsCollisionListener;
 import com.jme3.bullet.control.CharacterControl;
+import com.jme3.bullet.control.GhostControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
@@ -72,7 +75,7 @@ import mygame.messages.CharCreationMessage;
 import mygame.messages.CharDestructionMessage;
 import mygame.messages.HasID;
 
-public class BladeServer extends SimpleApplication implements MessageListener,ConnectionListener{
+public class BladeServer extends SimpleApplication implements MessageListener,ConnectionListener, PhysicsCollisionListener{
     HashMap<Long,Node> modelMap=new HashMap();
     HashMap<Long,Vector3f> upperArmAnglesMap=new HashMap();
     HashMap<Long,Vector3f> upperArmVelsMap=new HashMap();
@@ -145,7 +148,50 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     public void simpleUpdate(float tpf){
         updateCharacters(tpf);
     }
+    /*
+     private void handleCollisions(Long playerID) {
 
+        CollisionResults results = new CollisionResults();
+        Node player = modelMap.get(playerID);
+        //Node otherPlayer = null;
+        for (Map.Entry<Long, Node> playerEntry : modelMap.entrySet()) {
+            if (playerEntry.getKey() != playerID) {
+                long pID = playerEntry.getKey();
+
+                BoundingVolume bv = modelMap.get(pID).get
+                //otherPlayer = playerEntry.getValue();
+                player.collideWith(bv, results);
+
+                if (results.size() > 0) {
+                    System.out.println("COLLISION DETECTED");
+                    
+                    
+                    upperArmVelsMap.get(pID).x = 0;
+                    upperArmVelsMap.get(pID).y = 0;
+                    upperArmVelsMap.get(pID).z = 0;
+                    
+                }
+            }
+        }
+    }
+    */
+
+    public void collision(PhysicsCollisionEvent event) {
+
+        System.out.println("COLLISION DETECTED");
+
+        long[] playerID = new long[2];
+
+        playerID[0] = Long.parseLong(event.getNodeA().getName());
+        playerID[1] = Long.parseLong(event.getNodeB().getName());
+
+        for (int i = 0; i < 2; i++) {
+            upperArmVelsMap.get(playerID[i]).x = 0;
+            upperArmVelsMap.get(playerID[i]).y = 0;
+            upperArmVelsMap.get(playerID[i]).z = 0;
+        }
+    }
+    
     private long timeOfLastSync=0;
     private final long timeBetweenSyncs=100;
     public void updateCharacters(float tpf) {
@@ -155,10 +201,17 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             Vector3f upperArmAngles=upperArmAnglesMap.get(playerID);
             upperArmAnglesMap.put(playerID, CharMovement.extrapolateUpperArmAngles(upperArmAngles,
                     upperArmVelsMap.get(playerID), tpf));
+            //handleCollisions(playerID);
             elbowWristAngleMap.put(playerID, CharMovement.extrapolateLowerArmAngles(elbowWristAngleMap.get(playerID),
             elbowWristVelMap.get(playerID), tpf));
             charAngleMap.put(playerID, CharMovement.extrapolateCharTurn(charAngleMap.get(playerID),
                     charTurnVelMap.get(playerID), tpf));
+
+            GhostControl gControl = modelMap.get(playerID).getControl(GhostControl.class);
+            if (gControl.getOverlappingCount() > 2) {
+
+                System.out.println("GHOST COLLISION: " + gControl.getOverlappingCount());
+            }
 
             CharacterControl control=modelMap.get(playerID).getControl(CharacterControl.class);
             float xDir,zDir;
@@ -358,7 +411,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     public void clientConnected(Client client) {
         try {
             long playerID=currentPlayerID++;
-            Node model = Character.createCharacter("Models/FighterRight.mesh.xml", assetManager, bulletAppState,true);
+            Node model = Character.createCharacter("Models/FighterRight.mesh.xml", assetManager, bulletAppState,true, playerID);
             rootNode.attachChild(model);
             modelMap.put(playerID, model);
             upperArmAnglesMap.put(playerID, new Vector3f());

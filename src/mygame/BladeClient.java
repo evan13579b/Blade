@@ -38,9 +38,11 @@ import mygame.messages.InputMessages;
 import mygame.messages.CharPositionMessage;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
+import com.jme3.bounding.BoundingVolume;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.RigidBodyControl;
+import com.jme3.collision.CollisionResults;
 import com.jme3.input.ChaseCamera;
 import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
@@ -53,6 +55,7 @@ import com.jme3.input.event.MouseMotionEvent;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.FastMath;
+import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.network.connection.Client;
 import com.jme3.network.events.ConnectionListener;
@@ -75,6 +78,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.Map;
 import jme3tools.converters.ImageToAwt;
 import mygame.messages.CharCreationMessage;
 import mygame.messages.CharDestructionMessage;
@@ -109,6 +113,10 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     CharacterControl character;
     Client client;
     boolean clientSet = false;
+    private Vector3f upperArmAngles = new Vector3f();
+    private Vector3f upperArmVels = new Vector3f();
+    private float elbowWristAngle = CharMovement.Constraints.lRotMin;
+    private float elbowWristVel = 0;
     private long playerID = 0;
 
     public static void main(String[] args) {
@@ -122,6 +130,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         Serializer.registerClass(CharCreationMessage.class);
         Serializer.registerClass(CharDestructionMessage.class);
         InputMessages.registerInputClasses();
+
 
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
@@ -156,7 +165,12 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         sun2.setDirection(new Vector3f(0.1f, 0.7f, 1.0f));
         rootNode.addLight(sun2);
 
+
         flyCam.setEnabled(false);
+
+
+        this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
+
     }
     private boolean mouseCurrentlyStopped = true;
 
@@ -166,6 +180,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             characterUpdate(tpf);
             if ((System.currentTimeMillis() - timeOfLastMouseMotion) > mouseMovementTimeout && !mouseCurrentlyStopped) {
                 try {
+
                     client.send(new InputMessages.StopMouseMovement(playerID));
                 } catch (IOException ex) {
                     Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
@@ -177,31 +192,79 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         }
     }
 
+    /*
+    private void handleCollisions(Long playerID) {
+
+        CollisionResults results = new CollisionResults();
+        Node player = modelMap.get(playerID);
+        //Node otherPlayer = null;
+        for (Map.Entry<Long, Node> playerEntry : modelMap.entrySet()) {
+            if (playerEntry.getKey() != playerID) {
+                long pID = playerEntry.getKey();
+                BoundingVolume bv = modelMap.get(pID).getWorldBound();
+                //otherPlayer = playerEntry.getValue();
+                player.collideWith(bv, results);
+
+                if (results.size() > 0) {
+                    System.out.println("COLLISION DETECTED");
+
+
+                    upperArmVelsMap.get(pID).x = 0;
+                    upperArmVelsMap.get(pID).y = 0;
+                    upperArmVelsMap.get(pID).z = 0;
+
+                }
+            }
+        }
+    }
+     *
+     */
+
     public void characterUpdate(float tpf) {
+        //       System.out.println("character update");
         for (Iterator<Long> playerIterator = playerSet.iterator(); playerIterator.hasNext();) {
             long nextPlayerID = playerIterator.next();
             upperArmAnglesMap.put(nextPlayerID, CharMovement.extrapolateUpperArmAngles(upperArmAnglesMap.get(nextPlayerID), upperArmVelsMap.get(nextPlayerID), tpf));
+            //handleCollisions(nextPlayerID);
             elbowWristAngleMap.put(nextPlayerID, CharMovement.extrapolateLowerArmAngles(elbowWristAngleMap.get(nextPlayerID), elbowWristVelMap.get(nextPlayerID), tpf));
             charAngleMap.put(nextPlayerID, CharMovement.extrapolateCharTurn(charAngleMap.get(nextPlayerID), charTurnVelMap.get(nextPlayerID), tpf));
+      //      System.out.println("previous position:"+charPositionMap.get(nextPlayerID)+",extrapolated position:"+CharMovement.extrapolateCharMovement(charPositionMap.get(nextPlayerID), charVelocityMap.get(nextPlayerID), tpf));
             charPositionMap.put(nextPlayerID, CharMovement.extrapolateCharMovement(charPositionMap.get(nextPlayerID),
                     charVelocityMap.get(nextPlayerID), charAngleMap.get(nextPlayerID),tpf));
 
             CharMovement.setUpperArmTransform(upperArmAnglesMap.get(nextPlayerID), modelMap.get(nextPlayerID));
             CharMovement.setLowerArmTransform(elbowWristAngleMap.get(nextPlayerID), modelMap.get(nextPlayerID));
 
+            //     modelMap.get(nextPlayerID).setLocalTranslation(new Vector3f(100,100,100));
+   //         Vector3f charPosition=charPositionMap.get(nextPlayerID);
+  //          javax.vecmath.Vector3f warpLoc=new javax.vecmath.Vector3f(charPosition.x,modelMap.get(nextPlayerID).getLocalTranslation().y,charPosition.z);
+            //Vector3f localTrans=modelMap.get(nextPlayerID).getLocalTranslation();
+            //  javax.vecmath.Vector3f warpLoc=new javax.vecmath.Vector3f(localTrans.x,localTrans.y,localTrans.z);
+   //  System.out.println("local translation y:"+modelMap.get(nextPlayerID).getLocalTranslation().y+",charPosition:"+charPositionMap.get(nextPlayerID).y);
             Vector3f extrapolatedPosition,currentPosition;
             extrapolatedPosition=charPositionMap.get(nextPlayerID);currentPosition=modelMap.get(nextPlayerID).getLocalTranslation();
             float diffLength=FastMath.sqrt(FastMath.sqr(extrapolatedPosition.x-currentPosition.x)+FastMath.sqr(extrapolatedPosition.z-currentPosition.z));
+    //        System.out.println("Length of diff is "+diffLength);
             CharacterControl control=modelMap.get(nextPlayerID).getControl(CharacterControl.class);
             if(diffLength>5){
+      //          modelMap.get(nextPlayerID).getControl(CharacterControl.class).setEnabled(false);
+      //          modelMap.get(nextPlayerID).setLocalTranslation(charPositionMap.get(nextPlayerID).x,modelMap.get(nextPlayerID).getLocalTranslation().y,charPositionMap.get(nextPlayerID).z);
+     //           modelMap.get(nextPlayerID).getControl(CharacterControl.class).setEnabled(true);
                   control.setPhysicsLocation(new Vector3f(extrapolatedPosition.x,currentPosition.y,extrapolatedPosition.z));
             }
-
+     //      
+       //     modelMap.get(nextPlayerID).getControl(CharacterControl.class).setPhysicsLocation(new Vector3f(charPositionMap.get(nextPlayerID).x,modelMap.get(nextPlayerID).getLocalTranslation().y,charPositionMap.get(nextPlayerID).z));
+      //      CharacterControl control=modelMap.get(nextPlayerID).getControl(CharacterControl.class);
             float xDir,zDir;
             zDir=FastMath.cos(charAngleMap.get(nextPlayerID));
             xDir=FastMath.sin(charAngleMap.get(nextPlayerID));
             Vector3f viewDirection=new Vector3f(xDir,0,zDir);
             modelMap.get(nextPlayerID).getControl(CharacterControl.class).setViewDirection(viewDirection);
+       //     modelMap.get(nextPlayerID).setLocalTranslation(charPositionMap.get(nextPlayerID));
+      //      modelMap.get(nextPlayerID).setLocalRotation((new Quaternion()).fromAngleAxis(charAngleMap.get(nextPlayerID), new Vector3f(0, 1, 0)));
+
+            //        System.out.println("Char position is "+charPositionMap.get(nextPlayerID)+", local tranlsation "+modelMap.get(nextPlayerID).getLocalTranslation());
+
 
             Vector3f forward,up,left;
             float xVel,zVel;
@@ -211,7 +274,9 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             up=new Vector3f(0,1,0);
             left=up.cross(forward);
 
+
             control.setWalkDirection(left.mult(xVel).add(forward.mult(zVel)));
+
         }
     }
 
@@ -304,7 +369,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             System.out.println("Creating character");
             CharCreationMessage creationMessage = (CharCreationMessage) message;
             long newPlayerID = creationMessage.playerID;
-            Node newModel = Character.createCharacter("Models/FighterRight.mesh.xml", assetManager, bulletAppState, true);
+            Node newModel = Character.createCharacter("Models/FighterRight.mesh.xml", assetManager, bulletAppState, true, newPlayerID);
             rootNode.attachChild(newModel);
             if (creationMessage.controllable) {
                 playerID = newPlayerID;
@@ -429,14 +494,14 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
         try {
             if (evt.getDeltaWheel() > 0) {
-                if (prevDeltaWheel < 0 && !(elbowWristAngleMap.get(playerID) == CharMovement.Constraints.lRotMax)) {
+                if (prevDeltaWheel < 0 && !(elbowWristAngle == CharMovement.Constraints.lRotMax)) {
                     client.send(new InputMessages.StopLArm(playerID));
                 } else {
                     client.send(new InputMessages.LArmDown(playerID));
                 }
                 prevDeltaWheel = 1;
             } else if (evt.getDeltaWheel() < 0) {
-                if (prevDeltaWheel > 0 && !(elbowWristAngleMap.get(playerID) == CharMovement.Constraints.lRotMin)) {
+                if (prevDeltaWheel > 0 && !(elbowWristAngle == CharMovement.Constraints.lRotMin)) {
                     client.send(new InputMessages.StopLArm(playerID));
                 } else {
                     client.send(new InputMessages.LArmUp(playerID));
