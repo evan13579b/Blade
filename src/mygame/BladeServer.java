@@ -45,7 +45,6 @@ import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.FastMath;
-import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.network.connection.Client;
 import com.jme3.network.connection.Server;
@@ -95,7 +94,6 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     Material stone_mat;
     Material floor_mat;
     private RigidBodyControl terrain_phy;
-//    boolean left = false, right = false, up = false, down = false;
     float airTime = 0;
 
     Server server;
@@ -125,8 +123,6 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         InputMessages.addInputMessageListeners(server, this);
         server.addConnectionListener(this);
         server.addMessageListener(this,CharCreationMessage.class,CharDestructionMessage.class,CharPositionMessage.class);
-
-        
 
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
@@ -171,9 +167,6 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             Vector3f viewDirection=new Vector3f(xDir,0,zDir);
             control.setViewDirection(viewDirection);
 
-      //      Vector3f walkDirection=new Vector3f(
-
-
             Vector3f forward,up,left;
             float xVel,zVel;
             xVel=charVelocityMap.get(playerID).x;
@@ -183,13 +176,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             left=up.cross(forward);
 
             control.setWalkDirection(left.mult(xVel).add(forward.mult(zVel)));
-    //        System.out.println("char position is "+charPositionMap.get(playerID));
- //           float prevCharPosY=charPositionMap.get(playerID).y;
-            charPositionMap.get(playerID).set(modelMap.get(playerID).getLocalTranslation());
-  //          float nextCharPosY=charPositionMap.get(playerID).y;
-            
- //           float charPosYVel=(nextCharPosY-prevCharPosY)/tpf;
-   //         charVelocityMap.get(playerID).y=charPosYVel;
+           charPositionMap.get(playerID).set(modelMap.get(playerID).getLocalTranslation());
 
             CharMovement.setUpperArmTransform(upperArmAnglesMap.get(playerID), modelMap.get(playerID));
             CharMovement.setLowerArmTransform(elbowWristAngleMap.get(playerID), modelMap.get(playerID));

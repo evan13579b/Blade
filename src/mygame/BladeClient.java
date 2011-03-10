@@ -53,7 +53,6 @@ import com.jme3.input.event.MouseMotionEvent;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.FastMath;
-import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.network.connection.Client;
 import com.jme3.network.events.ConnectionListener;
@@ -110,10 +109,6 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     CharacterControl character;
     Client client;
     boolean clientSet = false;
-    private Vector3f upperArmAngles = new Vector3f();
-    private Vector3f upperArmVels = new Vector3f();
-    private float elbowWristAngle = CharMovement.Constraints.lRotMin;
-    private float elbowWristVel = 0;
     private long playerID = 0;
 
     public static void main(String[] args) {
@@ -127,7 +122,6 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         Serializer.registerClass(CharCreationMessage.class);
         Serializer.registerClass(CharDestructionMessage.class);
         InputMessages.registerInputClasses();
-
 
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
@@ -162,12 +156,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         sun2.setDirection(new Vector3f(0.1f, 0.7f, 1.0f));
         rootNode.addLight(sun2);
 
-
         flyCam.setEnabled(false);
-
-
-
-
     }
     private boolean mouseCurrentlyStopped = true;
 
@@ -177,7 +166,6 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             characterUpdate(tpf);
             if ((System.currentTimeMillis() - timeOfLastMouseMotion) > mouseMovementTimeout && !mouseCurrentlyStopped) {
                 try {
-
                     client.send(new InputMessages.StopMouseMovement(playerID));
                 } catch (IOException ex) {
                     Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
@@ -190,49 +178,30 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     }
 
     public void characterUpdate(float tpf) {
-        //       System.out.println("character update");
         for (Iterator<Long> playerIterator = playerSet.iterator(); playerIterator.hasNext();) {
             long nextPlayerID = playerIterator.next();
             upperArmAnglesMap.put(nextPlayerID, CharMovement.extrapolateUpperArmAngles(upperArmAnglesMap.get(nextPlayerID), upperArmVelsMap.get(nextPlayerID), tpf));
             elbowWristAngleMap.put(nextPlayerID, CharMovement.extrapolateLowerArmAngles(elbowWristAngleMap.get(nextPlayerID), elbowWristVelMap.get(nextPlayerID), tpf));
             charAngleMap.put(nextPlayerID, CharMovement.extrapolateCharTurn(charAngleMap.get(nextPlayerID), charTurnVelMap.get(nextPlayerID), tpf));
-      //      System.out.println("previous position:"+charPositionMap.get(nextPlayerID)+",extrapolated position:"+CharMovement.extrapolateCharMovement(charPositionMap.get(nextPlayerID), charVelocityMap.get(nextPlayerID), tpf));
             charPositionMap.put(nextPlayerID, CharMovement.extrapolateCharMovement(charPositionMap.get(nextPlayerID),
                     charVelocityMap.get(nextPlayerID), charAngleMap.get(nextPlayerID),tpf));
 
             CharMovement.setUpperArmTransform(upperArmAnglesMap.get(nextPlayerID), modelMap.get(nextPlayerID));
             CharMovement.setLowerArmTransform(elbowWristAngleMap.get(nextPlayerID), modelMap.get(nextPlayerID));
 
-            //     modelMap.get(nextPlayerID).setLocalTranslation(new Vector3f(100,100,100));
-   //         Vector3f charPosition=charPositionMap.get(nextPlayerID);
-  //          javax.vecmath.Vector3f warpLoc=new javax.vecmath.Vector3f(charPosition.x,modelMap.get(nextPlayerID).getLocalTranslation().y,charPosition.z);
-            //Vector3f localTrans=modelMap.get(nextPlayerID).getLocalTranslation();
-            //  javax.vecmath.Vector3f warpLoc=new javax.vecmath.Vector3f(localTrans.x,localTrans.y,localTrans.z);
-   //  System.out.println("local translation y:"+modelMap.get(nextPlayerID).getLocalTranslation().y+",charPosition:"+charPositionMap.get(nextPlayerID).y);
             Vector3f extrapolatedPosition,currentPosition;
             extrapolatedPosition=charPositionMap.get(nextPlayerID);currentPosition=modelMap.get(nextPlayerID).getLocalTranslation();
             float diffLength=FastMath.sqrt(FastMath.sqr(extrapolatedPosition.x-currentPosition.x)+FastMath.sqr(extrapolatedPosition.z-currentPosition.z));
-    //        System.out.println("Length of diff is "+diffLength);
             CharacterControl control=modelMap.get(nextPlayerID).getControl(CharacterControl.class);
             if(diffLength>5){
-      //          modelMap.get(nextPlayerID).getControl(CharacterControl.class).setEnabled(false);
-      //          modelMap.get(nextPlayerID).setLocalTranslation(charPositionMap.get(nextPlayerID).x,modelMap.get(nextPlayerID).getLocalTranslation().y,charPositionMap.get(nextPlayerID).z);
-     //           modelMap.get(nextPlayerID).getControl(CharacterControl.class).setEnabled(true);
                   control.setPhysicsLocation(new Vector3f(extrapolatedPosition.x,currentPosition.y,extrapolatedPosition.z));
             }
-     //      
-       //     modelMap.get(nextPlayerID).getControl(CharacterControl.class).setPhysicsLocation(new Vector3f(charPositionMap.get(nextPlayerID).x,modelMap.get(nextPlayerID).getLocalTranslation().y,charPositionMap.get(nextPlayerID).z));
-      //      CharacterControl control=modelMap.get(nextPlayerID).getControl(CharacterControl.class);
+
             float xDir,zDir;
             zDir=FastMath.cos(charAngleMap.get(nextPlayerID));
             xDir=FastMath.sin(charAngleMap.get(nextPlayerID));
             Vector3f viewDirection=new Vector3f(xDir,0,zDir);
             modelMap.get(nextPlayerID).getControl(CharacterControl.class).setViewDirection(viewDirection);
-       //     modelMap.get(nextPlayerID).setLocalTranslation(charPositionMap.get(nextPlayerID));
-      //      modelMap.get(nextPlayerID).setLocalRotation((new Quaternion()).fromAngleAxis(charAngleMap.get(nextPlayerID), new Vector3f(0, 1, 0)));
-
-            //        System.out.println("Char position is "+charPositionMap.get(nextPlayerID)+", local tranlsation "+modelMap.get(nextPlayerID).getLocalTranslation());
-
 
             Vector3f forward,up,left;
             float xVel,zVel;
@@ -242,9 +211,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             up=new Vector3f(0,1,0);
             left=up.cross(forward);
 
-
             control.setWalkDirection(left.mult(xVel).add(forward.mult(zVel)));
-
         }
     }
 
@@ -462,14 +429,14 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
         try {
             if (evt.getDeltaWheel() > 0) {
-                if (prevDeltaWheel < 0 && !(elbowWristAngle == CharMovement.Constraints.lRotMax)) {
+                if (prevDeltaWheel < 0 && !(elbowWristAngleMap.get(playerID) == CharMovement.Constraints.lRotMax)) {
                     client.send(new InputMessages.StopLArm(playerID));
                 } else {
                     client.send(new InputMessages.LArmDown(playerID));
                 }
                 prevDeltaWheel = 1;
             } else if (evt.getDeltaWheel() < 0) {
-                if (prevDeltaWheel > 0 && !(elbowWristAngle == CharMovement.Constraints.lRotMin)) {
+                if (prevDeltaWheel > 0 && !(elbowWristAngleMap.get(playerID) == CharMovement.Constraints.lRotMin)) {
                     client.send(new InputMessages.StopLArm(playerID));
                 } else {
                     client.send(new InputMessages.LArmUp(playerID));
