@@ -337,7 +337,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             System.out.println("Creating character");
             CharCreationMessage creationMessage = (CharCreationMessage) message;
             long newPlayerID = creationMessage.playerID;
-            Node newModel = Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState, true);
+            Node newModel = Character.createCharacter("Models/FighterRight.mesh.xml", assetManager, bulletAppState, true);
             rootNode.attachChild(newModel);
             if (creationMessage.controllable) {
                 playerID = newPlayerID;
@@ -424,7 +424,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
     public void onJoyButtonEvent(JoyButtonEvent evt) {
     }
-    private final int eventsPerPacket = 10; // how many events should happen before next packet is sent
+    private final int eventsPerPacket = 5; // how many events should happen before next packet is sent
     private final long mouseMovementTimeout = 100; // how long until we propose to send a StopMouseMovement message
     private long timeOfLastMouseMotion = 0; // how long since last movement
     private int currentMouseEvents = 0;
