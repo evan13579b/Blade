@@ -38,9 +38,11 @@ import mygame.messages.InputMessages;
 import mygame.messages.CharPositionMessage;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
+import com.jme3.bounding.BoundingVolume;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.RigidBodyControl;
+import com.jme3.collision.CollisionResults;
 import com.jme3.input.ChaseCamera;
 import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
@@ -76,6 +78,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.Map;
 import jme3tools.converters.ImageToAwt;
 import mygame.messages.CharCreationMessage;
 import mygame.messages.CharDestructionMessage;
@@ -166,7 +169,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         flyCam.setEnabled(false);
 
 
-
+        this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
 
     }
     private boolean mouseCurrentlyStopped = true;
@@ -189,11 +192,40 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         }
     }
 
+    /*
+    private void handleCollisions(Long playerID) {
+
+        CollisionResults results = new CollisionResults();
+        Node player = modelMap.get(playerID);
+        //Node otherPlayer = null;
+        for (Map.Entry<Long, Node> playerEntry : modelMap.entrySet()) {
+            if (playerEntry.getKey() != playerID) {
+                long pID = playerEntry.getKey();
+                BoundingVolume bv = modelMap.get(pID).getWorldBound();
+                //otherPlayer = playerEntry.getValue();
+                player.collideWith(bv, results);
+
+                if (results.size() > 0) {
+                    System.out.println("COLLISION DETECTED");
+
+
+                    upperArmVelsMap.get(pID).x = 0;
+                    upperArmVelsMap.get(pID).y = 0;
+                    upperArmVelsMap.get(pID).z = 0;
+
+                }
+            }
+        }
+    }
+     *
+     */
+
     public void characterUpdate(float tpf) {
         //       System.out.println("character update");
         for (Iterator<Long> playerIterator = playerSet.iterator(); playerIterator.hasNext();) {
             long nextPlayerID = playerIterator.next();
             upperArmAnglesMap.put(nextPlayerID, CharMovement.extrapolateUpperArmAngles(upperArmAnglesMap.get(nextPlayerID), upperArmVelsMap.get(nextPlayerID), tpf));
+            //handleCollisions(nextPlayerID);
             elbowWristAngleMap.put(nextPlayerID, CharMovement.extrapolateLowerArmAngles(elbowWristAngleMap.get(nextPlayerID), elbowWristVelMap.get(nextPlayerID), tpf));
             charAngleMap.put(nextPlayerID, CharMovement.extrapolateCharTurn(charAngleMap.get(nextPlayerID), charTurnVelMap.get(nextPlayerID), tpf));
       //      System.out.println("previous position:"+charPositionMap.get(nextPlayerID)+",extrapolated position:"+CharMovement.extrapolateCharMovement(charPositionMap.get(nextPlayerID), charVelocityMap.get(nextPlayerID), tpf));
@@ -337,7 +369,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             System.out.println("Creating character");
             CharCreationMessage creationMessage = (CharCreationMessage) message;
             long newPlayerID = creationMessage.playerID;
-            Node newModel = Character.createCharacter("Models/FighterRight.mesh.xml", assetManager, bulletAppState, true);
+            Node newModel = Character.createCharacter("Models/FighterRight.mesh.xml", assetManager, bulletAppState, true, newPlayerID);
             rootNode.attachChild(newModel);
             if (creationMessage.controllable) {
                 playerID = newPlayerID;
