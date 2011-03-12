@@ -104,8 +104,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     public static void main(String[] args) {
         BladeServer app = new BladeServer();
-    //    app.start();
-        app.start(JmeContext.Type.Headless);
+        app.start();
+        //app.start(JmeContext.Type.Headless);
     }
 
     @Override
