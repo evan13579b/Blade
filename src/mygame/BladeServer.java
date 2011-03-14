@@ -148,9 +148,9 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
             public boolean collide(PhysicsCollisionObject nodeA, PhysicsCollisionObject nodeB) {
                 System.out.println("COLLISION?");
+
                 return false;
             }
-
             /*
             public void collision(PhysicsCollisionEvent event) {
             String name1 = event.getNodeA().getName();
@@ -177,7 +177,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
              */
         };
 
-
+       
         bulletAppState.getPhysicsSpace().addCollisionGroupListener(coll, PhysicsCollisionObject.COLLISION_GROUP_02);
     }
 
