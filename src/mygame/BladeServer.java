@@ -39,11 +39,11 @@ import mygame.messages.InputMessages;
 import mygame.messages.CharPositionMessage;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
+import com.jme3.bounding.BoundingVolume;
 import com.jme3.bullet.BulletAppState;
-import com.jme3.bullet.collision.PhysicsCollisionGroupListener;
-import com.jme3.bullet.collision.PhysicsCollisionObject;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.RigidBodyControl;
+import com.jme3.collision.CollisionResults;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.FastMath;
@@ -69,6 +69,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import jme3tools.converters.ImageToAwt;
 import mygame.messages.CharCreationMessage;
 import mygame.messages.CharDestructionMessage;
@@ -144,13 +145,14 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         flyCam.setEnabled(true);
         this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
 
+        /*
         PhysicsCollisionGroupListener coll = new PhysicsCollisionGroupListener() {
 
             public boolean collide(PhysicsCollisionObject nodeA, PhysicsCollisionObject nodeB) {
                 System.out.println("COLLISION?");
-
                 return false;
             }
+            */
             /*
             public void collision(PhysicsCollisionEvent event) {
             String name1 = event.getNodeA().getName();
@@ -175,18 +177,16 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             }
              *
              */
-        };
+        //};
 
-       
-        bulletAppState.getPhysicsSpace().addCollisionGroupListener(coll, PhysicsCollisionObject.COLLISION_GROUP_02);
+        //bulletAppState.getPhysicsSpace().addCollisionGroupListener(coll, PhysicsCollisionObject.COLLISION_GROUP_02);
     }
 
     @Override
     public void simpleUpdate(float tpf){
         updateCharacters(tpf);
     }
-
-    /*
+    
     private void handleCollisions(Long playerID) {
 
         CollisionResults results = new CollisionResults();
@@ -201,17 +201,11 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                 player.collideWith(bv, results);
 
                 if (results.size() > 0) {
-                    System.out.println("COLLISION DETECTED");
-                    
-                    upperArmVelsMap.get(pID).x = 0;
-                    upperArmVelsMap.get(pID).y = 0;
-                    upperArmVelsMap.get(pID).z = 0;
-
+                    System.out.println("Server: COLLISION DETECTED");
                 }
             }
         }
     }
-    */
 
     private long timeOfLastSync=0;
     private final long timeBetweenSyncs=100;
@@ -222,7 +216,6 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             Vector3f upperArmAngles = upperArmAnglesMap.get(playerID);
             upperArmAnglesMap.put(playerID, CharMovement.extrapolateUpperArmAngles(upperArmAngles,
                     upperArmVelsMap.get(playerID), tpf));
-            //handleCollisions(playerID);
             elbowWristAngleMap.put(playerID, CharMovement.extrapolateLowerArmAngles(elbowWristAngleMap.get(playerID),
             elbowWristVelMap.get(playerID), tpf));
             charAngleMap.put(playerID, CharMovement.extrapolateCharTurn(charAngleMap.get(playerID),
@@ -248,6 +241,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
             CharMovement.setUpperArmTransform(upperArmAnglesMap.get(playerID), modelMap.get(playerID));
             CharMovement.setLowerArmTransform(elbowWristAngleMap.get(playerID), modelMap.get(playerID));
+            handleCollisions(playerID);
         }
         
         long currentTime = System.currentTimeMillis();
