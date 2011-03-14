@@ -55,7 +55,6 @@ import com.jme3.input.event.MouseMotionEvent;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.FastMath;
-import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.network.connection.Client;
 import com.jme3.network.events.ConnectionListener;
@@ -76,9 +75,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.Map;
 import jme3tools.converters.ImageToAwt;
 import mygame.messages.CharCreationMessage;
 import mygame.messages.CharDestructionMessage;
@@ -170,7 +169,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
 
         this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
-
+        
     }
     private boolean mouseCurrentlyStopped = true;
 
@@ -192,7 +191,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         }
     }
 
-    /*
+    
     private void handleCollisions(Long playerID) {
 
         CollisionResults results = new CollisionResults();
@@ -201,31 +200,23 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         for (Map.Entry<Long, Node> playerEntry : modelMap.entrySet()) {
             if (playerEntry.getKey() != playerID) {
                 long pID = playerEntry.getKey();
+
                 BoundingVolume bv = modelMap.get(pID).getWorldBound();
                 //otherPlayer = playerEntry.getValue();
                 player.collideWith(bv, results);
 
                 if (results.size() > 0) {
-                    System.out.println("COLLISION DETECTED");
-
-
-                    upperArmVelsMap.get(pID).x = 0;
-                    upperArmVelsMap.get(pID).y = 0;
-                    upperArmVelsMap.get(pID).z = 0;
-
+                    System.out.println("Client: COLLISION DETECTED");
                 }
             }
         }
     }
-     *
-     */
-
+    
     public void characterUpdate(float tpf) {
         //       System.out.println("character update");
         for (Iterator<Long> playerIterator = playerSet.iterator(); playerIterator.hasNext();) {
             long nextPlayerID = playerIterator.next();
             upperArmAnglesMap.put(nextPlayerID, CharMovement.extrapolateUpperArmAngles(upperArmAnglesMap.get(nextPlayerID), upperArmVelsMap.get(nextPlayerID), tpf));
-            //handleCollisions(nextPlayerID);
             elbowWristAngleMap.put(nextPlayerID, CharMovement.extrapolateLowerArmAngles(elbowWristAngleMap.get(nextPlayerID), elbowWristVelMap.get(nextPlayerID), tpf));
             charAngleMap.put(nextPlayerID, CharMovement.extrapolateCharTurn(charAngleMap.get(nextPlayerID), charTurnVelMap.get(nextPlayerID), tpf));
       //      System.out.println("previous position:"+charPositionMap.get(nextPlayerID)+",extrapolated position:"+CharMovement.extrapolateCharMovement(charPositionMap.get(nextPlayerID), charVelocityMap.get(nextPlayerID), tpf));
@@ -276,7 +267,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
 
             control.setWalkDirection(left.mult(xVel).add(forward.mult(zVel)));
-
+            handleCollisions(nextPlayerID);
         }
     }
 

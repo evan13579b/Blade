@@ -40,21 +40,24 @@ public class Character{
              *
              */
             //CollisionShape box = CollisionShapeFactory.createBoxShape(model);
-            
+            /*
             CollisionShape box = new BoxCollisionShape(new Vector3f(2.0f, 6.0f, 2.0f));
 
             RigidBodyControl rigidControl = new RigidBodyControl(box, 0.01f);
+
             rigidControl.setCollisionGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
             rigidControl.removeCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_01);
             rigidControl.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
-
+            rigidControl.setKinematic(true);
             model.addControl(rigidControl);
+             *
+             */
             CharacterControl charControl = new CharacterControl(capsule, 0.01f);
 
             model.addControl(charControl);
             model.setName(Long.toString(playerID));
 
-            bulletAppState.getPhysicsSpace().add(rigidControl);
+            //bulletAppState.getPhysicsSpace().add(rigidControl);
             bulletAppState.getPhysicsSpace().add(charControl);
         }
 
