@@ -40,10 +40,9 @@ import mygame.messages.CharPositionMessage;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.bullet.BulletAppState;
-import com.jme3.bullet.collision.PhysicsCollisionEvent;
-import com.jme3.bullet.collision.PhysicsCollisionListener;
+import com.jme3.bullet.collision.PhysicsCollisionGroupListener;
+import com.jme3.bullet.collision.PhysicsCollisionObject;
 import com.jme3.bullet.control.CharacterControl;
-import com.jme3.bullet.control.GhostControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
@@ -75,7 +74,7 @@ import mygame.messages.CharCreationMessage;
 import mygame.messages.CharDestructionMessage;
 import mygame.messages.HasID;
 
-public class BladeServer extends SimpleApplication implements MessageListener,ConnectionListener, PhysicsCollisionListener{
+public class BladeServer extends SimpleApplication implements MessageListener,ConnectionListener{
     HashMap<Long,Node> modelMap=new HashMap();
     HashMap<Long,Vector3f> upperArmAnglesMap=new HashMap();
     HashMap<Long,Vector3f> upperArmVelsMap=new HashMap();
@@ -104,8 +103,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     public static void main(String[] args) {
         BladeServer app = new BladeServer();
-        app.start();
-        //app.start(JmeContext.Type.Headless);
+        //app.start();
+        app.start(JmeContext.Type.Headless);
     }
 
     @Override
@@ -129,6 +128,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
+
         stateManager.attach(bulletAppState);
         initMaterials();
         initTerrain();
@@ -142,14 +142,52 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         rootNode.addLight(sun2);
 
         flyCam.setEnabled(true);
+        this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
+
+        PhysicsCollisionGroupListener coll = new PhysicsCollisionGroupListener() {
+
+            public boolean collide(PhysicsCollisionObject nodeA, PhysicsCollisionObject nodeB) {
+                System.out.println("COLLISION?");
+                return false;
+            }
+
+            /*
+            public void collision(PhysicsCollisionEvent event) {
+            String name1 = event.getNodeA().getName();
+            String name2 = event.getNodeB().getName();
+
+            //System.out.println(name1 + " " + name2);
+
+            if (event.getNodeA().getControl(RigidBodyControl.class) != null &&
+            event.getNodeB().getControl(RigidBodyControl.class) != null &&
+            event.getNodeA().getControl(RigidBodyControl.class).getCollisionGroup() == PhysicsCollisionObject.COLLISION_GROUP_02 &&
+            event.getNodeB().getControl(RigidBodyControl.class).getCollisionGroup() == PhysicsCollisionObject.COLLISION_GROUP_02) {
+            System.out.println("Rigid Collision!");
+            }
+             *
+             */
+            /*
+            if (Long.parseLong(name1) == )
+
+            GhostControl gControl = modelMap.get(playerID).getControl(GhostControl.class);
+            if (gControl.getOverlappingCount() > 2) {
+            System.out.println("GHOST COLLISION: " + gControl.getOverlappingCount());
+            }
+             *
+             */
+        };
+
+
+        bulletAppState.getPhysicsSpace().addCollisionGroupListener(coll, PhysicsCollisionObject.COLLISION_GROUP_02);
     }
 
     @Override
     public void simpleUpdate(float tpf){
         updateCharacters(tpf);
     }
+
     /*
-     private void handleCollisions(Long playerID) {
+    private void handleCollisions(Long playerID) {
 
         CollisionResults results = new CollisionResults();
         Node player = modelMap.get(playerID);
@@ -158,47 +196,30 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             if (playerEntry.getKey() != playerID) {
                 long pID = playerEntry.getKey();
 
-                BoundingVolume bv = modelMap.get(pID).get
+                BoundingVolume bv = modelMap.get(pID).getWorldBound();
                 //otherPlayer = playerEntry.getValue();
                 player.collideWith(bv, results);
 
                 if (results.size() > 0) {
                     System.out.println("COLLISION DETECTED");
                     
-                    
                     upperArmVelsMap.get(pID).x = 0;
                     upperArmVelsMap.get(pID).y = 0;
                     upperArmVelsMap.get(pID).z = 0;
-                    
+
                 }
             }
         }
     }
     */
 
-    public void collision(PhysicsCollisionEvent event) {
-
-        System.out.println("COLLISION DETECTED");
-
-        long[] playerID = new long[2];
-
-        playerID[0] = Long.parseLong(event.getNodeA().getName());
-        playerID[1] = Long.parseLong(event.getNodeB().getName());
-
-        for (int i = 0; i < 2; i++) {
-            upperArmVelsMap.get(playerID[i]).x = 0;
-            upperArmVelsMap.get(playerID[i]).y = 0;
-            upperArmVelsMap.get(playerID[i]).z = 0;
-        }
-    }
-    
     private long timeOfLastSync=0;
     private final long timeBetweenSyncs=100;
     public void updateCharacters(float tpf) {
 
         for(Iterator<Long> playerIterator=playerSet.iterator(); playerIterator.hasNext();){
             long playerID = playerIterator.next();
-            Vector3f upperArmAngles=upperArmAnglesMap.get(playerID);
+            Vector3f upperArmAngles = upperArmAnglesMap.get(playerID);
             upperArmAnglesMap.put(playerID, CharMovement.extrapolateUpperArmAngles(upperArmAngles,
                     upperArmVelsMap.get(playerID), tpf));
             //handleCollisions(playerID);
@@ -206,13 +227,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             elbowWristVelMap.get(playerID), tpf));
             charAngleMap.put(playerID, CharMovement.extrapolateCharTurn(charAngleMap.get(playerID),
                     charTurnVelMap.get(playerID), tpf));
-
-            GhostControl gControl = modelMap.get(playerID).getControl(GhostControl.class);
-            if (gControl.getOverlappingCount() > 2) {
-
-                System.out.println("GHOST COLLISION: " + gControl.getOverlappingCount());
-            }
-
+            
             CharacterControl control=modelMap.get(playerID).getControl(CharacterControl.class);
             float xDir,zDir;
             zDir=FastMath.cos(charAngleMap.get(playerID));
@@ -412,7 +427,18 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         try {
             long playerID=currentPlayerID++;
             Node model = Character.createCharacter("Models/FighterRight.mesh.xml", assetManager, bulletAppState,true, playerID);
+            /*
+            WireBox wBox = new WireBox();
+            wBox.fromBoundingBox(new BoundingBox(Vector3f.ZERO, 0.5f, 0.5f, 0.5f));
+            Geometry geom1 = new Geometry("WireBox", wBox);
+            Material m1 = new Material(assetManager, "Common/MatDefs/Misc/SolidColor.j3md");
+            m1.setColor("Color", ColorRGBA.Blue);
+            geom1.setMaterial(m1);
+            model.attachChild(geom1);
+             *
+             */
             rootNode.attachChild(model);
+            //rootNode.attachChild(geom1);
             modelMap.put(playerID, model);
             upperArmAnglesMap.put(playerID, new Vector3f());
             upperArmVelsMap.put(playerID, new Vector3f());
