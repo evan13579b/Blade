@@ -376,16 +376,16 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                 elbowWristVelMap.put(playerID, 0f);
             } else if (message instanceof InputMessages.MoveCharBackword) {
                 System.out.println("Move foreward");
-                charVelocityMap.get(playerID).z=-0.1f;
+                charVelocityMap.get(playerID).z=-CharMovement.charBackwordSpeed;
             } else if (message instanceof InputMessages.MoveCharForward) {
                 System.out.println("Move backword");
-                charVelocityMap.get(playerID).z=0.1f;
+                charVelocityMap.get(playerID).z=CharMovement.charForwardSpeed;
             } else if (message instanceof InputMessages.MoveCharLeft) {
                 System.out.println("Move left");
-                charVelocityMap.get(playerID).x=0.1f;
+                charVelocityMap.get(playerID).x=CharMovement.charStrafeSpeed;
             } else if (message instanceof InputMessages.MoveCharRight) {
                 System.out.println("Move right");
-                charVelocityMap.get(playerID).x=-0.1f;
+                charVelocityMap.get(playerID).x=-CharMovement.charStrafeSpeed;
             } else if (message instanceof InputMessages.TurnCharLeft) {
                 charTurnVelMap.put(playerID, 1f);
             } else if (message instanceof InputMessages.TurnCharRight) {
