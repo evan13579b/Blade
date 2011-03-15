@@ -1,0 +1,22 @@
+material Brick/SOLID
+{
+	technique
+	{
+		pass
+		{
+			diffuse 0.769279 0.110000 0.122623
+			specular 0.500000 0.500000 0.500000 12.500000
+		}
+	}
+}
+material GreenPaint/SOLID
+{
+	technique
+	{
+		pass
+		{
+			diffuse 0.182951 0.828328 0.000000
+			specular 0.500000 0.500000 0.500000 12.500000
+		}
+	}
+}
