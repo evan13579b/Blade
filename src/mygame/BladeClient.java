@@ -257,7 +257,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/Terrain.j3md");
 
         /** 1.1) Add ALPHA map (for red-blue-green coded splat textures) */
-        mat_terrain.setTexture("m_Alpha", assetManager.loadTexture("Textures/alpha.png"));
+        mat_terrain.setTexture("m_Alpha", assetManager.loadTexture("Textures/alpha1.1.png"));
 
         /** 1.2) Add GRASS texture into the red layer (m_Tex1). */
         Texture grass = assetManager.loadTexture("Textures/grass.jpg");
@@ -279,7 +279,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
         /** 2. Create the height map */
         AbstractHeightMap heightmap = null;
-        Texture heightMapImage = assetManager.loadTexture("Textures/grayscale.png");
+        Texture heightMapImage = assetManager.loadTexture("Textures/grayscale1.1.png");
         heightmap = new ImageBasedHeightMap(
                 ImageToAwt.convert(heightMapImage.getImage(), false, true, 0));
         heightmap.load();
@@ -291,13 +291,17 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
          * 3.4) As LOD step scale we supply Vector3f(1,1,1).
          * 3.5) At last, we supply the prepared heightmap itself.
          */
-        terrain = new TerrainQuad("my terrain", 65, 513, heightmap.getHeightMap());
+        terrain = new TerrainQuad("my terrain", 65, 1025, heightmap.getHeightMap());
 
         /** 4. We give the terrain its material, position & scale it, and attach it. */
         terrain.setMaterial(mat_terrain);
         terrain.setLocalTranslation(0, -100, 0);
         terrain.setLocalScale(2f, 1f, 2f);
         rootNode.attachChild(terrain);
+        /** Add in houses **/
+        Node block = House.createHouse("Models/Main.mesh.xml", assetManager, bulletAppState, true);
+        rootNode.attachChild(block);
+        
 
         /** 5. The LOD (level of detail) depends on were the camera is: */
         List<Camera> cameras = new ArrayList<Camera>();
@@ -306,6 +310,8 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         terrain_phy = new RigidBodyControl(0.0f);
         terrain.addControl(terrain_phy);
         bulletAppState.getPhysicsSpace().add(terrain_phy);
+        
+
 
 
     }
@@ -338,7 +344,9 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             CharCreationMessage creationMessage = (CharCreationMessage) message;
             long newPlayerID = creationMessage.playerID;
             Node newModel = Character.createCharacter("Models/FighterRight.mesh.xml", assetManager, bulletAppState, true);
+            
             rootNode.attachChild(newModel);
+            
             if (creationMessage.controllable) {
                 playerID = newPlayerID;
                 model = newModel;
@@ -352,6 +360,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 clientSet = true;
             }
             modelMap.put(newPlayerID, newModel);
+            
             playerSet.add(newPlayerID);
             upperArmAnglesMap.put(newPlayerID, new Vector3f());
             upperArmVelsMap.put(newPlayerID, new Vector3f());

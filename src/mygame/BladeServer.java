@@ -220,7 +220,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/Terrain.j3md");
 
         /** 1.1) Add ALPHA map (for red-blue-green coded splat textures) */
-        mat_terrain.setTexture("m_Alpha", assetManager.loadTexture("Textures/alpha.png"));
+        mat_terrain.setTexture("m_Alpha", assetManager.loadTexture("Textures/alpha1.1.png"));
 
         /** 1.2) Add GRASS texture into the red layer (m_Tex1). */
         Texture grass = assetManager.loadTexture("Textures/grass.jpg");
@@ -242,7 +242,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
         /** 2. Create the height map */
         AbstractHeightMap heightmap = null;
-        Texture heightMapImage = assetManager.loadTexture("Textures/grayscale.png");
+        Texture heightMapImage = assetManager.loadTexture("Textures/grayscale1.1.png");
         heightmap = new ImageBasedHeightMap(
                 ImageToAwt.convert(heightMapImage.getImage(), false, true, 0));
         heightmap.load();
@@ -262,6 +262,10 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         terrain.setLocalScale(2f, 1f, 2f);
         rootNode.attachChild(terrain);
 
+        /** Add in houses **/
+        Node block = House.createHouse("Models/Main.mesh.xml", assetManager, bulletAppState, true);
+        rootNode.attachChild(block);
+        
         /** 5. The LOD (level of detail) depends on were the camera is: */
         List<Camera> cameras = new ArrayList<Camera>();
         cameras.add(getCamera());
@@ -269,7 +273,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         terrain_phy = new RigidBodyControl(0.0f);
         terrain.addControl(terrain_phy);
         bulletAppState.getPhysicsSpace().add(terrain_phy);
-
+        
 
     }
 
@@ -372,7 +376,9 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         try {
             long playerID=currentPlayerID++;
             Node model = Character.createCharacter("Models/FighterRight.mesh.xml", assetManager, bulletAppState,true);
+           
             rootNode.attachChild(model);
+            
             modelMap.put(playerID, model);
             upperArmAnglesMap.put(playerID, new Vector3f());
             upperArmVelsMap.put(playerID, new Vector3f());
