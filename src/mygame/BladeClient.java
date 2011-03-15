@@ -199,6 +199,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 mouseCurrentlyStopped = true;
             }
         }
+        rootNode.updateGeometricState();
     }
 
     
@@ -241,11 +242,11 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
   //          javax.vecmath.Vector3f warpLoc=new javax.vecmath.Vector3f(charPosition.x,modelMap.get(nextPlayerID).getLocalTranslation().y,charPosition.z);
             //Vector3f localTrans=modelMap.get(nextPlayerID).getLocalTranslation();
             //  javax.vecmath.Vector3f warpLoc=new javax.vecmath.Vector3f(localTrans.x,localTrans.y,localTrans.z);
-     System.out.println("local translation y:"+modelMap.get(nextPlayerID).getLocalTranslation().y+",charPosition:"+charPositionMap.get(nextPlayerID).y);
+  //   System.out.println("local translation y:"+modelMap.get(nextPlayerID).getLocalTranslation().y+",charPosition:"+charPositionMap.get(nextPlayerID).y);
             Vector3f extrapolatedPosition,currentPosition;
             extrapolatedPosition=charPositionMap.get(nextPlayerID);currentPosition=modelMap.get(nextPlayerID).getLocalTranslation();
             float diffLength=FastMath.sqrt(FastMath.sqr(extrapolatedPosition.x-currentPosition.x)+FastMath.sqr(extrapolatedPosition.z-currentPosition.z));
-            System.out.println("Length of diff is "+diffLength);
+     //       System.out.println("Length of diff is "+diffLength);
             CharacterControl control=modelMap.get(nextPlayerID).getControl(CharacterControl.class);
   //          System.out.println("extrapolated:"+extrapolatedPosition+", currentPosition:"+currentPosition);
             if(diffLength>15){
