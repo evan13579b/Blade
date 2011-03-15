@@ -69,6 +69,7 @@ import com.jme3.terrain.geomipmap.TerrainQuad;
 import com.jme3.terrain.heightmap.ImageBasedHeightMap;
 import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.WrapMode;
+import com.jme3.util.SkyFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -101,6 +102,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     HashMap<Long, Float> charAngleMap = new HashMap();
     HashMap<Long, Float> charTurnVelMap = new HashMap();
     HashMap<Long, AnimChannel> animChannelMap = new HashMap();
+
     
     private BulletAppState bulletAppState;
     private TerrainQuad terrain;
@@ -134,9 +136,11 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
         stateManager.attach(bulletAppState);
+        rootNode.attachChild(SkyFactory.createSky(
+        assetManager, "Textures/Skysphere.jpg", true));
         initMaterials();
         initTerrain();
-
+        
         try {
             client = new Client(BladeMain.serverIP, BladeMain.port, BladeMain.port);
             client.start();
@@ -175,6 +179,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
     @Override
     public void simpleUpdate(float tpf) {
+        
         if (clientSet) {
             characterUpdate(tpf);
             if ((System.currentTimeMillis() - timeOfLastMouseMotion) > mouseMovementTimeout && !mouseCurrentlyStopped) {
@@ -277,6 +282,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     }
 
     public void initTerrain() {
+        
         mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/Terrain.j3md");
 
         /** 1.1) Add ALPHA map (for red-blue-green coded splat textures) */

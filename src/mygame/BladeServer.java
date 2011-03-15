@@ -64,6 +64,7 @@ import com.jme3.terrain.heightmap.AbstractHeightMap;
 import com.jme3.terrain.heightmap.ImageBasedHeightMap;
 import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.WrapMode;
+import com.jme3.util.SkyFactory;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -131,6 +132,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         bulletAppState = new BulletAppState();
 
         stateManager.attach(bulletAppState);
+        rootNode.attachChild(SkyFactory.createSky(
+        assetManager, "Textures/Skysphere.jpg", true));
         initMaterials();
         initTerrain();
 
@@ -184,6 +187,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     @Override
     public void simpleUpdate(float tpf){
+        
         updateCharacters(tpf);
     }
     
@@ -266,6 +270,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     }
 
     public void initTerrain() {
+        
         mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/Terrain.j3md");
 
         /** 1.1) Add ALPHA map (for red-blue-green coded splat textures) */
