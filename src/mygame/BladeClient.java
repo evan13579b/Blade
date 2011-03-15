@@ -229,7 +229,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             upperArmAnglesMap.put(nextPlayerID, CharMovement.extrapolateUpperArmAngles(upperArmAnglesMap.get(nextPlayerID), upperArmVelsMap.get(nextPlayerID), tpf));
             elbowWristAngleMap.put(nextPlayerID, CharMovement.extrapolateLowerArmAngles(elbowWristAngleMap.get(nextPlayerID), elbowWristVelMap.get(nextPlayerID), tpf));
             charAngleMap.put(nextPlayerID, CharMovement.extrapolateCharTurn(charAngleMap.get(nextPlayerID), charTurnVelMap.get(nextPlayerID), tpf));
-      //      System.out.println("previous position:"+charPositionMap.get(nextPlayerID)+",extrapolated position:"+CharMovement.extrapolateCharMovement(charPositionMap.get(nextPlayerID), charVelocityMap.get(nextPlayerID), tpf));
+ //           System.out.println("previous position:"+charPositionMap.get(nextPlayerID)+",extrapolated position:"+CharMovement.extrapolateCharMovement(charPositionMap.get(nextPlayerID), charVelocityMap.get(nextPlayerID), tpf));
             charPositionMap.put(nextPlayerID, CharMovement.extrapolateCharMovement(charPositionMap.get(nextPlayerID),
                     charVelocityMap.get(nextPlayerID), charAngleMap.get(nextPlayerID),tpf));
 
@@ -241,18 +241,18 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
   //          javax.vecmath.Vector3f warpLoc=new javax.vecmath.Vector3f(charPosition.x,modelMap.get(nextPlayerID).getLocalTranslation().y,charPosition.z);
             //Vector3f localTrans=modelMap.get(nextPlayerID).getLocalTranslation();
             //  javax.vecmath.Vector3f warpLoc=new javax.vecmath.Vector3f(localTrans.x,localTrans.y,localTrans.z);
- //    System.out.println("local translation y:"+modelMap.get(nextPlayerID).getLocalTranslation().y+",charPosition:"+charPositionMap.get(nextPlayerID).y);
+     System.out.println("local translation y:"+modelMap.get(nextPlayerID).getLocalTranslation().y+",charPosition:"+charPositionMap.get(nextPlayerID).y);
             Vector3f extrapolatedPosition,currentPosition;
             extrapolatedPosition=charPositionMap.get(nextPlayerID);currentPosition=modelMap.get(nextPlayerID).getLocalTranslation();
             float diffLength=FastMath.sqrt(FastMath.sqr(extrapolatedPosition.x-currentPosition.x)+FastMath.sqr(extrapolatedPosition.z-currentPosition.z));
             System.out.println("Length of diff is "+diffLength);
             CharacterControl control=modelMap.get(nextPlayerID).getControl(CharacterControl.class);
   //          System.out.println("extrapolated:"+extrapolatedPosition+", currentPosition:"+currentPosition);
-            if(diffLength>5){
+            if(diffLength>15){
       //          modelMap.get(nextPlayerID).getControl(CharacterControl.class).setEnabled(false);
       //          modelMap.get(nextPlayerID).setLocalTranslation(charPositionMap.get(nextPlayerID).x,modelMap.get(nextPlayerID).getLocalTranslation().y,charPositionMap.get(nextPlayerID).z);
      //           modelMap.get(nextPlayerID).getControl(CharacterControl.class).setEnabled(true);
-                  control.setPhysicsLocation(new Vector3f(extrapolatedPosition.x,currentPosition.y,extrapolatedPosition.z));
+                  control.setPhysicsLocation(new Vector3f(extrapolatedPosition.x,currentPosition.y+1,extrapolatedPosition.z));
             }
      //      
        //     modelMap.get(nextPlayerID).getControl(CharacterControl.class).setPhysicsLocation(new Vector3f(charPositionMap.get(nextPlayerID).x,modelMap.get(nextPlayerID).getLocalTranslation().y,charPositionMap.get(nextPlayerID).z));
