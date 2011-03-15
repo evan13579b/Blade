@@ -245,7 +245,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             Vector3f extrapolatedPosition,currentPosition;
             extrapolatedPosition=charPositionMap.get(nextPlayerID);currentPosition=modelMap.get(nextPlayerID).getLocalTranslation();
             float diffLength=FastMath.sqrt(FastMath.sqr(extrapolatedPosition.x-currentPosition.x)+FastMath.sqr(extrapolatedPosition.z-currentPosition.z));
-   //         System.out.println("Length of diff is "+diffLength);
+            System.out.println("Length of diff is "+diffLength);
             CharacterControl control=modelMap.get(nextPlayerID).getControl(CharacterControl.class);
   //          System.out.println("extrapolated:"+extrapolatedPosition+", currentPosition:"+currentPosition);
             if(diffLength>5){
