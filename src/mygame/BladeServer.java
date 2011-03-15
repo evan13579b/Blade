@@ -237,7 +237,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             left=up.cross(forward);
 
             control.setWalkDirection(left.mult(xVel).add(forward.mult(zVel)));
-           charPositionMap.get(playerID).set(modelMap.get(playerID).getLocalTranslation());
+            charPositionMap.get(playerID).set(modelMap.get(playerID).getLocalTranslation());
 
             CharMovement.setUpperArmTransform(upperArmAnglesMap.get(playerID), modelMap.get(playerID));
             CharMovement.setLowerArmTransform(elbowWristAngleMap.get(playerID), modelMap.get(playerID));

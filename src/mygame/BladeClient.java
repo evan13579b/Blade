@@ -235,14 +235,14 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             Vector3f extrapolatedPosition,currentPosition;
             extrapolatedPosition=charPositionMap.get(nextPlayerID);currentPosition=modelMap.get(nextPlayerID).getLocalTranslation();
             float diffLength=FastMath.sqrt(FastMath.sqr(extrapolatedPosition.x-currentPosition.x)+FastMath.sqr(extrapolatedPosition.z-currentPosition.z));
-    //        System.out.println("Length of diff is "+diffLength);
+            System.out.println("Length of diff is "+diffLength);
             CharacterControl control=modelMap.get(nextPlayerID).getControl(CharacterControl.class);
-  //          if(diffLength>10){
+            if(diffLength>5){
       //          modelMap.get(nextPlayerID).getControl(CharacterControl.class).setEnabled(false);
       //          modelMap.get(nextPlayerID).setLocalTranslation(charPositionMap.get(nextPlayerID).x,modelMap.get(nextPlayerID).getLocalTranslation().y,charPositionMap.get(nextPlayerID).z);
      //           modelMap.get(nextPlayerID).getControl(CharacterControl.class).setEnabled(true);
-    //              control.setPhysicsLocation(new Vector3f(extrapolatedPosition.x,currentPosition.y,extrapolatedPosition.z));
-   //e         }
+                  control.setPhysicsLocation(new Vector3f(extrapolatedPosition.x,currentPosition.y,extrapolatedPosition.z));
+            }
      //      
        //     modelMap.get(nextPlayerID).getControl(CharacterControl.class).setPhysicsLocation(new Vector3f(charPositionMap.get(nextPlayerID).x,modelMap.get(nextPlayerID).getLocalTranslation().y,charPositionMap.get(nextPlayerID).z));
       //      CharacterControl control=modelMap.get(nextPlayerID).getControl(CharacterControl.class);
