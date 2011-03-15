@@ -335,7 +335,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         terrain.setLocalScale(2f, 1f, 2f);
         rootNode.attachChild(terrain);
         /** Add in houses **/
-        Node block = House.createHouse("Models/Main.mesh.xml", assetManager, bulletAppState, true);
+        Node block = House.createHouse("Models/Main.mesh.j3o", assetManager, bulletAppState, true);
         rootNode.attachChild(block);
         
 
@@ -379,7 +379,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             System.out.println("Creating character");
             CharCreationMessage creationMessage = (CharCreationMessage) message;
             long newPlayerID = creationMessage.playerID;
-            Node newModel = Character.createCharacter("Models/FighterRight.mesh.xml", assetManager, bulletAppState, true, newPlayerID);
+            Node newModel = Character.createCharacter("Models/FighterRight.mesh.j3o", assetManager, bulletAppState, true, newPlayerID);
             
             rootNode.attachChild(newModel);
             

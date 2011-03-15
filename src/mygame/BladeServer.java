@@ -322,7 +322,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         rootNode.attachChild(terrain);
 
         /** Add in houses **/
-        Node block = House.createHouse("Models/Main.mesh.xml", assetManager, bulletAppState, true);
+        Node block = House.createHouse("Models/Main.mesh.j3o", assetManager, bulletAppState, true);
         rootNode.attachChild(block);
         
         /** 5. The LOD (level of detail) depends on were the camera is: */
@@ -434,7 +434,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     public void clientConnected(Client client) {
         try {
             long playerID=currentPlayerID++;
-            Node model = Character.createCharacter("Models/FighterRight.mesh.xml", assetManager, bulletAppState,true, playerID);
+            Node model = Character.createCharacter("Models/FighterRight.mesh.j3o", assetManager, bulletAppState,true, playerID);
             /*
             WireBox wBox = new WireBox();
             wBox.fromBoundingBox(new BoundingBox(Vector3f.ZERO, 0.5f, 0.5f, 0.5f));

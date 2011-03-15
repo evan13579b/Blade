@@ -18,3 +18,5 @@ happens try reloading.
 
 There also is sometimes a memory limit problem. It showed up on one of our computers. If that happens please let us know. It was fixed by setting a higher
 memory limit in the JVM opetions but we don't know how to set options for the distributed version.
+
+The networking code needs a lot of work. It can be jerky when there is significant lag.
