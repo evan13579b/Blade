@@ -1,4 +1,9 @@
 /*
+ * The Init terrain and init materials functions were both taken from the JME example code
+ * and modified. The rest of the code is almost entirely written from scratch.
+ */
+
+/*
  * Copyright (c) 2009-2010 jMonkeyEngine
  * All rights reserved.
  *

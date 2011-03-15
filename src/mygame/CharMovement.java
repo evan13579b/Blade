@@ -23,6 +23,7 @@ public class CharMovement {
     static public final float charStrafeSpeed=0.2f;
     static public final float charForwardSpeed=0.2f;
     static public final float charBackwordSpeed=0.2f;
+    static public final float walkSpeedFactor=4f;
 
     static public final class Constraints{
         static public final float uYRotMax=FastMath.PI-FastMath.QUARTER_PI;
@@ -131,6 +132,6 @@ public class CharMovement {
             left=up.cross(forward);
 
 
-            return charPosition.add((left.mult(xVel).add(forward.mult(zVel)).mult(charForwardSpeed)));
+            return charPosition.add((left.mult(xVel).add(forward.mult(zVel)).mult(charForwardSpeed*walkSpeedFactor)));
     }
 }
