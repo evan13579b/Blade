@@ -371,7 +371,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     public void clientConnected(Client client) {
         try {
             long playerID=currentPlayerID++;
-            Node model = Character.createCharacter("Models/Fighter.mesh.xml", assetManager, bulletAppState,true);
+            Node model = Character.createCharacter("Models/Fighter.mesh.j3o", assetManager, bulletAppState,true);
             rootNode.attachChild(model);
             modelMap.put(playerID, model);
             upperArmAnglesMap.put(playerID, new Vector3f());
