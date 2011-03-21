@@ -12,3 +12,11 @@ We have included 3 zip files for distribution and testing. Note that due to some
 
 Our project is currently developing on another repository on github at github.com/evan13579b/Blade so that we didn't force others to constantly
 download our big files if they changed. We copied those project files into the school repository.
+
+When running this, give the server time to load up. Takes about 10 seconds. Sometimes there might be a client error on startup. If that
+happens try reloading.
+
+There also is sometimes a memory limit problem. It showed up on one of our computers. If that happens please let us know. It was fixed by setting a higher
+memory limit in the JVM opetions but we don't know how to set options for the distributed version.
+
+The networking code needs a lot of work. It can be jerky when there is significant lag.

@@ -1,4 +1,9 @@
 /*
+ * The Init terrain and init materials functions were both taken from the JME example code
+ * and modified. The rest of the code is almost entirely written from scratch.
+ */
+
+/*
  * Copyright (c) 2009-2010 jMonkeyEngine
  * All rights reserved.
  *
@@ -39,13 +44,14 @@ import mygame.messages.InputMessages;
 import mygame.messages.CharPositionMessage;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
+import com.jme3.bounding.BoundingVolume;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.RigidBodyControl;
+import com.jme3.collision.CollisionResults;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.FastMath;
-import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.network.connection.Client;
 import com.jme3.network.connection.Server;
@@ -63,11 +69,13 @@ import com.jme3.terrain.heightmap.AbstractHeightMap;
 import com.jme3.terrain.heightmap.ImageBasedHeightMap;
 import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.WrapMode;
+import com.jme3.util.SkyFactory;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import jme3tools.converters.ImageToAwt;
 import mygame.messages.CharCreationMessage;
 import mygame.messages.CharDestructionMessage;
@@ -95,7 +103,6 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     Material stone_mat;
     Material floor_mat;
     private RigidBodyControl terrain_phy;
-//    boolean left = false, right = false, up = false, down = false;
     float airTime = 0;
 
     Server server;
@@ -103,7 +110,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     public static void main(String[] args) {
         BladeServer app = new BladeServer();
-    //    app.start();
+        //app.start();
         app.start(JmeContext.Type.Headless);
     }
 
@@ -126,11 +133,12 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         server.addConnectionListener(this);
         server.addMessageListener(this,CharCreationMessage.class,CharDestructionMessage.class,CharPositionMessage.class);
 
-        
-
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
+
         stateManager.attach(bulletAppState);
+        rootNode.attachChild(SkyFactory.createSky(
+        assetManager, "Textures/Skysphere.jpg", true));
         initMaterials();
         initTerrain();
 
@@ -143,11 +151,69 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         rootNode.addLight(sun2);
 
         flyCam.setEnabled(true);
+        this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
+
+        /*
+        PhysicsCollisionGroupListener coll = new PhysicsCollisionGroupListener() {
+
+            public boolean collide(PhysicsCollisionObject nodeA, PhysicsCollisionObject nodeB) {
+                System.out.println("COLLISION?");
+                return false;
+            }
+            */
+            /*
+            public void collision(PhysicsCollisionEvent event) {
+            String name1 = event.getNodeA().getName();
+            String name2 = event.getNodeB().getName();
+
+            //System.out.println(name1 + " " + name2);
+
+            if (event.getNodeA().getControl(RigidBodyControl.class) != null &&
+            event.getNodeB().getControl(RigidBodyControl.class) != null &&
+            event.getNodeA().getControl(RigidBodyControl.class).getCollisionGroup() == PhysicsCollisionObject.COLLISION_GROUP_02 &&
+            event.getNodeB().getControl(RigidBodyControl.class).getCollisionGroup() == PhysicsCollisionObject.COLLISION_GROUP_02) {
+            System.out.println("Rigid Collision!");
+            }
+             *
+             */
+            /*
+            if (Long.parseLong(name1) == )
+
+            GhostControl gControl = modelMap.get(playerID).getControl(GhostControl.class);
+            if (gControl.getOverlappingCount() > 2) {
+            System.out.println("GHOST COLLISION: " + gControl.getOverlappingCount());
+            }
+             *
+             */
+        //};
+
+        //bulletAppState.getPhysicsSpace().addCollisionGroupListener(coll, PhysicsCollisionObject.COLLISION_GROUP_02);
     }
 
     @Override
     public void simpleUpdate(float tpf){
+        
         updateCharacters(tpf);
+    }
+    
+    private void handleCollisions(Long playerID) {
+
+        CollisionResults results = new CollisionResults();
+        Node player = modelMap.get(playerID);
+        //Node otherPlayer = null;
+        for (Map.Entry<Long, Node> playerEntry : modelMap.entrySet()) {
+            if (playerEntry.getKey() != playerID) {
+                long pID = playerEntry.getKey();
+
+                BoundingVolume bv = modelMap.get(pID).getWorldBound();
+                //otherPlayer = playerEntry.getValue();
+                player.collideWith(bv, results);
+
+                if (results.size() > 0) {
+                    System.out.println("Server: COLLISION DETECTED");
+                }
+            }
+        }
     }
 
     private long timeOfLastSync=0;
@@ -156,23 +222,20 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
         for(Iterator<Long> playerIterator=playerSet.iterator(); playerIterator.hasNext();){
             long playerID = playerIterator.next();
-            Vector3f upperArmAngles=upperArmAnglesMap.get(playerID);
+            Vector3f upperArmAngles = upperArmAnglesMap.get(playerID);
             upperArmAnglesMap.put(playerID, CharMovement.extrapolateUpperArmAngles(upperArmAngles,
                     upperArmVelsMap.get(playerID), tpf));
             elbowWristAngleMap.put(playerID, CharMovement.extrapolateLowerArmAngles(elbowWristAngleMap.get(playerID),
             elbowWristVelMap.get(playerID), tpf));
             charAngleMap.put(playerID, CharMovement.extrapolateCharTurn(charAngleMap.get(playerID),
                     charTurnVelMap.get(playerID), tpf));
-
+            
             CharacterControl control=modelMap.get(playerID).getControl(CharacterControl.class);
             float xDir,zDir;
             zDir=FastMath.cos(charAngleMap.get(playerID));
             xDir=FastMath.sin(charAngleMap.get(playerID));
             Vector3f viewDirection=new Vector3f(xDir,0,zDir);
             control.setViewDirection(viewDirection);
-
-      //      Vector3f walkDirection=new Vector3f(
-
 
             Vector3f forward,up,left;
             float xVel,zVel;
@@ -183,16 +246,11 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             left=up.cross(forward);
 
             control.setWalkDirection(left.mult(xVel).add(forward.mult(zVel)));
-    //        System.out.println("char position is "+charPositionMap.get(playerID));
- //           float prevCharPosY=charPositionMap.get(playerID).y;
             charPositionMap.get(playerID).set(modelMap.get(playerID).getLocalTranslation());
-  //          float nextCharPosY=charPositionMap.get(playerID).y;
-            
- //           float charPosYVel=(nextCharPosY-prevCharPosY)/tpf;
-   //         charVelocityMap.get(playerID).y=charPosYVel;
 
             CharMovement.setUpperArmTransform(upperArmAnglesMap.get(playerID), modelMap.get(playerID));
             CharMovement.setLowerArmTransform(elbowWristAngleMap.get(playerID), modelMap.get(playerID));
+            handleCollisions(playerID);
         }
         
         long currentTime = System.currentTimeMillis();
@@ -217,10 +275,11 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     }
 
     public void initTerrain() {
+        
         mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/Terrain.j3md");
 
         /** 1.1) Add ALPHA map (for red-blue-green coded splat textures) */
-        mat_terrain.setTexture("m_Alpha", assetManager.loadTexture("Textures/alpha.png"));
+        mat_terrain.setTexture("m_Alpha", assetManager.loadTexture("Textures/alpha1.1.png"));
 
         /** 1.2) Add GRASS texture into the red layer (m_Tex1). */
         Texture grass = assetManager.loadTexture("Textures/grass.jpg");
@@ -242,7 +301,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
         /** 2. Create the height map */
         AbstractHeightMap heightmap = null;
-        Texture heightMapImage = assetManager.loadTexture("Textures/grayscale.png");
+        Texture heightMapImage = assetManager.loadTexture("Textures/flatland.png");
         heightmap = new ImageBasedHeightMap(
                 ImageToAwt.convert(heightMapImage.getImage(), false, true, 0));
         heightmap.load();
@@ -262,6 +321,10 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         terrain.setLocalScale(2f, 1f, 2f);
         rootNode.attachChild(terrain);
 
+        /** Add in houses **/
+        Node block = House.createHouse("Models/Main.mesh.j3o", assetManager, bulletAppState, true);
+        rootNode.attachChild(block);
+        
         /** 5. The LOD (level of detail) depends on were the camera is: */
         List<Camera> cameras = new ArrayList<Camera>();
         cameras.add(getCamera());
@@ -269,7 +332,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         terrain_phy = new RigidBodyControl(0.0f);
         terrain.addControl(terrain_phy);
         bulletAppState.getPhysicsSpace().add(terrain_phy);
-
+        
 
     }
 
@@ -327,16 +390,16 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                 elbowWristVelMap.put(playerID, 0f);
             } else if (message instanceof InputMessages.MoveCharBackword) {
                 System.out.println("Move foreward");
-                charVelocityMap.get(playerID).z=-0.1f;
+                charVelocityMap.get(playerID).z=-CharMovement.charBackwordSpeed;
             } else if (message instanceof InputMessages.MoveCharForward) {
                 System.out.println("Move backword");
-                charVelocityMap.get(playerID).z=0.1f;
+                charVelocityMap.get(playerID).z=CharMovement.charForwardSpeed;
             } else if (message instanceof InputMessages.MoveCharLeft) {
                 System.out.println("Move left");
-                charVelocityMap.get(playerID).x=0.1f;
+                charVelocityMap.get(playerID).x=CharMovement.charStrafeSpeed;
             } else if (message instanceof InputMessages.MoveCharRight) {
                 System.out.println("Move right");
-                charVelocityMap.get(playerID).x=-0.1f;
+                charVelocityMap.get(playerID).x=-CharMovement.charStrafeSpeed;
             } else if (message instanceof InputMessages.TurnCharLeft) {
                 charTurnVelMap.put(playerID, 1f);
             } else if (message instanceof InputMessages.TurnCharRight) {
@@ -371,8 +434,24 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     public void clientConnected(Client client) {
         try {
             long playerID=currentPlayerID++;
+<<<<<<< HEAD:src/mygame/BladeServer.java
             Node model = Character.createCharacter("Models/Fighter.mesh.j3o", assetManager, bulletAppState,true);
+=======
+            Node model = Character.createCharacter("Models/FighterRight.mesh.j3o", assetManager, bulletAppState,true, playerID);
+            /*
+            WireBox wBox = new WireBox();
+            wBox.fromBoundingBox(new BoundingBox(Vector3f.ZERO, 0.5f, 0.5f, 0.5f));
+            Geometry geom1 = new Geometry("WireBox", wBox);
+            Material m1 = new Material(assetManager, "Common/MatDefs/Misc/SolidColor.j3md");
+            m1.setColor("Color", ColorRGBA.Blue);
+            geom1.setMaterial(m1);
+            model.attachChild(geom1);
+             *
+             */
+           
+>>>>>>> 7a17f8dcf9b43e6eedfee88271f7e73e07089c52:src/mygame/BladeServer.java
             rootNode.attachChild(model);
+            //rootNode.attachChild(geom1);
             modelMap.put(playerID, model);
             upperArmAnglesMap.put(playerID, new Vector3f());
             upperArmVelsMap.put(playerID, new Vector3f());
