@@ -434,22 +434,9 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     public void clientConnected(Client client) {
         try {
             long playerID=currentPlayerID++;
-<<<<<<< HEAD:src/mygame/BladeServer.java
-            Node model = Character.createCharacter("Models/Fighter.mesh.j3o", assetManager, bulletAppState,true);
-=======
-            Node model = Character.createCharacter("Models/FighterRight.mesh.j3o", assetManager, bulletAppState,true, playerID);
-            /*
-            WireBox wBox = new WireBox();
-            wBox.fromBoundingBox(new BoundingBox(Vector3f.ZERO, 0.5f, 0.5f, 0.5f));
-            Geometry geom1 = new Geometry("WireBox", wBox);
-            Material m1 = new Material(assetManager, "Common/MatDefs/Misc/SolidColor.j3md");
-            m1.setColor("Color", ColorRGBA.Blue);
-            geom1.setMaterial(m1);
-            model.attachChild(geom1);
-             *
-             */
-           
->>>>>>> 7a17f8dcf9b43e6eedfee88271f7e73e07089c52:src/mygame/BladeServer.java
+
+            Node model = Character.createCharacter("Models/FighterRight.mesh.xml", assetManager, bulletAppState,true, playerID);
+
             rootNode.attachChild(model);
             //rootNode.attachChild(geom1);
             modelMap.put(playerID, model);
