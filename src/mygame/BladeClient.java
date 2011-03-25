@@ -45,6 +45,7 @@ import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.bounding.BoundingVolume;
 import com.jme3.bullet.BulletAppState;
+import com.jme3.bullet.collision.shapes.HeightfieldCollisionShape;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.collision.CollisionResults;
@@ -142,7 +143,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         bulletAppState = new BulletAppState();
         stateManager.attach(bulletAppState);
         rootNode.attachChild(SkyFactory.createSky(
-        assetManager, "Textures/Skysphere.jpg", true));
+            assetManager, "Textures/Skysphere.jpg", true));
         initMaterials();
         initTerrain();
         
@@ -288,7 +289,8 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     }
 
     public void initTerrain() {
-        
+
+
         mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/Terrain.j3md");
 
         /** 1.1) Add ALPHA map (for red-blue-green coded splat textures) */
@@ -321,13 +323,15 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
         /** 3. We have prepared material and heightmap. Now we create the actual terrain:
          * 3.1) We create a TerrainQuad and name it "my terrain".
-         * 3.2) A good value for terrain tiles is 64x64 -- so we supply 64+1=65.
+         * 3.2) A good value for ter98.247.191.67rain tiles is 64x64 -- so we supply 64+1=65.
          * 3.3) We prepared a heightmap of size 512x512 -- so we supply 512+1=513.
          * 3.4) As LOD step scale we supply Vector3f(1,1,1).
          * 3.5) At last, we supply the prepared heightmap itself.
          */
         terrain = new TerrainQuad("my terrain", 65, 1025, heightmap.getHeightMap());
+        HeightfieldCollisionShape sceneShape = new HeightfieldCollisionShape(heightmap.getHeightMap());
 
+        
         /** 4. We give the terrain its material, position & scale it, and attach it. */
         terrain.setMaterial(mat_terrain);
         terrain.setLocalTranslation(0, -100, 0);
@@ -336,12 +340,12 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         /** Add in houses **/
         Node block = House.createHouse("Models/Main.mesh.xml", assetManager, bulletAppState, true);
         rootNode.attachChild(block);
-        
 
         /** 5. The LOD (level of detail) depends on were the camera is: */
         List<Camera> cameras = new ArrayList<Camera>();
         cameras.add(getCamera());
         TerrainLodControl control = new TerrainLodControl(terrain, cameras);
+        
         terrain_phy = new RigidBodyControl(0.0f);
         terrain.addControl(terrain_phy);
         bulletAppState.getPhysicsSpace().add(terrain_phy);

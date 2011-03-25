@@ -46,6 +46,7 @@ import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.bounding.BoundingVolume;
 import com.jme3.bullet.BulletAppState;
+import com.jme3.bullet.collision.shapes.HeightfieldCollisionShape;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.collision.CollisionResults;
@@ -138,7 +139,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
         stateManager.attach(bulletAppState);
         rootNode.attachChild(SkyFactory.createSky(
-        assetManager, "Textures/Skysphere.jpg", true));
+            assetManager, "Textures/Skysphere.jpg", true));
         initMaterials();
         initTerrain();
 
@@ -277,7 +278,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     public void initTerrain() {
         
         mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/Terrain.j3md");
-
+        
         /** 1.1) Add ALPHA map (for red-blue-green coded splat textures) */
         mat_terrain.setTexture("m_Alpha", assetManager.loadTexture("Textures/alpha1.1.png"));
 
@@ -298,7 +299,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         rock.setWrap(WrapMode.Repeat);
         mat_terrain.setTexture("m_Tex3", rock);
         mat_terrain.setFloat("m_Tex3Scale", 128f);
-
+       
         /** 2. Create the height map */
         AbstractHeightMap heightmap = null;
         Texture heightMapImage = assetManager.loadTexture("Textures/flatland.png");
@@ -314,6 +315,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
          * 3.5) At last, we supply the prepared heightmap itself.
          */
         terrain = new TerrainQuad("my terrain", 65, 513, heightmap.getHeightMap());
+        HeightfieldCollisionShape sceneShape = new HeightfieldCollisionShape(heightmap.getHeightMap());
 
         /** 4. We give the terrain its material, position & scale it, and attach it. */
         terrain.setMaterial(mat_terrain);
