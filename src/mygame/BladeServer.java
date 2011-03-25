@@ -71,7 +71,7 @@ import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.WrapMode;
 import com.jme3.util.SkyFactory;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -82,17 +82,17 @@ import mygame.messages.CharDestructionMessage;
 import mygame.messages.HasID;
 
 public class BladeServer extends SimpleApplication implements MessageListener,ConnectionListener{
-    HashMap<Long,Node> modelMap=new HashMap();
-    HashMap<Long,Vector3f> upperArmAnglesMap=new HashMap();
-    HashMap<Long,Vector3f> upperArmVelsMap=new HashMap();
-    HashMap<Long,Float> elbowWristAngleMap=new HashMap();
-    HashMap<Long,Float> elbowWristVelMap=new HashMap();
+    ConcurrentHashMap<Long,Node> modelMap=new ConcurrentHashMap();
+    ConcurrentHashMap<Long,Vector3f> upperArmAnglesMap=new ConcurrentHashMap();
+    ConcurrentHashMap<Long,Vector3f> upperArmVelsMap=new ConcurrentHashMap();
+    ConcurrentHashMap<Long,Float> elbowWristAngleMap=new ConcurrentHashMap();
+    ConcurrentHashMap<Long,Float> elbowWristVelMap=new ConcurrentHashMap();
     HashSet<Long> playerSet=new HashSet();
-    HashMap<Long,Client> clientMap=new HashMap();
-    HashMap<Long,Vector3f> charPositionMap=new HashMap();
-    HashMap<Long,Vector3f> charVelocityMap=new HashMap();
-    HashMap<Long,Float> charAngleMap=new HashMap();
-    HashMap<Long,Float> charTurnVelMap=new HashMap();
+    ConcurrentHashMap<Long,Client> clientMap=new ConcurrentHashMap();
+    ConcurrentHashMap<Long,Vector3f> charPositionMap=new ConcurrentHashMap();
+    ConcurrentHashMap<Long,Vector3f> charVelocityMap=new ConcurrentHashMap();
+    ConcurrentHashMap<Long,Float> charAngleMap=new ConcurrentHashMap();
+    ConcurrentHashMap<Long,Float> charTurnVelMap=new ConcurrentHashMap();
 
     private long currentPlayerID=0;
 

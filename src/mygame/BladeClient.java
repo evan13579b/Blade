@@ -77,7 +77,7 @@ import com.jme3.texture.Texture.WrapMode;
 import com.jme3.util.SkyFactory;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -96,17 +96,17 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
     private ChaseCamera chaseCam;
     private Node model;
-    HashMap<Long, Node> modelMap = new HashMap();
-    HashMap<Long, Vector3f> upperArmAnglesMap = new HashMap();
-    HashMap<Long, Vector3f> upperArmVelsMap = new HashMap();
-    HashMap<Long, Float> elbowWristAngleMap = new HashMap();
-    HashMap<Long, Float> elbowWristVelMap = new HashMap();
+    ConcurrentHashMap<Long, Node> modelMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, Vector3f> upperArmAnglesMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, Vector3f> upperArmVelsMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, Float> elbowWristAngleMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, Float> elbowWristVelMap = new ConcurrentHashMap();
     HashSet<Long> playerSet = new HashSet();
-    HashMap<Long, Vector3f> charPositionMap = new HashMap();
-    HashMap<Long, Vector3f> charVelocityMap = new HashMap();
-    HashMap<Long, Float> charAngleMap = new HashMap();
-    HashMap<Long, Float> charTurnVelMap = new HashMap();
-    HashMap<Long, AnimChannel> animChannelMap = new HashMap();
+    ConcurrentHashMap<Long, Vector3f> charPositionMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, Vector3f> charVelocityMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, Float> charAngleMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, Float> charTurnVelMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, AnimChannel> animChannelMap = new ConcurrentHashMap();
 
     
     private BulletAppState bulletAppState;
@@ -417,7 +417,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
     public void onJoyButtonEvent(JoyButtonEvent evt) {
     }
-    private final int eventsPerPacket = 5; // how many events should happen before next packet is sent
+    private final int eventsPerPacket = 10; // how many events should happen before next packet is sent
     private final long mouseMovementTimeout = 100; // how long until we propose to send a StopMouseMovement message
     private long timeOfLastMouseMotion = 0; // how long since last movement
     private int currentMouseEvents = 0;
