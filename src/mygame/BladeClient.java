@@ -43,12 +43,12 @@ import mygame.messages.InputMessages;
 import mygame.messages.CharPositionMessage;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
-import com.jme3.bounding.BoundingVolume;
 import com.jme3.bullet.BulletAppState;
+import com.jme3.bullet.collision.PhysicsCollisionGroupListener;
 import com.jme3.bullet.collision.shapes.HeightfieldCollisionShape;
+import com.jme3.bullet.collision.PhysicsCollisionObject;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.RigidBodyControl;
-import com.jme3.collision.CollisionResults;
 import com.jme3.input.ChaseCamera;
 import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
@@ -178,7 +178,17 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
 
         this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
-        
+
+        PhysicsCollisionGroupListener gListener = new PhysicsCollisionGroupListener() {
+
+            public boolean collide(PhysicsCollisionObject nodeA, PhysicsCollisionObject nodeB) {
+                System.out.println("GROUP COLLISION.");
+                return false;
+            }
+        };
+
+        this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().addCollisionGroupListener(gListener, PhysicsCollisionObject.COLLISION_GROUP_02);
+       
     }
     private boolean mouseCurrentlyStopped = true;
 
@@ -202,7 +212,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         rootNode.updateGeometricState();
     }
 
-    
+    /*
     private void handleCollisions(Long playerID) {
 
         CollisionResults results = new CollisionResults();
@@ -223,6 +233,8 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             }
         }
     }
+     *
+     */
     
     public void characterUpdate(float tpf) {
         for (Iterator<Long> playerIterator = playerSet.iterator(); playerIterator.hasNext();) {
@@ -262,7 +274,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             cam.setLocation(modelMap.get(nextPlayerID).getLocalTranslation().add(new Vector3f(0,4,0)).subtract(viewDirection.mult(8)));
 
             control.setWalkDirection(left.mult(xVel).add(forward.mult(zVel)));
-            handleCollisions(nextPlayerID);
+            //handleCollisions(nextPlayerID);
         }
     }
 

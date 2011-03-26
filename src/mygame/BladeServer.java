@@ -46,6 +46,8 @@ import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.bounding.BoundingVolume;
 import com.jme3.bullet.BulletAppState;
+import com.jme3.bullet.collision.PhysicsCollisionGroupListener;
+import com.jme3.bullet.collision.PhysicsCollisionObject;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.collision.CollisionResults;
@@ -155,6 +157,16 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
         flyCam.setEnabled(true);
         this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
+
+        PhysicsCollisionGroupListener gListener = new PhysicsCollisionGroupListener() {
+
+            public boolean collide(PhysicsCollisionObject nodeA, PhysicsCollisionObject nodeB) {
+                System.out.println("GROUP COLLISION.");
+                return false;
+            }
+        };
+
+        this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().addCollisionGroupListener(gListener, PhysicsCollisionObject.COLLISION_GROUP_02);
 
     }
 
