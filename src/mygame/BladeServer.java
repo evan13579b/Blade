@@ -288,13 +288,13 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         rootNode.attachChild(terrain);
 
         //Node block = House.createHouse("Models/Main.mesh.j3o", assetManager, bulletAppState, true);
-        Material block_mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+       /* Material block_mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         Geometry block = new Geometry("cannon ball", new Sphere(128, 128, 0.4f, true, false));
         block.setMaterial(block_mat);
         basic_phy = new RigidBodyControl(0.5f);
         block.addControl(basic_phy);
         bulletAppState.getPhysicsSpace().add(basic_phy);
-        rootNode.attachChild(block);
+        rootNode.attachChild(block);*/
 
         
         List<Camera> cameras = new ArrayList<Camera>();
