@@ -271,7 +271,8 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     }
 
     public void initTerrain() {
-        
+
+
         mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/Terrain.j3md");
 
         mat_terrain.setTexture("m_Alpha", assetManager.loadTexture("Textures/alpha1.1.png"));
@@ -298,6 +299,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         heightmap.load();
 
         terrain = new TerrainQuad("my terrain", 65, 1025, heightmap.getHeightMap());
+        HeightfieldCollisionShape sceneShape = new HeightfieldCollisionShape(heightmap.getHeightMap());
 
         terrain.setMaterial(mat_terrain);
         terrain.setLocalTranslation(0, -100, 0);
@@ -305,8 +307,8 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         rootNode.attachChild(terrain);
         Node block = House.createHouse("Models/Main.mesh.j3o", assetManager, bulletAppState, true);
         rootNode.attachChild(block);
-        
 
+        
         terrain_phy = new RigidBodyControl(0.0f);
         terrain.addControl(terrain_phy);
         bulletAppState.getPhysicsSpace().add(terrain_phy);
