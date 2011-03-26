@@ -61,7 +61,9 @@ import com.jme3.network.message.Message;
 import com.jme3.network.serializing.Serializer;
 import com.jme3.network.sync.ServerSyncService;
 import com.jme3.renderer.Camera;
+import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
+import com.jme3.scene.shape.Sphere;
 import com.jme3.system.JmeContext;
 import com.jme3.terrain.geomipmap.TerrainLodControl;
 import com.jme3.terrain.geomipmap.TerrainQuad;
@@ -103,6 +105,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     Material stone_mat;
     Material floor_mat;
     private RigidBodyControl terrain_phy;
+    private RigidBodyControl basic_phy;
     float airTime = 0;
 
     Server server;
@@ -272,8 +275,15 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         terrain.setLocalScale(2f, 1f, 2f);
         rootNode.attachChild(terrain);
 
-        Node block = House.createHouse("Models/Main.mesh.j3o", assetManager, bulletAppState, true);
+        //Node block = House.createHouse("Models/Main.mesh.j3o", assetManager, bulletAppState, true);
+        Material block_mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        Geometry block = new Geometry("cannon ball", new Sphere(128, 128, 0.4f, true, false));
+        block.setMaterial(block_mat);
+        basic_phy = new RigidBodyControl(0.5f);
+        block.addControl(basic_phy);
+        bulletAppState.getPhysicsSpace().add(basic_phy);
         rootNode.attachChild(block);
+
         
         List<Camera> cameras = new ArrayList<Camera>();
         cameras.add(getCamera());

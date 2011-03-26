@@ -45,6 +45,7 @@ import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.bounding.BoundingVolume;
 import com.jme3.bullet.BulletAppState;
+import com.jme3.bullet.collision.shapes.HeightfieldCollisionShape;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.collision.CollisionResults;
@@ -66,9 +67,10 @@ import com.jme3.network.events.ConnectionListener;
 import com.jme3.network.events.MessageListener;
 import com.jme3.network.message.Message;
 import com.jme3.network.serializing.Serializer;
-import com.jme3.renderer.Camera;
+import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
-import com.jme3.terrain.geomipmap.TerrainLodControl;
+import com.jme3.scene.shape.Box;
+import com.jme3.scene.shape.Sphere;
 import com.jme3.terrain.heightmap.AbstractHeightMap;
 import com.jme3.terrain.geomipmap.TerrainQuad;
 import com.jme3.terrain.heightmap.ImageBasedHeightMap;
@@ -76,17 +78,16 @@ import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.WrapMode;
 import com.jme3.util.SkyFactory;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jme3tools.converters.ImageToAwt;
 import mygame.messages.CharCreationMessage;
 import mygame.messages.CharDestructionMessage;
+import com.jme3.bullet.collision.shapes.BoxCollisionShape;
 
 /**
  *
@@ -116,7 +117,11 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     Material stone_mat;
     Material floor_mat;
     private RigidBodyControl terrain_phy;
+    private RigidBodyControl basic_phy;
     CharacterControl character;
+    BoundingVolume ballBound;
+    Geometry block;
+
     Client client;
     boolean clientSet = false;
     private long playerID = 0;
@@ -207,11 +212,14 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 long pID = playerEntry.getKey();
 
                 BoundingVolume bv = modelMap.get(pID).getWorldBound();
-                player.collideWith(bv, results);
-
+                
+                player.collideWith(player, results);
+                
+                //block.collideWith(block, results);
                 if (results.size() > 0) {
                     System.out.println("Client: COLLISION DETECTED");
                 }
+                
             }
         }
     }
@@ -290,18 +298,27 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         heightmap = new ImageBasedHeightMap(
                 ImageToAwt.convert(heightMapImage.getImage(), false, true, 0));
         heightmap.load();
-
         terrain = new TerrainQuad("my terrain", 65, 1025, heightmap.getHeightMap());
-        HeightfieldCollisionShape sceneShape = new HeightfieldCollisionShape(heightmap.getHeightMap());
-
         terrain.setMaterial(mat_terrain);
         terrain.setLocalTranslation(0, -100, 0);
         terrain.setLocalScale(2f, 1f, 2f);
         rootNode.attachChild(terrain);
-        Node block = House.createHouse("Models/Main.mesh.j3o", assetManager, bulletAppState, true);
-        rootNode.attachChild(block);
-
         
+        //Node block = House.createHouse("Models/Main.mesh.j3o", assetManager, bulletAppState, true);
+        Material block_mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        block = new Geometry("cannon ball", new Sphere(128, 128, 4f, true, false));
+        block.setMaterial(block_mat);
+        BoxCollisionShape boxShap = new BoxCollisionShape(new Vector3f(4f,4f,4f));
+        basic_phy = new RigidBodyControl(0.1f);
+        //basic_phy.setGravity(new Vector3f(0,1,0));
+        basic_phy.setCollisionShape(boxShap);
+        block.addControl(basic_phy);
+        bulletAppState.getPhysicsSpace().add(basic_phy);
+        rootNode.attachChild(block);
+        //ballBound = block.getModelBound();
+       // ballBound = block.getWorldBound();
+
+
         terrain_phy = new RigidBodyControl(0.0f);
         terrain.addControl(terrain_phy);
         bulletAppState.getPhysicsSpace().add(terrain_phy);
