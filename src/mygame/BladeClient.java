@@ -43,11 +43,11 @@ import mygame.messages.InputMessages;
 import mygame.messages.CharPositionMessage;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
-import com.jme3.bounding.BoundingVolume;
 import com.jme3.bullet.BulletAppState;
+import com.jme3.bullet.collision.PhysicsCollisionGroupListener;
+import com.jme3.bullet.collision.PhysicsCollisionObject;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.RigidBodyControl;
-import com.jme3.collision.CollisionResults;
 import com.jme3.input.ChaseCamera;
 import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
@@ -66,9 +66,7 @@ import com.jme3.network.events.ConnectionListener;
 import com.jme3.network.events.MessageListener;
 import com.jme3.network.message.Message;
 import com.jme3.network.serializing.Serializer;
-import com.jme3.renderer.Camera;
 import com.jme3.scene.Node;
-import com.jme3.terrain.geomipmap.TerrainLodControl;
 import com.jme3.terrain.heightmap.AbstractHeightMap;
 import com.jme3.terrain.geomipmap.TerrainQuad;
 import com.jme3.terrain.heightmap.ImageBasedHeightMap;
@@ -76,12 +74,9 @@ import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.WrapMode;
 import com.jme3.util.SkyFactory;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jme3tools.converters.ImageToAwt;
@@ -173,7 +168,17 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
 
         this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
-        
+
+        PhysicsCollisionGroupListener gListener = new PhysicsCollisionGroupListener() {
+
+            public boolean collide(PhysicsCollisionObject nodeA, PhysicsCollisionObject nodeB) {
+                System.out.println("GROUP COLLISION.");
+                return false;
+            }
+        };
+
+        this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().addCollisionGroupListener(gListener, PhysicsCollisionObject.COLLISION_GROUP_02);
+       
     }
     private boolean mouseCurrentlyStopped = true;
 
@@ -197,7 +202,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         rootNode.updateGeometricState();
     }
 
-    
+    /*
     private void handleCollisions(Long playerID) {
 
         CollisionResults results = new CollisionResults();
@@ -215,6 +220,8 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             }
         }
     }
+     *
+     */
     
     public void characterUpdate(float tpf) {
         for (Iterator<Long> playerIterator = playerSet.iterator(); playerIterator.hasNext();) {
@@ -254,7 +261,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             cam.setLocation(modelMap.get(nextPlayerID).getLocalTranslation().add(new Vector3f(0,4,0)).subtract(viewDirection.mult(8)));
 
             control.setWalkDirection(left.mult(xVel).add(forward.mult(zVel)));
-            handleCollisions(nextPlayerID);
+            //handleCollisions(nextPlayerID);
         }
     }
 
