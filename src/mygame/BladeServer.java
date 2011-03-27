@@ -74,6 +74,7 @@ import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import jme3tools.converters.ImageToAwt;
@@ -219,10 +220,10 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         long currentTime = System.currentTimeMillis();
         if (currentTime - timeOfLastSync > timeBetweenSyncs) {
             timeOfLastSync = currentTime;
-            for (Iterator<Long> sourcePlayerIterator = playerSet.iterator(); sourcePlayerIterator.hasNext();) {
-                long sourcePlayerID = sourcePlayerIterator.next();
-                for (Iterator<Long> destPlayerIterator = playerSet.iterator(); destPlayerIterator.hasNext();) {
-                    long destPlayerID = destPlayerIterator.next();
+            List<Long> playerList=new LinkedList();
+            playerList.addAll(playerSet);
+            for (Long sourcePlayerID:playerList) {
+                for (Long destPlayerID:playerList) {
                     try {
                        
                         clientMap.get(destPlayerID).send(new CharPositionMessage(upperArmAnglesMap.get(sourcePlayerID), 
@@ -233,7 +234,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     } catch (IOException ex) {
                         Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
                     } catch (NullPointerException ex){
-                        playerSet.remove(destPlayerID); // if the client has disconnected, remove its id
+                        if(playerSet.contains(destPlayerID))
+                            playerSet.remove(destPlayerID); // if the client has disconnected, remove its id
                     }
                 }
             }
