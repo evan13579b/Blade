@@ -28,8 +28,8 @@ public class CharMovement {
     static public final class Constraints{
         static public final float uYRotMax=FastMath.PI-FastMath.QUARTER_PI;
         static public final float uYRotMin=0;
-        static public final float uXRotMax=FastMath.QUARTER_PI;
-        static public final float uXRotMin=-FastMath.QUARTER_PI;
+        static public final float uXRotMax=FastMath.HALF_PI;
+        static public final float uXRotMin=-FastMath.HALF_PI;
         static public final float lRotMax=FastMath.HALF_PI;
         static public final float lRotMin=-FastMath.QUARTER_PI/2;
         static public final float uZRotMax=FastMath.HALF_PI+FastMath.QUARTER_PI;
@@ -57,6 +57,14 @@ public class CharMovement {
         return rotation;
     }
 
+    static private Quaternion wristRotInit=(new Quaternion()).fromAngleAxis(3*FastMath.QUARTER_PI/4, new Vector3f(-1,0,0));
+    static Quaternion createWristTransform(Float elbowWristRotation){
+        Quaternion rotation=new Quaternion();
+        rotation.fromAngles(elbowWristRotation,0,0);
+ //       System.out.println(rotation);
+        return rotation.mult(wristRotInit);
+    }
+
     static void setUpperArmTransform(Vector3f upperArmAngles,Node model){
         Bone upperArm=model.getControl(AnimControl.class).getSkeleton().getBone("UpArmR");
         upperArm.setUserControl(true);
@@ -65,8 +73,11 @@ public class CharMovement {
 
     static void setLowerArmTransform(Float elbowWristRotation,Node model){
         Bone lowerArm=model.getControl(AnimControl.class).getSkeleton().getBone("LowArmR");
+        Bone hand=model.getControl(AnimControl.class).getSkeleton().getBone("HandR");
         lowerArm.setUserControl(true);
-        
+        hand.setUserControl(true);
+
+        hand.setUserTransforms(Vector3f.ZERO, createWristTransform(elbowWristRotation), Vector3f.UNIT_XYZ);
         lowerArm.setUserTransforms(Vector3f.ZERO, createLowerArmTransform(elbowWristRotation), Vector3f.UNIT_XYZ);
     }
 
