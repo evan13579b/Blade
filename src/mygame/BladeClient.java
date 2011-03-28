@@ -48,10 +48,16 @@ import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.bounding.BoundingVolume;
 import com.jme3.bullet.BulletAppState;
+<<<<<<< HEAD:src/mygame/BladeClient.java
 import com.jme3.bullet.collision.PhysicsCollisionGroupListener;
 import com.jme3.bullet.collision.PhysicsCollisionListener;
 import com.jme3.bullet.collision.PhysicsCollisionObject;
+=======
+import com.jme3.bullet.collision.PhysicsCollisionEvent;
+import com.jme3.bullet.collision.PhysicsCollisionListener;
+>>>>>>> 18f1277b0549f77dedce6de8c02ba6b7c7b83568:src/mygame/BladeClient.java
 import com.jme3.bullet.control.CharacterControl;
+import com.jme3.bullet.control.GhostControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.input.ChaseCamera;
 import com.jme3.input.KeyInput;
@@ -73,7 +79,6 @@ import com.jme3.network.message.Message;
 import com.jme3.network.serializing.Serializer;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
-import com.jme3.scene.shape.Sphere;
 import com.jme3.terrain.heightmap.AbstractHeightMap;
 import com.jme3.terrain.geomipmap.TerrainQuad;
 import com.jme3.terrain.heightmap.ImageBasedHeightMap;
@@ -89,8 +94,11 @@ import java.util.logging.Logger;
 import jme3tools.converters.ImageToAwt;
 import mygame.messages.CharCreationMessage;
 import mygame.messages.CharDestructionMessage;
+<<<<<<< HEAD:src/mygame/BladeClient.java
 import com.jme3.bullet.collision.shapes.BoxCollisionShape;
 import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
+=======
+>>>>>>> 18f1277b0549f77dedce6de8c02ba6b7c7b83568:src/mygame/BladeClient.java
 
 /**
  *
@@ -184,6 +192,7 @@ public class BladeClient extends SimpleApplication implements PhysicsCollisionLi
         rootNode.addLight(sun2);
 
         flyCam.setEnabled(false);
+<<<<<<< HEAD:src/mygame/BladeClient.java
         //This is to show Meshes
          this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
          
@@ -191,6 +200,12 @@ public class BladeClient extends SimpleApplication implements PhysicsCollisionLi
          
         /*this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
 
+=======
+
+
+        this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
+        /*
+>>>>>>> 18f1277b0549f77dedce6de8c02ba6b7c7b83568:src/mygame/BladeClient.java
         PhysicsCollisionGroupListener gListener = new PhysicsCollisionGroupListener() {
 
             public boolean collide(PhysicsCollisionObject nodeA, PhysicsCollisionObject nodeB) {
@@ -198,9 +213,31 @@ public class BladeClient extends SimpleApplication implements PhysicsCollisionLi
                 return false;
             }
         };
+         *
+         */
+        PhysicsCollisionListener physListener = new PhysicsCollisionListener() {
 
+            public void collision(PhysicsCollisionEvent event) {
+                
+                if (event.getNodeA().getControl(GhostControl.class) != null
+                && event.getNodeB().getControl(GhostControl.class) != null)
+                System.out.println("Ghost Collided!");
+
+                if (event.getNodeA().getControl(CharacterControl.class) != null
+                        && event.getNodeB().getControl(CharacterControl.class) != null) {
+                    System.out.println("Character Collided!");
+                }
+            }
+        };
+
+<<<<<<< HEAD:src/mygame/BladeClient.java
         this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().addCollisionGroupListener(gListener, PhysicsCollisionObject.COLLISION_GROUP_02);
        */
+=======
+        //this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().addCollisionGroupListener(gListener, PhysicsCollisionObject.COLLISION_GROUP_02);
+        this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().addCollisionListener(physListener);
+        
+>>>>>>> 18f1277b0549f77dedce6de8c02ba6b7c7b83568:src/mygame/BladeClient.java
     }
     private boolean mouseCurrentlyStopped = true;
 
