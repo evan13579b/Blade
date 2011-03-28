@@ -192,12 +192,10 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     @Override
     public void simpleUpdate(float tpf){
-        
         updateCharacters(tpf);
     }
     
     private void handleCollisions(Long playerID) {
-
         CollisionResults results = new CollisionResults();
         Node player = modelMap.get(playerID);
         //Node otherPlayer = null;
@@ -219,7 +217,6 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     private long timeOfLastSync=0;
     private final long timeBetweenSyncs=100;
     public void updateCharacters(float tpf) {
-
         for(Iterator<Long> playerIterator=playerSet.iterator(); playerIterator.hasNext();){
             long playerID = playerIterator.next();
             Vector3f upperArmAngles = upperArmAnglesMap.get(playerID);
@@ -275,7 +272,6 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     }
 
     public void initTerrain() {
-        
         mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/Terrain.j3md");
 
         /** 1.1) Add ALPHA map (for red-blue-green coded splat textures) */
