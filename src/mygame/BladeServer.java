@@ -46,6 +46,8 @@ import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.bounding.BoundingVolume;
 import com.jme3.bullet.BulletAppState;
+import com.jme3.bullet.collision.PhysicsCollisionGroupListener;
+import com.jme3.bullet.collision.PhysicsCollisionObject;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.collision.CollisionResults;
@@ -61,7 +63,9 @@ import com.jme3.network.message.Message;
 import com.jme3.network.serializing.Serializer;
 import com.jme3.network.sync.ServerSyncService;
 import com.jme3.renderer.Camera;
+import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
+import com.jme3.scene.shape.Sphere;
 import com.jme3.system.JmeContext;
 import com.jme3.terrain.geomipmap.TerrainLodControl;
 import com.jme3.terrain.geomipmap.TerrainQuad;
@@ -71,7 +75,7 @@ import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.WrapMode;
 import com.jme3.util.SkyFactory;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -82,17 +86,17 @@ import mygame.messages.CharDestructionMessage;
 import mygame.messages.HasID;
 
 public class BladeServer extends SimpleApplication implements MessageListener,ConnectionListener{
-    HashMap<Long,Node> modelMap=new HashMap();
-    HashMap<Long,Vector3f> upperArmAnglesMap=new HashMap();
-    HashMap<Long,Vector3f> upperArmVelsMap=new HashMap();
-    HashMap<Long,Float> elbowWristAngleMap=new HashMap();
-    HashMap<Long,Float> elbowWristVelMap=new HashMap();
+    ConcurrentHashMap<Long,Node> modelMap=new ConcurrentHashMap();
+    ConcurrentHashMap<Long,Vector3f> upperArmAnglesMap=new ConcurrentHashMap();
+    ConcurrentHashMap<Long,Vector3f> upperArmVelsMap=new ConcurrentHashMap();
+    ConcurrentHashMap<Long,Float> elbowWristAngleMap=new ConcurrentHashMap();
+    ConcurrentHashMap<Long,Float> elbowWristVelMap=new ConcurrentHashMap();
     HashSet<Long> playerSet=new HashSet();
-    HashMap<Long,Client> clientMap=new HashMap();
-    HashMap<Long,Vector3f> charPositionMap=new HashMap();
-    HashMap<Long,Vector3f> charVelocityMap=new HashMap();
-    HashMap<Long,Float> charAngleMap=new HashMap();
-    HashMap<Long,Float> charTurnVelMap=new HashMap();
+    ConcurrentHashMap<Long,Client> clientMap=new ConcurrentHashMap();
+    ConcurrentHashMap<Long,Vector3f> charPositionMap=new ConcurrentHashMap();
+    ConcurrentHashMap<Long,Vector3f> charVelocityMap=new ConcurrentHashMap();
+    ConcurrentHashMap<Long,Float> charAngleMap=new ConcurrentHashMap();
+    ConcurrentHashMap<Long,Float> charTurnVelMap=new ConcurrentHashMap();
 
     private long currentPlayerID=0;
 
@@ -103,6 +107,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     Material stone_mat;
     Material floor_mat;
     private RigidBodyControl terrain_phy;
+    private RigidBodyControl basic_phy;
     float airTime = 0;
 
     Server server;
@@ -153,41 +158,16 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         flyCam.setEnabled(true);
         this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
 
-        /*
-        PhysicsCollisionGroupListener coll = new PhysicsCollisionGroupListener() {
+        PhysicsCollisionGroupListener gListener = new PhysicsCollisionGroupListener() {
 
             public boolean collide(PhysicsCollisionObject nodeA, PhysicsCollisionObject nodeB) {
-                System.out.println("COLLISION?");
+                System.out.println("GROUP COLLISION.");
                 return false;
             }
-            */
-            /*
-            public void collision(PhysicsCollisionEvent event) {
-            String name1 = event.getNodeA().getName();
-            String name2 = event.getNodeB().getName();
+        };
 
-            //System.out.println(name1 + " " + name2);
+        this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().addCollisionGroupListener(gListener, PhysicsCollisionObject.COLLISION_GROUP_02);
 
-            if (event.getNodeA().getControl(RigidBodyControl.class) != null &&
-            event.getNodeB().getControl(RigidBodyControl.class) != null &&
-            event.getNodeA().getControl(RigidBodyControl.class).getCollisionGroup() == PhysicsCollisionObject.COLLISION_GROUP_02 &&
-            event.getNodeB().getControl(RigidBodyControl.class).getCollisionGroup() == PhysicsCollisionObject.COLLISION_GROUP_02) {
-            System.out.println("Rigid Collision!");
-            }
-             *
-             */
-            /*
-            if (Long.parseLong(name1) == )
-
-            GhostControl gControl = modelMap.get(playerID).getControl(GhostControl.class);
-            if (gControl.getOverlappingCount() > 2) {
-            System.out.println("GHOST COLLISION: " + gControl.getOverlappingCount());
-            }
-             *
-             */
-        //};
-
-        //bulletAppState.getPhysicsSpace().addCollisionGroupListener(coll, PhysicsCollisionObject.COLLISION_GROUP_02);
     }
 
     @Override
@@ -198,13 +178,11 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     private void handleCollisions(Long playerID) {
         CollisionResults results = new CollisionResults();
         Node player = modelMap.get(playerID);
-        //Node otherPlayer = null;
         for (Map.Entry<Long, Node> playerEntry : modelMap.entrySet()) {
             if (playerEntry.getKey() != playerID) {
                 long pID = playerEntry.getKey();
 
                 BoundingVolume bv = modelMap.get(pID).getWorldBound();
-                //otherPlayer = playerEntry.getValue();
                 player.collideWith(bv, results);
 
                 if (results.size() > 0) {
@@ -258,6 +236,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                 for (Iterator<Long> destPlayerIterator = playerSet.iterator(); destPlayerIterator.hasNext();) {
                     long destPlayerID = destPlayerIterator.next();
                     try {
+                       
                         clientMap.get(destPlayerID).send(new CharPositionMessage(upperArmAnglesMap.get(sourcePlayerID), 
                                 upperArmVelsMap.get(sourcePlayerID),charPositionMap.get(sourcePlayerID),
                                 charVelocityMap.get(sourcePlayerID),elbowWristAngleMap.get(sourcePlayerID),
@@ -265,6 +244,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                                 charTurnVelMap.get(sourcePlayerID),sourcePlayerID));
                     } catch (IOException ex) {
                         Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
+                    } catch (NullPointerException ex){
+                        playerSet.remove(destPlayerID); // if the client has disconnected, remove its id
                     }
                 }
             }
@@ -274,54 +255,47 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     public void initTerrain() {
         mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/Terrain.j3md");
 
-        /** 1.1) Add ALPHA map (for red-blue-green coded splat textures) */
         mat_terrain.setTexture("m_Alpha", assetManager.loadTexture("Textures/alpha1.1.png"));
 
-        /** 1.2) Add GRASS texture into the red layer (m_Tex1). */
         Texture grass = assetManager.loadTexture("Textures/grass.jpg");
         grass.setWrap(WrapMode.Repeat);
         mat_terrain.setTexture("m_Tex1", grass);
         mat_terrain.setFloat("m_Tex1Scale", 64f);
 
-        /** 1.3) Add DIRT texture into the green layer (m_Tex2) */
         Texture dirt = assetManager.loadTexture("Textures/TiZeta_SmlssWood1.jpg");
         dirt.setWrap(WrapMode.Repeat);
         mat_terrain.setTexture("m_Tex2", dirt);
         mat_terrain.setFloat("m_Tex2Scale", 32f);
 
-        /** 1.4) Add ROAD texture into the blue layer (m_Tex3) */
         Texture rock = assetManager.loadTexture("Textures/TiZeta_cem1.jpg");
         rock.setWrap(WrapMode.Repeat);
         mat_terrain.setTexture("m_Tex3", rock);
         mat_terrain.setFloat("m_Tex3Scale", 128f);
 
-        /** 2. Create the height map */
         AbstractHeightMap heightmap = null;
         Texture heightMapImage = assetManager.loadTexture("Textures/flatland.png");
         heightmap = new ImageBasedHeightMap(
                 ImageToAwt.convert(heightMapImage.getImage(), false, true, 0));
         heightmap.load();
 
-        /** 3. We have prepared material and heightmap. Now we create the actual terrain:
-         * 3.1) We create a TerrainQuad and name it "my terrain".
-         * 3.2) A good value for terrain tiles is 64x64 -- so we supply 64+1=65.
-         * 3.3) We prepared a heightmap of size 512x512 -- so we supply 512+1=513.
-         * 3.4) As LOD step scale we supply Vector3f(1,1,1).
-         * 3.5) At last, we supply the prepared heightmap itself.
-         */
+
         terrain = new TerrainQuad("my terrain", 65, 513, heightmap.getHeightMap());
 
-        /** 4. We give the terrain its material, position & scale it, and attach it. */
         terrain.setMaterial(mat_terrain);
         terrain.setLocalTranslation(0, -100, 0);
         terrain.setLocalScale(2f, 1f, 2f);
         rootNode.attachChild(terrain);
 
-        /** Add in houses **/
-        Node block = House.createHouse("Models/Main.mesh.j3o", assetManager, bulletAppState, true);
-        rootNode.attachChild(block);
+        //Node block = House.createHouse("Models/Main.mesh.j3o", assetManager, bulletAppState, true);
+       /* Material block_mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        Geometry block = new Geometry("cannon ball", new Sphere(128, 128, 0.4f, true, false));
+        block.setMaterial(block_mat);
+        basic_phy = new RigidBodyControl(0.5f);
+        block.addControl(basic_phy);
+        bulletAppState.getPhysicsSpace().add(basic_phy);
+        rootNode.attachChild(block);*/
+
         
-        /** 5. The LOD (level of detail) depends on were the camera is: */
         List<Camera> cameras = new ArrayList<Camera>();
         cameras.add(getCamera());
         TerrainLodControl control = new TerrainLodControl(terrain, cameras);
