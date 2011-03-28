@@ -268,8 +268,10 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             up=new Vector3f(0,1,0);
             left=up.cross(forward);
 
-            cam.setDirection(viewDirection);
-            cam.setLocation(modelMap.get(nextPlayerID).getLocalTranslation().add(new Vector3f(0,4,0)).subtract(viewDirection.mult(8)));
+            if(nextPlayerID==playerID){
+                cam.setDirection(viewDirection);
+                cam.setLocation(modelMap.get(nextPlayerID).getLocalTranslation().add(new Vector3f(0,4,0)).subtract(viewDirection.mult(8)));
+            }
 
             control.setWalkDirection(left.mult(xVel).add(forward.mult(zVel)));
             //handleCollisions(nextPlayerID);

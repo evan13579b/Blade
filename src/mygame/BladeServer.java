@@ -239,6 +239,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                 for (Iterator<Long> destPlayerIterator = playerSet.iterator(); destPlayerIterator.hasNext();) {
                     long destPlayerID = destPlayerIterator.next();
                     try {
+                       
                         clientMap.get(destPlayerID).send(new CharPositionMessage(upperArmAnglesMap.get(sourcePlayerID), 
                                 upperArmVelsMap.get(sourcePlayerID),charPositionMap.get(sourcePlayerID),
                                 charVelocityMap.get(sourcePlayerID),elbowWristAngleMap.get(sourcePlayerID),
@@ -246,6 +247,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                                 charTurnVelMap.get(sourcePlayerID),sourcePlayerID));
                     } catch (IOException ex) {
                         Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
+                    } catch (NullPointerException ex){
+                        playerSet.remove(destPlayerID); // if the client has disconnected, remove its id
                     }
                 }
             }
