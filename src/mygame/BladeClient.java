@@ -45,9 +45,10 @@ import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.bounding.BoundingVolume;
 import com.jme3.bullet.BulletAppState;
-import com.jme3.bullet.collision.PhysicsCollisionGroupListener;
-import com.jme3.bullet.collision.PhysicsCollisionObject;
+import com.jme3.bullet.collision.PhysicsCollisionEvent;
+import com.jme3.bullet.collision.PhysicsCollisionListener;
 import com.jme3.bullet.control.CharacterControl;
+import com.jme3.bullet.control.GhostControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.input.ChaseCamera;
 import com.jme3.input.KeyInput;
@@ -69,7 +70,6 @@ import com.jme3.network.message.Message;
 import com.jme3.network.serializing.Serializer;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
-import com.jme3.scene.shape.Sphere;
 import com.jme3.terrain.heightmap.AbstractHeightMap;
 import com.jme3.terrain.geomipmap.TerrainQuad;
 import com.jme3.terrain.heightmap.ImageBasedHeightMap;
@@ -85,7 +85,6 @@ import java.util.logging.Logger;
 import jme3tools.converters.ImageToAwt;
 import mygame.messages.CharCreationMessage;
 import mygame.messages.CharDestructionMessage;
-import com.jme3.bullet.collision.shapes.BoxCollisionShape;
 
 /**
  *
@@ -176,7 +175,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
 
         this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
-
+        /*
         PhysicsCollisionGroupListener gListener = new PhysicsCollisionGroupListener() {
 
             public boolean collide(PhysicsCollisionObject nodeA, PhysicsCollisionObject nodeB) {
@@ -184,9 +183,26 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 return false;
             }
         };
+         *
+         */
+        PhysicsCollisionListener physListener = new PhysicsCollisionListener() {
 
-        this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().addCollisionGroupListener(gListener, PhysicsCollisionObject.COLLISION_GROUP_02);
-       
+            public void collision(PhysicsCollisionEvent event) {
+                
+                if (event.getNodeA().getControl(GhostControl.class) != null
+                && event.getNodeB().getControl(GhostControl.class) != null)
+                System.out.println("Ghost Collided!");
+
+                if (event.getNodeA().getControl(CharacterControl.class) != null
+                        && event.getNodeB().getControl(CharacterControl.class) != null) {
+                    System.out.println("Character Collided!");
+                }
+            }
+        };
+
+        //this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().addCollisionGroupListener(gListener, PhysicsCollisionObject.COLLISION_GROUP_02);
+        this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().addCollisionListener(physListener);
+        
     }
     private boolean mouseCurrentlyStopped = true;
 
