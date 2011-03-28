@@ -331,8 +331,10 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
         /** 4. We give the terrain its material, position & scale it, and attach it. */
         terrain.setMaterial(mat_terrain);
+        
         terrain.setLocalTranslation(0, -100, 0);
-        terrain.setLocalScale(2f, 1f, 2f);
+        terrain.setLocalScale(1f, 1f, 1f);
+        
         rootNode.attachChild(terrain);
         /** Add in houses **/
         Node block = House.createHouse("Models/Main.mesh.j3o", assetManager, bulletAppState, true);
