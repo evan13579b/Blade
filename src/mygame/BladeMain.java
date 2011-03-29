@@ -30,7 +30,7 @@ public class BladeMain {
             BladeClient.main(args);
             System.out.println("Starting Client");
         }
-        else{
+         else{
             System.out.println("'"+args[0]+"' is not a proper command.");
         }
     }

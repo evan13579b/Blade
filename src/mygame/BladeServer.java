@@ -411,7 +411,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             System.out.println("client connected:" + playerID+","+client);
             playerSet.add(playerID);
             clientMap.put(playerID, client);
-            
+             
         } catch (IOException ex) {
             Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
         }

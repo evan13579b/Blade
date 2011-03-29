@@ -590,6 +590,6 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     }
 
     public void onAnimChange(AnimControl control, AnimChannel channel, String animName) {
-        
+         
     }
 }

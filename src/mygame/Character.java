@@ -54,7 +54,7 @@ public class Character{
              */
             CharacterControl charControl = new CharacterControl(capsule, 0.01f);
 
-            model.addControl(charControl);
+             model.addControl(charControl);
             model.setName(Long.toString(playerID));
 
             //bulletAppState.getPhysicsSpace().add(rigidControl);
