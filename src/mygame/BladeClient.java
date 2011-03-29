@@ -39,15 +39,20 @@ package mygame;
 import com.jme3.animation.AnimChannel;
 import com.jme3.animation.AnimControl;
 import com.jme3.animation.AnimEventListener;
+import com.jme3.bullet.collision.PhysicsCollisionEvent;
+import com.jme3.bullet.collision.shapes.infos.ChildCollisionShape;
+import java.util.List;
 import mygame.messages.InputMessages;
 import mygame.messages.CharPositionMessage;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.bounding.BoundingVolume;
 import com.jme3.bullet.BulletAppState;
+import com.jme3.bullet.collision.PhysicsCollisionGroupListener;
+import com.jme3.bullet.collision.PhysicsCollisionListener;
+import com.jme3.bullet.collision.PhysicsCollisionObject;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.RigidBodyControl;
-import com.jme3.collision.CollisionResults;
 import com.jme3.input.ChaseCamera;
 import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
@@ -66,9 +71,9 @@ import com.jme3.network.events.ConnectionListener;
 import com.jme3.network.events.MessageListener;
 import com.jme3.network.message.Message;
 import com.jme3.network.serializing.Serializer;
-import com.jme3.renderer.Camera;
+import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
-import com.jme3.terrain.geomipmap.TerrainLodControl;
+import com.jme3.scene.shape.Sphere;
 import com.jme3.terrain.heightmap.AbstractHeightMap;
 import com.jme3.terrain.geomipmap.TerrainQuad;
 import com.jme3.terrain.heightmap.ImageBasedHeightMap;
@@ -76,23 +81,24 @@ import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.WrapMode;
 import com.jme3.util.SkyFactory;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jme3tools.converters.ImageToAwt;
 import mygame.messages.CharCreationMessage;
 import mygame.messages.CharDestructionMessage;
+import com.jme3.bullet.collision.shapes.BoxCollisionShape;
+import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
 
 /**
  *
  * @author blah
  */
-public class BladeClient extends SimpleApplication implements MessageListener, RawInputListener, ConnectionListener, AnimEventListener {
+
+
+public class BladeClient extends SimpleApplication implements PhysicsCollisionListener, MessageListener, RawInputListener, ConnectionListener, AnimEventListener {
 
     private ChaseCamera chaseCam;
     private Node model;
@@ -116,7 +122,14 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     Material stone_mat;
     Material floor_mat;
     private RigidBodyControl terrain_phy;
+    private RigidBodyControl basic_phy;
+    private RigidBodyControl body_phy;
     CharacterControl character;
+    CompoundCollisionShape collisionShape;
+    BoundingVolume ballBound;
+    Geometry block;
+    BoxCollisionShape leftShoulder;
+
     Client client;
     boolean clientSet = false;
     private long playerID = 0;
@@ -132,14 +145,16 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         Serializer.registerClass(CharCreationMessage.class);
         Serializer.registerClass(CharDestructionMessage.class);
         InputMessages.registerInputClasses();
-
+        ;
 
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
         stateManager.attach(bulletAppState);
+        bulletAppState.getPhysicsSpace().addCollisionListener(this);
         rootNode.attachChild(SkyFactory.createSky(assetManager, "Textures/Skysphere.jpg", true));
         initMaterials();
         initTerrain();
+       
         
         try {
             client = new Client(BladeMain.serverIP, BladeMain.port, BladeMain.port);
@@ -168,12 +183,24 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         sun2.setDirection(new Vector3f(0.1f, 0.7f, 1.0f));
         rootNode.addLight(sun2);
 
-
         flyCam.setEnabled(false);
+        //This is to show Meshes
+         this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
+         
+         
+         
+        /*this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
 
+        PhysicsCollisionGroupListener gListener = new PhysicsCollisionGroupListener() {
 
-        this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
-        
+            public boolean collide(PhysicsCollisionObject nodeA, PhysicsCollisionObject nodeB) {
+                System.out.println("GROUP COLLISION.");
+                return false;
+            }
+        };
+
+        this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().addCollisionGroupListener(gListener, PhysicsCollisionObject.COLLISION_GROUP_02);
+       */
     }
     private boolean mouseCurrentlyStopped = true;
 
@@ -197,7 +224,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         rootNode.updateGeometricState();
     }
 
-    
+    /*
     private void handleCollisions(Long playerID) {
 
         CollisionResults results = new CollisionResults();
@@ -207,14 +234,19 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 long pID = playerEntry.getKey();
 
                 BoundingVolume bv = modelMap.get(pID).getWorldBound();
-                player.collideWith(bv, results);
-
+                
+                player.collideWith(player, results);
+                
+                //block.collideWith(block, results);
                 if (results.size() > 0) {
                     System.out.println("Client: COLLISION DETECTED");
                 }
+                
             }
         }
     }
+     *
+     */
     
     public void characterUpdate(float tpf) {
         for (Iterator<Long> playerIterator = playerSet.iterator(); playerIterator.hasNext();) {
@@ -256,7 +288,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             }
 
             control.setWalkDirection(left.mult(xVel).add(forward.mult(zVel)));
-            handleCollisions(nextPlayerID);
+            //handleCollisions(nextPlayerID);
         }
     }
 
@@ -266,7 +298,8 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     }
 
     public void initTerrain() {
-        
+
+
         mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/Terrain.j3md");
 
         mat_terrain.setTexture("m_Alpha", assetManager.loadTexture("Textures/alpha1.1.png"));
@@ -291,18 +324,37 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         heightmap = new ImageBasedHeightMap(
                 ImageToAwt.convert(heightMapImage.getImage(), false, true, 0));
         heightmap.load();
-
         terrain = new TerrainQuad("my terrain", 65, 1025, heightmap.getHeightMap());
-
         terrain.setMaterial(mat_terrain);
-        terrain.setLocalTranslation(0, -100, 0);
-        terrain.setLocalScale(2f, 1f, 2f);
-        rootNode.attachChild(terrain);
-        Node block = House.createHouse("Models/Main.mesh.j3o", assetManager, bulletAppState, true);
-        rootNode.attachChild(block);
         
+        terrain.setLocalTranslation(0, -100, 0);
+<<<<<<< HEAD:src/mygame/BladeClient.java
+        terrain.setLocalScale(1f, 1f, 1f);
+        
+=======
+        terrain.setLocalScale(2f, 1f, 2f);
+
+>>>>>>> 384534a1ee69e55357271112fa5003cb47fd87df:src/mygame/BladeClient.java
+        rootNode.attachChild(terrain);
+        //Node block = House.createHouse("Models/Main.mesh.j3o", assetManager, bulletAppState, true);
+        Material block_mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        block = new Geometry("cannon ball", new Sphere(128, 128, 4f, true, false));
+        block.setMaterial(block_mat);
+        //BoxCollisionShape boxShap = new BoxCollisionShape(new Vector3f(4f,4f,4f));
+        basic_phy = new RigidBodyControl(0.1f);
+        //basic_phy.setGravity(new Vector3f(0,1,0));
+        //basic_phy.setCollisionShape(boxShap);
+        block.addControl(basic_phy);
+        block.setLocalTranslation(0,0,50);
+        bulletAppState.getPhysicsSpace().add(basic_phy);
+        rootNode.attachChild(block);
+        //ballBound = block.getModelBound();
+       // ballBound = block.getWorldBound();
+
 
         terrain_phy = new RigidBodyControl(0.0f);
+        terrain_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
+        terrain_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_03);
         terrain.addControl(terrain_phy);
         bulletAppState.getPhysicsSpace().add(terrain_phy);
         
@@ -516,6 +568,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     }
 
     public void onKeyEvent(KeyInputEvent evt) {
+       updateShoulder();
         try {
             int key = evt.getKeyCode();
             if (!evt.isRepeating()) {
@@ -592,4 +645,41 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     public void onAnimChange(AnimControl control, AnimChannel channel, String animName) {
          
     }
+    public void updateShoulder(){
+        //collisionShape.removeChildShape(leftShoulder);
+        //collisionShape.addChildShape(leftShoulder, character.getPhysicsLocation().add(new Vector3f(2f,2f,2f)));
+    }
+    public void createCollisionShape(){
+       /* leftShoulder = new BoxCollisionShape(new Vector3f(2f,2f,2f));
+        body_phy = new RigidBodyControl(0.1f);
+        //modelMap.get(1l).addControl(body_phy);
+        //bulletAppState.getPhysicsSpace().add(body_phy);
+        collisionShape.addChildShape(leftShoulder,Vector3f.ZERO);
+        */
+
+    }
+    //Controling collisions!
+    public void collision(PhysicsCollisionEvent event) {
+        //System.out.println("Collision Detected");
+        Object hold = event.getObjectA();
+        Object hold1 = event.getObjectB();
+        if(hold.equals(terrain_phy) || hold1.equals(terrain_phy)){
+          //  System.out.println("OMG ITS A MIRACLE");
+        }
+        if(hold.equals(Character.controlLArm)){
+          System.out.println("left Arm");
+        }
+        if(hold.equals(Character.controlRArm)){
+            System.out.println("Right ARm");
+          //System.out.println(Character.leftShoulder.toString() + " " + hold3.getCollisionShape().toString());
+          
+        }
+        
+        //System.out.println(hold.hashCode() + " " + hold1.hashCode());
+        //System.out.println("Obj " + event.getObjectA().toString() + " " + event.getObjectB().toString());
+        //System.out.println("node " + event.getNodeA().getName() + " " + event.getNodeB().getName());
+        //System.out.println(event.);
+    }
 }
+
+
