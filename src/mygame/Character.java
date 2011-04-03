@@ -32,26 +32,7 @@ public class Character{
         if (applyPhysics) {
             CapsuleCollisionShape capsule = new CapsuleCollisionShape(1.5f, 6f);
 
-            /*
-            BoundingVolume bv = new BoundingBox(Vector3f.ZERO, 0.25f, 0.25f, 0.25f);
-            model.setModelBound(bv);
-            model.updateModelBound();
-            model.updateGeometricState();
-             *
-             */
-            //CollisionShape box = CollisionShapeFactory.createBoxShape(model);
-            /*
-            CollisionShape box = new BoxCollisionShape(new Vector3f(2.0f, 6.0f, 2.0f));
-
-            RigidBodyControl rigidControl = new RigidBodyControl(box, 0.01f);
-
-            rigidControl.setCollisionGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
-            rigidControl.removeCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_01);
-            rigidControl.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
-            rigidControl.setKinematic(true);
-            model.addControl(rigidControl);
-             *
-             */
+            
             CharacterControl charControl = new CharacterControl(capsule, 0.01f);
 
              model.addControl(charControl);

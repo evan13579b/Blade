@@ -63,9 +63,8 @@ import com.jme3.network.message.Message;
 import com.jme3.network.serializing.Serializer;
 import com.jme3.network.sync.ServerSyncService;
 import com.jme3.renderer.Camera;
-import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
-import com.jme3.scene.shape.Sphere;
+import com.jme3.system.AppSettings;
 import com.jme3.system.JmeContext;
 import com.jme3.terrain.geomipmap.TerrainLodControl;
 import com.jme3.terrain.geomipmap.TerrainQuad;
@@ -116,6 +115,9 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     public static void main(String[] args) {
         BladeServer app = new BladeServer();
+        AppSettings appSettings=new AppSettings(true);
+        appSettings.setFrameRate(60);
+        app.setSettings(appSettings);
         //app.start();
         app.start(JmeContext.Type.Headless);
     }
