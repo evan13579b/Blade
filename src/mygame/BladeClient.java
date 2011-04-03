@@ -133,7 +133,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     public static void main(String[] args) {
         BladeClient app = new BladeClient();
         AppSettings appSettings=new AppSettings(true);
-        appSettings.setFrameRate(60);
+        appSettings.setFrameRate(30);
         app.setSettings(appSettings);
         app.start();
     }
@@ -359,7 +359,15 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     }
 
     public void messageReceived(Message message) {
-        if (message instanceof CharCreationMessage) {
+        if (message instanceof CharDestructionMessage){
+            CharDestructionMessage destroMessage=(CharDestructionMessage)message;
+            long destroyedPlayerID=destroMessage.playerID;
+            System.out.println("my id is "+playerID+", and destroID is "+destroyedPlayerID);
+            playerSet.remove(destroyedPlayerID);
+            rootNode.detachChild(modelMap.get(destroyedPlayerID));
+            modelMap.remove(destroyedPlayerID);
+        }
+        else if (message instanceof CharCreationMessage) {
             System.out.println("Creating character");
             CharCreationMessage creationMessage = (CharCreationMessage) message;
             long newPlayerID = creationMessage.playerID;
