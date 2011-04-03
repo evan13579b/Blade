@@ -63,9 +63,8 @@ import com.jme3.network.message.Message;
 import com.jme3.network.serializing.Serializer;
 import com.jme3.network.sync.ServerSyncService;
 import com.jme3.renderer.Camera;
-import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
-import com.jme3.scene.shape.Sphere;
+import com.jme3.system.AppSettings;
 import com.jme3.system.JmeContext;
 import com.jme3.terrain.geomipmap.TerrainLodControl;
 import com.jme3.terrain.geomipmap.TerrainQuad;
@@ -94,6 +93,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     ConcurrentHashMap<Long,Float> elbowWristVelMap=new ConcurrentHashMap();
     HashSet<Long> playerSet=new HashSet();
     ConcurrentHashMap<Long,Client> clientMap=new ConcurrentHashMap();
+    ConcurrentHashMap<Client,Long> playerIDMap=new ConcurrentHashMap();
     ConcurrentHashMap<Long,Vector3f> charPositionMap=new ConcurrentHashMap();
     ConcurrentHashMap<Long,Vector3f> charVelocityMap=new ConcurrentHashMap();
     ConcurrentHashMap<Long,Float> charAngleMap=new ConcurrentHashMap();
@@ -116,6 +116,9 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     public static void main(String[] args) {
         BladeServer app = new BladeServer();
+        AppSettings appSettings=new AppSettings(true);
+        appSettings.setFrameRate(30);
+        app.setSettings(appSettings);
         //app.start();
         app.start(JmeContext.Type.Headless);
     }
@@ -429,6 +432,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             System.out.println("client connected:" + playerID+","+client);
             playerSet.add(playerID);
             clientMap.put(playerID, client);
+            playerIDMap.put(client, playerID);
              
         } catch (IOException ex) {
             Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
@@ -436,6 +440,21 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     }
 
     public void clientDisconnected(Client client) {
-        
+        System.out.println("client disconnecting is " + client);
+        long playerID = playerIDMap.get(client);
+        List<Long> players = new LinkedList();
+        rootNode.detachChild(modelMap.get(playerID));
+        playerIDMap.remove(client);
+        clientMap.remove(playerID);
+        players.addAll(playerSet);
+        playerSet.remove(playerID);
+        players.remove(playerID);
+        for (Long destID : players) {
+            try {
+                clientMap.get(destID).send(new CharDestructionMessage(playerID));
+            } catch (IOException ex) {
+                Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
     }
 }
