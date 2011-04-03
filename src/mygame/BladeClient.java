@@ -328,13 +328,12 @@ public class BladeClient extends SimpleApplication implements PhysicsCollisionLi
         terrain.setMaterial(mat_terrain);
         
         terrain.setLocalTranslation(0, -100, 0);
-<<<<<<< HEAD:src/mygame/BladeClient.java
-        terrain.setLocalScale(1f, 1f, 1f);
+
+     
         
-=======
+
         terrain.setLocalScale(2f, 1f, 2f);
 
->>>>>>> 384534a1ee69e55357271112fa5003cb47fd87df:src/mygame/BladeClient.java
         rootNode.attachChild(terrain);
         //Node block = House.createHouse("Models/Main.mesh.j3o", assetManager, bulletAppState, true);
         Material block_mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
