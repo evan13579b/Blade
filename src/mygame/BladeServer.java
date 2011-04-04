@@ -72,6 +72,7 @@ import com.jme3.network.sync.ServerSyncService;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.system.AppSettings;
+import com.jme3.system.JmeContext;
 import com.jme3.terrain.geomipmap.TerrainQuad;
 import com.jme3.terrain.heightmap.AbstractHeightMap;
 import com.jme3.terrain.heightmap.ImageBasedHeightMap;
@@ -128,8 +129,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         AppSettings appSettings=new AppSettings(true);
         appSettings.setFrameRate(30);
         app.setSettings(appSettings);
-        app.start();
-        //app.start(JmeContext.Type.Headless);
+        //app.start();
+        app.start(JmeContext.Type.Headless);
     }
 
     @Override

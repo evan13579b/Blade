@@ -327,8 +327,8 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             currentPosition=modelMap.get(nextPlayerID).getLocalTranslation();
             float diffLength=FastMath.sqrt(FastMath.sqr(extrapolatedPosition.x-currentPosition.x)+FastMath.sqr(extrapolatedPosition.z-currentPosition.z));
             CharacterControl control=modelMap.get(nextPlayerID).getControl(CharacterControl.class);
-            if(diffLength>15){
-                  control.setPhysicsLocation(new Vector3f(extrapolatedPosition.x,currentPosition.y+1,extrapolatedPosition.z));
+            if(diffLength>5){
+                  control.setPhysicsLocation(extrapolatedPosition);//new Vector3f(extrapolatedPosition.x,currentPosition.y+1,extrapolatedPosition.z));
             }
 
             float xDir,zDir;
