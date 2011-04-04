@@ -46,9 +46,11 @@ import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.bounding.BoundingVolume;
 import com.jme3.bullet.BulletAppState;
-import com.jme3.bullet.collision.PhysicsCollisionGroupListener;
+import com.jme3.bullet.collision.PhysicsCollisionEvent;
+import com.jme3.bullet.collision.PhysicsCollisionListener;
 import com.jme3.bullet.collision.PhysicsCollisionObject;
 import com.jme3.bullet.control.CharacterControl;
+import com.jme3.bullet.control.GhostControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.collision.CollisionResults;
 import com.jme3.light.DirectionalLight;
@@ -64,6 +66,7 @@ import com.jme3.network.serializing.Serializer;
 import com.jme3.network.sync.ServerSyncService;
 import com.jme3.renderer.Camera;
 import com.jme3.scene.Node;
+import com.jme3.scene.Spatial;
 import com.jme3.system.AppSettings;
 import com.jme3.system.JmeContext;
 import com.jme3.terrain.geomipmap.TerrainLodControl;
@@ -98,6 +101,11 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     ConcurrentHashMap<Long,Vector3f> charVelocityMap=new ConcurrentHashMap();
     ConcurrentHashMap<Long,Float> charAngleMap=new ConcurrentHashMap();
     ConcurrentHashMap<Long,Float> charTurnVelMap=new ConcurrentHashMap();
+
+    ConcurrentHashMap<Long, Vector3f> prevUpperArmAnglesMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, Float> prevElbowWristAngleMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, Vector3f> prevCharPositionMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, Float> prevCharAngleMap = new ConcurrentHashMap();
 
     private long currentPlayerID=0;
 
@@ -162,15 +170,51 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         flyCam.setEnabled(true);
         this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
 
-        PhysicsCollisionGroupListener gListener = new PhysicsCollisionGroupListener() {
+        PhysicsCollisionListener physListener = new PhysicsCollisionListener() {
 
-            public boolean collide(PhysicsCollisionObject nodeA, PhysicsCollisionObject nodeB) {
-                System.out.println("GROUP COLLISION.");
-                return false;
+            public void collision(PhysicsCollisionEvent event) {
+
+                Spatial a = event.getNodeA();
+                Spatial b = event.getNodeB();
+
+                if ((a.getControl(GhostControl.class) != null
+                        && b.getControl(GhostControl.class) != null)
+                        || (a.getControl(CharacterControl.class) != null
+                        && b.getControl(CharacterControl.class) != null)) {
+                    System.out.println("Collision!");
+
+                    long playerID1 = Long.valueOf(a.getName());
+                    long playerID2 = Long.valueOf(b.getName());
+                    upperArmAnglesMap.put(playerID1, prevUpperArmAnglesMap.get(playerID1));
+                    upperArmAnglesMap.put(playerID2, prevUpperArmAnglesMap.get(playerID2));
+
+                    elbowWristAngleMap.put(playerID1, prevElbowWristAngleMap.get(playerID1));
+                    elbowWristAngleMap.put(playerID2, prevElbowWristAngleMap.get(playerID2));
+
+                    charAngleMap.put(playerID1, prevCharAngleMap.get(playerID1));
+                    charAngleMap.put(playerID2, prevCharAngleMap.get(playerID2));
+
+                    charPositionMap.put(playerID1, prevCharPositionMap.get(playerID1));
+                    charPositionMap.put(playerID2, prevCharPositionMap.get(playerID2));
+
+                    CharMovement.setUpperArmTransform(upperArmAnglesMap.get(playerID1), modelMap.get(playerID1));
+                    CharMovement.setLowerArmTransform(elbowWristAngleMap.get(playerID1), modelMap.get(playerID1));
+                    CharMovement.setUpperArmTransform(upperArmAnglesMap.get(playerID2), modelMap.get(playerID2));
+                    CharMovement.setLowerArmTransform(elbowWristAngleMap.get(playerID2), modelMap.get(playerID2));
+
+                    upperArmVelsMap.put(playerID1, Vector3f.ZERO);
+                    upperArmVelsMap.put(playerID2, Vector3f.ZERO);
+                    elbowWristVelMap.put(playerID1, 0f);
+                    elbowWristVelMap.put(playerID2, 0f);
+                    charVelocityMap.put(playerID1, Vector3f.ZERO);
+                    charVelocityMap.put(playerID2, Vector3f.ZERO);
+                    charTurnVelMap.put(playerID1, 0f);
+                    charTurnVelMap.put(playerID2, 0f);
+                }
             }
         };
 
-        this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().addCollisionGroupListener(gListener, PhysicsCollisionObject.COLLISION_GROUP_02);
+        this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().addCollisionListener(physListener);
 
     }
 
@@ -178,7 +222,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     public void simpleUpdate(float tpf){
         updateCharacters(tpf);
     }
-    
+
+    /*
     private void handleCollisions(Long playerID) {
         CollisionResults results = new CollisionResults();
         Node player = modelMap.get(playerID);
@@ -195,6 +240,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             }
         }
     }
+     *
+     */
 
     private long timeOfLastSync=0;
     private final long timeBetweenSyncs=100;
@@ -202,13 +249,18 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         for(Iterator<Long> playerIterator=playerSet.iterator(); playerIterator.hasNext();){
             long playerID = playerIterator.next();
             Vector3f upperArmAngles = upperArmAnglesMap.get(playerID);
+            prevUpperArmAnglesMap.put(playerID, upperArmAnglesMap.get(playerID));
             upperArmAnglesMap.put(playerID, CharMovement.extrapolateUpperArmAngles(upperArmAngles,
                     upperArmVelsMap.get(playerID), tpf));
+
+            prevElbowWristAngleMap.put(playerID, elbowWristAngleMap.get(playerID));
             elbowWristAngleMap.put(playerID, CharMovement.extrapolateLowerArmAngles(elbowWristAngleMap.get(playerID),
-            elbowWristVelMap.get(playerID), tpf));
+                    elbowWristVelMap.get(playerID), tpf));
+
+            prevCharAngleMap.put(playerID, charAngleMap.get(playerID));
             charAngleMap.put(playerID, CharMovement.extrapolateCharTurn(charAngleMap.get(playerID),
                     charTurnVelMap.get(playerID), tpf));
-            
+
             CharacterControl control=modelMap.get(playerID).getControl(CharacterControl.class);
             float xDir,zDir;
             zDir=FastMath.cos(charAngleMap.get(playerID));
@@ -225,11 +277,13 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             left=up.cross(forward);
 
             control.setWalkDirection(left.mult(xVel).add(forward.mult(zVel)));
+            
+            prevCharPositionMap.put(playerID, charPositionMap.get(playerID));
             charPositionMap.get(playerID).set(modelMap.get(playerID).getLocalTranslation());
 
             CharMovement.setUpperArmTransform(upperArmAnglesMap.get(playerID), modelMap.get(playerID));
             CharMovement.setLowerArmTransform(elbowWristAngleMap.get(playerID), modelMap.get(playerID));
-            handleCollisions(playerID);
+            //handleCollisions(playerID);
         }
         
         long currentTime = System.currentTimeMillis();
