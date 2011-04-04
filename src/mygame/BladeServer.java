@@ -49,6 +49,7 @@ import com.jme3.asset.TextureKey;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.collision.PhysicsCollisionEvent;
 import com.jme3.bullet.collision.PhysicsCollisionListener;
+import com.jme3.bullet.collision.PhysicsCollisionObject;
 import com.jme3.bullet.collision.shapes.BoxCollisionShape;
 import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
 import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
@@ -68,19 +69,15 @@ import com.jme3.network.events.MessageListener;
 import com.jme3.network.message.Message;
 import com.jme3.network.serializing.Serializer;
 import com.jme3.network.sync.ServerSyncService;
-import com.jme3.renderer.Camera;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.system.AppSettings;
-import com.jme3.system.JmeContext;
-import com.jme3.terrain.geomipmap.TerrainLodControl;
 import com.jme3.terrain.geomipmap.TerrainQuad;
 import com.jme3.terrain.heightmap.AbstractHeightMap;
 import com.jme3.terrain.heightmap.ImageBasedHeightMap;
 import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.WrapMode;
 import com.jme3.util.SkyFactory;
-import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -131,8 +128,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         AppSettings appSettings=new AppSettings(true);
         appSettings.setFrameRate(30);
         app.setSettings(appSettings);
-        //app.start();
-        app.start(JmeContext.Type.Headless);
+        app.start();
+        //app.start(JmeContext.Type.Headless);
     }
 
     @Override
@@ -340,7 +337,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     }
 
     public void initTerrain() {
-        mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/Terrain.j3md");
+  /*      mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/Terrain.j3md");
 
         mat_terrain.setTexture("m_Alpha", assetManager.loadTexture("Textures/alpha1.1.png"));
 
@@ -371,7 +368,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         terrain.setMaterial(mat_terrain);
         terrain.setLocalTranslation(0, -100, 0);
         terrain.setLocalScale(2f, 1f, 2f);
-        rootNode.attachChild(terrain);
+        
 
         //Node block = House.createHouse("Models/Main.mesh.j3o", assetManager, bulletAppState, true);
        /* Material block_mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
@@ -380,16 +377,65 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         basic_phy = new RigidBodyControl(0.5f);
         block.addControl(basic_phy);
         bulletAppState.getPhysicsSpace().add(basic_phy);
-        rootNode.attachChild(block);*/
+        rootNode.attachChild(block);
 
         
-        List<Camera> cameras = new ArrayList<Camera>();
-        cameras.add(getCamera());
-        TerrainLodControl control = new TerrainLodControl(terrain, cameras);
-        terrain_phy = new RigidBodyControl(0.0f);
+  //      List<Camera> cameras = new ArrayList<Camera>();
+  //      cameras.add(getCamera());
+  //      TerrainLodControl control = new TerrainLodControl(terrain, cameras);
+        terrain_phy = new RigidBodyControl(CollisionShapeFactory.createMeshShape(terrain), 0);
         terrain.addControl(terrain_phy);
+        rootNode.attachChild(terrain);
         bulletAppState.getPhysicsSpace().add(terrain_phy);
         
+*/
+
+
+        mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/Terrain.j3md");
+
+        mat_terrain.setTexture("m_Alpha", assetManager.loadTexture("Textures/alpha1.1.png"));
+
+        Texture grass = assetManager.loadTexture("Textures/grass.jpg");
+        grass.setWrap(WrapMode.Repeat);
+        mat_terrain.setTexture("m_Tex1", grass);
+        mat_terrain.setFloat("m_Tex1Scale", 64f);
+
+        Texture dirt = assetManager.loadTexture("Textures/TiZeta_SmlssWood1.jpg");
+        dirt.setWrap(WrapMode.Repeat);
+        mat_terrain.setTexture("m_Tex2", dirt);
+        mat_terrain.setFloat("m_Tex2Scale", 32f);
+
+        Texture rock = assetManager.loadTexture("Textures/TiZeta_cem1.jpg");
+        rock.setWrap(WrapMode.Repeat);
+        mat_terrain.setTexture("m_Tex3", rock);
+        mat_terrain.setFloat("m_Tex3Scale", 128f);
+
+        AbstractHeightMap heightmap = null;
+        Texture heightMapImage = assetManager.loadTexture("Textures/flatland.png");
+        heightmap = new ImageBasedHeightMap(
+                ImageToAwt.convert(heightMapImage.getImage(), false, true, 0));
+        heightmap.load();
+        terrain = new TerrainQuad("my terrain", 65, 1025, heightmap.getHeightMap());
+        terrain.setMaterial(mat_terrain);
+
+        terrain.setLocalTranslation(0, -100, 0);
+//<<<<<<< HEAD:src/mygame/BladeClient.java
+ //       terrain.setLocalScale(1f, 1f, 1f);
+
+//
+        terrain.setLocalScale(2f, 2f, 2f);
+
+//>>>>>>> 384534a1ee69e55357271112fa5003cb47fd87df:src/mygame/BladeClient.java
+        rootNode.attachChild(terrain);
+
+
+
+        terrain_phy = new RigidBodyControl(0.0f);
+        terrain_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
+        terrain_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_03);
+        terrain.addControl(terrain_phy);
+        bulletAppState.getPhysicsSpace().add(terrain_phy);
+
 
     }
 
