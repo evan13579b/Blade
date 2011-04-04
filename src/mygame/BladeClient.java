@@ -47,6 +47,7 @@ import com.jme3.bounding.BoundingVolume;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.collision.PhysicsCollisionEvent;
 import com.jme3.bullet.collision.PhysicsCollisionListener;
+import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.GhostControl;
 import com.jme3.bullet.control.RigidBodyControl;
@@ -62,6 +63,7 @@ import com.jme3.input.event.MouseMotionEvent;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.FastMath;
+import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.network.connection.Client;
 import com.jme3.network.events.ConnectionListener;
@@ -92,6 +94,13 @@ import mygame.messages.CharDestructionMessage;
  */
 public class BladeClient extends SimpleApplication implements MessageListener, RawInputListener, ConnectionListener, AnimEventListener {
 
+    //TESTING ITEMS *larry
+    //public CapsuleCollisionShape testSword = new CapsuleCollisionShape(1f,2f);
+    //public GhostControl swordControl;
+
+
+    //END TEST
+    
     private ChaseCamera chaseCam;
     private Node model;
     ConcurrentHashMap<Long, Node> modelMap = new ConcurrentHashMap();
@@ -172,8 +181,9 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
 
         flyCam.setEnabled(false);
-
-
+        //TEST *larry
+        //swordControl = new GhostControl(testSword);
+        //bulletAppState.getPhysicsSpace().add(swordControl);
         this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
         /*
         PhysicsCollisionGroupListener gListener = new PhysicsCollisionGroupListener() {
@@ -197,6 +207,9 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                         && event.getNodeB().getControl(CharacterControl.class) != null) {
                     System.out.println("Character Collided!");
                 }
+                
+                
+                
             }
         };
 
@@ -249,8 +262,11 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     }
      *
      */
-    
+
+ 
     public void characterUpdate(float tpf) {
+        Character.updateSword();
+       // System.out.println(model.getControl(AnimControl.class).getSkeleton().getBone("HandR").getModelSpacePosition());
         for (Iterator<Long> playerIterator = playerSet.iterator(); playerIterator.hasNext();) {
             long nextPlayerID = playerIterator.next();
             upperArmAnglesMap.put(nextPlayerID, CharMovement.extrapolateUpperArmAngles(upperArmAnglesMap.get(nextPlayerID), upperArmVelsMap.get(nextPlayerID), tpf));

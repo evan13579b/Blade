@@ -74,6 +74,7 @@ public class CharMovement {
     static void setLowerArmTransform(Float elbowWristRotation,Node model){
         Bone lowerArm=model.getControl(AnimControl.class).getSkeleton().getBone("LowArmR");
         Bone hand=model.getControl(AnimControl.class).getSkeleton().getBone("HandR");
+        
         lowerArm.setUserControl(true);
         hand.setUserControl(true);
      //   System.out.println(Vector3f.UNIT_XYZ);
