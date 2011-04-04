@@ -20,4 +20,9 @@ public class CharDestructionMessage extends Message{
         super();
         this.playerID=playerID;
     }
+    
+    public CharDestructionMessage(){
+        super();
+        this.playerID=-1;
+    }
 }
