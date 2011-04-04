@@ -63,9 +63,8 @@ import com.jme3.network.message.Message;
 import com.jme3.network.serializing.Serializer;
 import com.jme3.network.sync.ServerSyncService;
 import com.jme3.renderer.Camera;
-import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
-import com.jme3.scene.shape.Sphere;
+import com.jme3.system.AppSettings;
 import com.jme3.system.JmeContext;
 import com.jme3.terrain.geomipmap.TerrainLodControl;
 import com.jme3.terrain.geomipmap.TerrainQuad;
@@ -78,6 +77,7 @@ import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import jme3tools.converters.ImageToAwt;
@@ -93,6 +93,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     ConcurrentHashMap<Long,Float> elbowWristVelMap=new ConcurrentHashMap();
     HashSet<Long> playerSet=new HashSet();
     ConcurrentHashMap<Long,Client> clientMap=new ConcurrentHashMap();
+    ConcurrentHashMap<Client,Long> playerIDMap=new ConcurrentHashMap();
     ConcurrentHashMap<Long,Vector3f> charPositionMap=new ConcurrentHashMap();
     ConcurrentHashMap<Long,Vector3f> charVelocityMap=new ConcurrentHashMap();
     ConcurrentHashMap<Long,Float> charAngleMap=new ConcurrentHashMap();
@@ -115,6 +116,9 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     public static void main(String[] args) {
         BladeServer app = new BladeServer();
+        AppSettings appSettings=new AppSettings(true);
+        appSettings.setFrameRate(30);
+        app.setSettings(appSettings);
         //app.start();
         app.start(JmeContext.Type.Headless);
     }
@@ -172,12 +176,10 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     @Override
     public void simpleUpdate(float tpf){
-        
         updateCharacters(tpf);
     }
     
     private void handleCollisions(Long playerID) {
-
         CollisionResults results = new CollisionResults();
         Node player = modelMap.get(playerID);
         for (Map.Entry<Long, Node> playerEntry : modelMap.entrySet()) {
@@ -197,7 +199,6 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     private long timeOfLastSync=0;
     private final long timeBetweenSyncs=100;
     public void updateCharacters(float tpf) {
-
         for(Iterator<Long> playerIterator=playerSet.iterator(); playerIterator.hasNext();){
             long playerID = playerIterator.next();
             Vector3f upperArmAngles = upperArmAnglesMap.get(playerID);
@@ -234,10 +235,10 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         long currentTime = System.currentTimeMillis();
         if (currentTime - timeOfLastSync > timeBetweenSyncs) {
             timeOfLastSync = currentTime;
-            for (Iterator<Long> sourcePlayerIterator = playerSet.iterator(); sourcePlayerIterator.hasNext();) {
-                long sourcePlayerID = sourcePlayerIterator.next();
-                for (Iterator<Long> destPlayerIterator = playerSet.iterator(); destPlayerIterator.hasNext();) {
-                    long destPlayerID = destPlayerIterator.next();
+            List<Long> playerList=new LinkedList();
+            playerList.addAll(playerSet);
+            for (Long sourcePlayerID:playerList) {
+                for (Long destPlayerID:playerList) {
                     try {
                        
                         clientMap.get(destPlayerID).send(new CharPositionMessage(upperArmAnglesMap.get(sourcePlayerID), 
@@ -248,7 +249,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     } catch (IOException ex) {
                         Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
                     } catch (NullPointerException ex){
-                        playerSet.remove(destPlayerID); // if the client has disconnected, remove its id
+                        if(playerSet.contains(destPlayerID))
+                            playerSet.remove(destPlayerID); // if the client has disconnected, remove its id
                     }
                 }
             }
@@ -256,7 +258,6 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     }
 
     public void initTerrain() {
-        
         mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/Terrain.j3md");
 
         mat_terrain.setTexture("m_Alpha", assetManager.loadTexture("Textures/alpha1.1.png"));
@@ -431,13 +432,29 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             System.out.println("client connected:" + playerID+","+client);
             playerSet.add(playerID);
             clientMap.put(playerID, client);
-            
+            playerIDMap.put(client, playerID);
+             
         } catch (IOException ex) {
             Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
     public void clientDisconnected(Client client) {
-        
+        System.out.println("client disconnecting is " + client);
+        long playerID = playerIDMap.get(client);
+        List<Long> players = new LinkedList();
+        rootNode.detachChild(modelMap.get(playerID));
+        playerIDMap.remove(client);
+        clientMap.remove(playerID);
+        players.addAll(playerSet);
+        playerSet.remove(playerID);
+        players.remove(playerID);
+        for (Long destID : players) {
+            try {
+                clientMap.get(destID).send(new CharDestructionMessage(playerID));
+            } catch (IOException ex) {
+                Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
     }
 }
