@@ -117,6 +117,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     Material floor_mat;
     private RigidBodyControl terrain_phy;
     private RigidBodyControl basic_phy;
+    private boolean updateNow;
     float airTime = 0;
 
     Server server;
@@ -127,8 +128,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         AppSettings appSettings=new AppSettings(true);
         appSettings.setFrameRate(30);
         app.setSettings(appSettings);
-        //app.start();
-        app.start(JmeContext.Type.Headless);
+        app.start();
+        //app.start(JmeContext.Type.Headless);
     }
 
     @Override
@@ -202,20 +203,22 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     CharMovement.setUpperArmTransform(upperArmAnglesMap.get(playerID2), modelMap.get(playerID2));
                     CharMovement.setLowerArmTransform(elbowWristAngleMap.get(playerID2), modelMap.get(playerID2));
 
-                    upperArmVelsMap.put(playerID1, Vector3f.ZERO);
-                    upperArmVelsMap.put(playerID2, Vector3f.ZERO);
-                    elbowWristVelMap.put(playerID1, 0f);
-                    elbowWristVelMap.put(playerID2, 0f);
-                    charVelocityMap.put(playerID1, Vector3f.ZERO);
-                    charVelocityMap.put(playerID2, Vector3f.ZERO);
-                    charTurnVelMap.put(playerID1, 0f);
-                    charTurnVelMap.put(playerID2, 0f);
+                    upperArmVelsMap.put(playerID1, upperArmVelsMap.get(playerID1).mult(-1.0f));
+                    upperArmVelsMap.put(playerID2, upperArmVelsMap.get(playerID2).mult(-1.0f));
+                    elbowWristVelMap.put(playerID1, elbowWristVelMap.get(playerID1)*-1.0f);
+                    elbowWristVelMap.put(playerID2, elbowWristVelMap.get(playerID2)*-1.0f);
+                    charVelocityMap.put(playerID1, charVelocityMap.get(playerID1).mult(-1.0f));
+                    charVelocityMap.put(playerID2, charVelocityMap.get(playerID2).mult(-1.0f));
+                    charTurnVelMap.put(playerID1, charTurnVelMap.get(playerID1)*-1.0f);
+                    charTurnVelMap.put(playerID2, charTurnVelMap.get(playerID2)*-1.0f);
+
+                    updateNow = true;
                 }
             }
         };
 
         this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().addCollisionListener(physListener);
-
+        updateNow = false;
     }
 
     @Override
@@ -287,7 +290,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         }
         
         long currentTime = System.currentTimeMillis();
-        if (currentTime - timeOfLastSync > timeBetweenSyncs) {
+        if ((currentTime - timeOfLastSync > timeBetweenSyncs)|| updateNow) {
             timeOfLastSync = currentTime;
             List<Long> playerList=new LinkedList();
             playerList.addAll(playerSet);
@@ -308,6 +311,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     }
                 }
             }
+            updateNow = false;
         }
     }
 

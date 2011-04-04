@@ -228,14 +228,15 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                     CharMovement.setUpperArmTransform(upperArmAnglesMap.get(playerID2), modelMap.get(playerID2));
                     CharMovement.setLowerArmTransform(elbowWristAngleMap.get(playerID2), modelMap.get(playerID2));
 
-                    upperArmVelsMap.put(playerID1, Vector3f.ZERO);
-                    upperArmVelsMap.put(playerID2, Vector3f.ZERO);
-                    elbowWristVelMap.put(playerID1, 0f);
-                    elbowWristVelMap.put(playerID2, 0f);
-                    charVelocityMap.put(playerID1, Vector3f.ZERO);
-                    charVelocityMap.put(playerID2, Vector3f.ZERO);
-                    charTurnVelMap.put(playerID1, 0f);
-                    charTurnVelMap.put(playerID2, 0f);
+                    upperArmVelsMap.put(playerID1, upperArmVelsMap.get(playerID1).mult(-1.0f));
+                    upperArmVelsMap.put(playerID2, upperArmVelsMap.get(playerID2).mult(-1.0f));
+                    elbowWristVelMap.put(playerID1, elbowWristVelMap.get(playerID1)*-1.0f);
+                    elbowWristVelMap.put(playerID2, elbowWristVelMap.get(playerID2)*-1.0f);
+                    charVelocityMap.put(playerID1, charVelocityMap.get(playerID1).mult(-1.0f));
+                    charVelocityMap.put(playerID2, charVelocityMap.get(playerID2).mult(-1.0f));
+                    charTurnVelMap.put(playerID1, charTurnVelMap.get(playerID1)*-1.0f);
+                    charTurnVelMap.put(playerID2, charTurnVelMap.get(playerID2)*-1.0f);
+                    
                 }
             }
         };
