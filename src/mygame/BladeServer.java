@@ -37,6 +37,8 @@
 
 package mygame;
 
+import com.jme3.animation.AnimControl;
+import com.jme3.animation.Bone;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -44,18 +46,20 @@ import mygame.messages.InputMessages;
 import mygame.messages.CharPositionMessage;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
-import com.jme3.bounding.BoundingVolume;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.collision.PhysicsCollisionEvent;
 import com.jme3.bullet.collision.PhysicsCollisionListener;
-import com.jme3.bullet.collision.PhysicsCollisionObject;
+import com.jme3.bullet.collision.shapes.BoxCollisionShape;
+import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
+import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.GhostControl;
 import com.jme3.bullet.control.RigidBodyControl;
-import com.jme3.collision.CollisionResults;
+import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.FastMath;
+import com.jme3.math.Matrix3f;
 import com.jme3.math.Vector3f;
 import com.jme3.network.connection.Client;
 import com.jme3.network.connection.Server;
@@ -82,7 +86,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import jme3tools.converters.ImageToAwt;
 import mygame.messages.CharCreationMessage;
 import mygame.messages.CharDestructionMessage;
@@ -128,8 +131,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         AppSettings appSettings=new AppSettings(true);
         appSettings.setFrameRate(30);
         app.setSettings(appSettings);
-        app.start();
-        //app.start(JmeContext.Type.Headless);
+        //app.start();
+        app.start(JmeContext.Type.Headless);
     }
 
     @Override
@@ -212,7 +215,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     charTurnVelMap.put(playerID1, charTurnVelMap.get(playerID1)*-1.0f);
                     charTurnVelMap.put(playerID2, charTurnVelMap.get(playerID2)*-1.0f);
 
-                    updateNow = true;
+                    //updateNow = true;
                 }
             }
         };
@@ -287,6 +290,27 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             CharMovement.setUpperArmTransform(upperArmAnglesMap.get(playerID), modelMap.get(playerID));
             CharMovement.setLowerArmTransform(elbowWristAngleMap.get(playerID), modelMap.get(playerID));
             //handleCollisions(playerID);
+
+            // Adjust the sword collision shape in accordance with arm movement.
+            // first, get rotation and position of hand
+            Bone hand = modelMap.get(playerID).getControl(AnimControl.class).getSkeleton().getBone("HandR");
+            Matrix3f rotation = hand.getModelSpaceRotation().toRotationMatrix();
+            Vector3f position = hand.getModelSpacePosition();
+
+            // adjust for difference in position of wrist and middle of sword
+            Vector3f shiftPosition = rotation.mult(new Vector3f(0f, .5f, 2.5f));
+
+            // build new collision shape
+            CompoundCollisionShape cShape = new CompoundCollisionShape();
+            Vector3f boxSize = new Vector3f(.1f, .1f, 2.25f);
+            cShape.addChildShape(new BoxCollisionShape(boxSize), position, rotation);
+            CollisionShapeFactory.shiftCompoundShapeContents(cShape, shiftPosition);
+            cShape.addChildShape(new CapsuleCollisionShape(1.5f, 6f), Vector3f.ZERO);
+            // remove GhostControl from PhysicsSpace, apply change, put in PhysicsSpace
+            GhostControl ghost = modelMap.get(playerID).getControl(GhostControl.class);
+            bulletAppState.getPhysicsSpace().remove(ghost);
+            ghost.setCollisionShape(cShape);
+            bulletAppState.getPhysicsSpace().add(ghost);
         }
         
         long currentTime = System.currentTimeMillis();
@@ -481,6 +505,12 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             charVelocityMap.put(playerID, new Vector3f());
             charAngleMap.put(playerID, 0f);
             charTurnVelMap.put(playerID, 0f);
+
+            prevUpperArmAnglesMap.put(playerID, new Vector3f());
+            prevElbowWristAngleMap.put(playerID, new Float(CharMovement.Constraints.lRotMin));
+            prevCharPositionMap.put(playerID, new Vector3f());
+            prevCharAngleMap.put(playerID, 0f);
+
             client.send(new CharCreationMessage(playerID,true));
             for(Iterator<Long> playerIterator=playerSet.iterator();playerIterator.hasNext();){
                 long destPlayerID=playerIterator.next();
