@@ -64,35 +64,46 @@ public class Character{
 
         if (applyPhysics) {
             CapsuleCollisionShape capsule = new CapsuleCollisionShape(1.5f, 6f);
-            collisionShape1.addChildShape(leftArm, new Vector3f(2f,0,0));
-            collisionShape2.addChildShape(rightArm, new Vector3f(-2f,0,0));
-            collisionShape3.addChildShape(body, new Vector3f(0,0,0));
-            collisionShape4.addChildShape(sword, new Vector3f(-2f,0,2f));
-            collisionShape5.addChildShape(rLeg, new Vector3f(-2f,2f,0f));
-            collisionShape6.addChildShape(lLeg, new Vector3f(2f,2f,0f));
-            collisionShape7.addChildShape(head, new Vector3f(0f,-2f,0f));
+            collisionShape1.addChildShape(leftArm, new Vector3f(3f,0,0));
+            collisionShape2.addChildShape(rightArm, new Vector3f(-3f,0,0));
+            //collisionShape3.addChildShape(body, new Vector3f(0,0,0));
+            //collisionShape4.addChildShape(sword, new Vector3f(-2f,0,2f));
+            //collisionShape5.addChildShape(rLeg, new Vector3f(-2f,2f,0f));
+            //collisionShape6.addChildShape(lLeg, new Vector3f(2f,2f,0f));
+            //collisionShape7.addChildShape(head, new Vector3f(0f,-2f,0f));
             //Mesh mesh = findMesh(model);
-            
+
+
             //CollisionShape gimpact = new GImpactCollisionShape(mesh);
 
             controlLArm = new RigidBodyControl(collisionShape1, 0.01f);
             controlLArm.setKinematic(true);
+            
+            //controlLArm.setEnabled(true);
             model.addControl(controlLArm);
+            
             controlRArm = new RigidBodyControl(collisionShape2, 0.01f);
             controlRArm.setKinematic(true);
+            //controlRArm.setEnabled(true);
             model.addControl(controlRArm);
+
             controlBody = new RigidBodyControl(collisionShape3, 0.01f);
             controlBody.setKinematic(true);
             model.addControl(controlBody);
+
             controlSword = new RigidBodyControl(collisionShape4, 0.01f);
             controlSword.setKinematic(true);
             model.addControl(controlSword);
+
             controlLLeg = new RigidBodyControl(collisionShape5, 0.01f);
             controlLLeg.setKinematic(true);
             model.addControl(controlLLeg);
+
             controlRLeg = new RigidBodyControl(collisionShape6, 0.01f);
             controlRLeg.setKinematic(true);
+           
             model.addControl(controlRLeg);
+
             controlHead = new RigidBodyControl(collisionShape7, 0.01f);
             controlHead.setKinematic(true);
             model.addControl(controlHead);

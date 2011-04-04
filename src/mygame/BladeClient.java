@@ -116,6 +116,7 @@ public class BladeClient extends SimpleApplication implements PhysicsCollisionLi
 
     
     private BulletAppState bulletAppState;
+    
     private TerrainQuad terrain;
     Material mat_terrain;
     Material wall_mat;
@@ -654,6 +655,7 @@ public class BladeClient extends SimpleApplication implements PhysicsCollisionLi
     }
     //Controling collisions!
     public void collision(PhysicsCollisionEvent event) {
+        
         //System.out.println("Collision Detected");
         Object hold = event.getObjectA();
         Object hold1 = event.getObjectB();
@@ -668,7 +670,7 @@ public class BladeClient extends SimpleApplication implements PhysicsCollisionLi
           //System.out.println(Character.leftShoulder.toString() + " " + hold3.getCollisionShape().toString());
           
         }
-        
+        System.out.println(event.getNodeA().toString() + " " + event.getNodeB().toString());
         //System.out.println(hold.hashCode() + " " + hold1.hashCode());
         //System.out.println("Obj " + event.getObjectA().toString() + " " + event.getObjectB().toString());
         //System.out.println("node " + event.getNodeA().getName() + " " + event.getNodeB().getName());
