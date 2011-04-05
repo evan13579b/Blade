@@ -327,8 +327,8 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             currentPosition=modelMap.get(nextPlayerID).getLocalTranslation();
             float diffLength=FastMath.sqrt(FastMath.sqr(extrapolatedPosition.x-currentPosition.x)+FastMath.sqr(extrapolatedPosition.z-currentPosition.z));
             CharacterControl control=modelMap.get(nextPlayerID).getControl(CharacterControl.class);
-            if(diffLength>15){
-                  control.setPhysicsLocation(new Vector3f(extrapolatedPosition.x,currentPosition.y+1,extrapolatedPosition.z));
+            if(diffLength>5){
+                  control.setPhysicsLocation(extrapolatedPosition);//new Vector3f(extrapolatedPosition.x,currentPosition.y+1,extrapolatedPosition.z));
             }
 
             float xDir,zDir;
@@ -501,6 +501,11 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             animChannelMap.put(newPlayerID, modelMap.get(newPlayerID).getControl(AnimControl.class).createChannel());
             animChannelMap.get(newPlayerID).setAnim("stand");
 
+            prevUpperArmAnglesMap.put(newPlayerID, new Vector3f());
+            prevElbowWristAngleMap.put(newPlayerID, new Float(CharMovement.Constraints.lRotMin));
+            prevCharPositionMap.put(newPlayerID, new Vector3f());
+            prevCharAngleMap.put(newPlayerID, 0f);
+            
         } else if (message instanceof CharPositionMessage) {
             if (clientSet) {
 

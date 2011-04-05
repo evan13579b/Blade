@@ -37,6 +37,8 @@
 
 package mygame;
 
+import com.jme3.animation.AnimControl;
+import com.jme3.animation.Bone;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -44,18 +46,21 @@ import mygame.messages.InputMessages;
 import mygame.messages.CharPositionMessage;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
-import com.jme3.bounding.BoundingVolume;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.collision.PhysicsCollisionEvent;
 import com.jme3.bullet.collision.PhysicsCollisionListener;
 import com.jme3.bullet.collision.PhysicsCollisionObject;
+import com.jme3.bullet.collision.shapes.BoxCollisionShape;
+import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
+import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.GhostControl;
 import com.jme3.bullet.control.RigidBodyControl;
-import com.jme3.collision.CollisionResults;
+import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.FastMath;
+import com.jme3.math.Matrix3f;
 import com.jme3.math.Vector3f;
 import com.jme3.network.connection.Client;
 import com.jme3.network.connection.Server;
@@ -64,25 +69,21 @@ import com.jme3.network.events.MessageListener;
 import com.jme3.network.message.Message;
 import com.jme3.network.serializing.Serializer;
 import com.jme3.network.sync.ServerSyncService;
-import com.jme3.renderer.Camera;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.system.AppSettings;
 import com.jme3.system.JmeContext;
-import com.jme3.terrain.geomipmap.TerrainLodControl;
 import com.jme3.terrain.geomipmap.TerrainQuad;
 import com.jme3.terrain.heightmap.AbstractHeightMap;
 import com.jme3.terrain.heightmap.ImageBasedHeightMap;
 import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.WrapMode;
 import com.jme3.util.SkyFactory;
-import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import jme3tools.converters.ImageToAwt;
 import mygame.messages.CharCreationMessage;
 import mygame.messages.CharDestructionMessage;
@@ -128,7 +129,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         AppSettings appSettings=new AppSettings(true);
         appSettings.setFrameRate(30);
         app.setSettings(appSettings);
-      //  app.start();
+        //app.start();
         app.start(JmeContext.Type.Headless);
     }
 
@@ -177,7 +178,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
                 Spatial a = event.getNodeA();
                 Spatial b = event.getNodeB();
-       
+
                 if ((a.getControl(GhostControl.class) != null
                         && b.getControl(GhostControl.class) != null)
                         || (a.getControl(CharacterControl.class) != null
@@ -212,7 +213,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     charTurnVelMap.put(playerID1, charTurnVelMap.get(playerID1)*-1.0f);
                     charTurnVelMap.put(playerID2, charTurnVelMap.get(playerID2)*-1.0f);
 
-                    updateNow = true;
+                    //updateNow = true;
                 }
             }
         };
@@ -287,6 +288,27 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             CharMovement.setUpperArmTransform(upperArmAnglesMap.get(playerID), modelMap.get(playerID));
             CharMovement.setLowerArmTransform(elbowWristAngleMap.get(playerID), modelMap.get(playerID));
             //handleCollisions(playerID);
+
+            // Adjust the sword collision shape in accordance with arm movement.
+            // first, get rotation and position of hand
+            Bone hand = modelMap.get(playerID).getControl(AnimControl.class).getSkeleton().getBone("HandR");
+            Matrix3f rotation = hand.getModelSpaceRotation().toRotationMatrix();
+            Vector3f position = hand.getModelSpacePosition();
+
+            // adjust for difference in position of wrist and middle of sword
+            Vector3f shiftPosition = rotation.mult(new Vector3f(0f, .5f, 2.5f));
+
+            // build new collision shape
+            CompoundCollisionShape cShape = new CompoundCollisionShape();
+            Vector3f boxSize = new Vector3f(.1f, .1f, 2.25f);
+            cShape.addChildShape(new BoxCollisionShape(boxSize), position, rotation);
+            CollisionShapeFactory.shiftCompoundShapeContents(cShape, shiftPosition);
+            cShape.addChildShape(new CapsuleCollisionShape(1.5f, 6f), Vector3f.ZERO);
+            // remove GhostControl from PhysicsSpace, apply change, put in PhysicsSpace
+            GhostControl ghost = modelMap.get(playerID).getControl(GhostControl.class);
+            bulletAppState.getPhysicsSpace().remove(ghost);
+            ghost.setCollisionShape(cShape);
+            bulletAppState.getPhysicsSpace().add(ghost);
         }
         
         long currentTime = System.currentTimeMillis();
@@ -316,7 +338,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     }
 
     public void initTerrain() {
-        mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/Terrain.j3md");
+  /*      mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/Terrain.j3md");
 
         mat_terrain.setTexture("m_Alpha", assetManager.loadTexture("Textures/alpha1.1.png"));
 
@@ -347,7 +369,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         terrain.setMaterial(mat_terrain);
         terrain.setLocalTranslation(0, -100, 0);
         terrain.setLocalScale(2f, 1f, 2f);
-        rootNode.attachChild(terrain);
+        
 
         //Node block = House.createHouse("Models/Main.mesh.j3o", assetManager, bulletAppState, true);
        /* Material block_mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
@@ -356,16 +378,65 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         basic_phy = new RigidBodyControl(0.5f);
         block.addControl(basic_phy);
         bulletAppState.getPhysicsSpace().add(basic_phy);
-        rootNode.attachChild(block);*/
+        rootNode.attachChild(block);
 
         
-        List<Camera> cameras = new ArrayList<Camera>();
-        cameras.add(getCamera());
-        TerrainLodControl control = new TerrainLodControl(terrain, cameras);
-        terrain_phy = new RigidBodyControl(0.0f);
+  //      List<Camera> cameras = new ArrayList<Camera>();
+  //      cameras.add(getCamera());
+  //      TerrainLodControl control = new TerrainLodControl(terrain, cameras);
+        terrain_phy = new RigidBodyControl(CollisionShapeFactory.createMeshShape(terrain), 0);
         terrain.addControl(terrain_phy);
+        rootNode.attachChild(terrain);
         bulletAppState.getPhysicsSpace().add(terrain_phy);
         
+*/
+
+
+        mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/Terrain.j3md");
+
+        mat_terrain.setTexture("m_Alpha", assetManager.loadTexture("Textures/alpha1.1.png"));
+
+        Texture grass = assetManager.loadTexture("Textures/grass.jpg");
+        grass.setWrap(WrapMode.Repeat);
+        mat_terrain.setTexture("m_Tex1", grass);
+        mat_terrain.setFloat("m_Tex1Scale", 64f);
+
+        Texture dirt = assetManager.loadTexture("Textures/TiZeta_SmlssWood1.jpg");
+        dirt.setWrap(WrapMode.Repeat);
+        mat_terrain.setTexture("m_Tex2", dirt);
+        mat_terrain.setFloat("m_Tex2Scale", 32f);
+
+        Texture rock = assetManager.loadTexture("Textures/TiZeta_cem1.jpg");
+        rock.setWrap(WrapMode.Repeat);
+        mat_terrain.setTexture("m_Tex3", rock);
+        mat_terrain.setFloat("m_Tex3Scale", 128f);
+
+        AbstractHeightMap heightmap = null;
+        Texture heightMapImage = assetManager.loadTexture("Textures/flatland.png");
+        heightmap = new ImageBasedHeightMap(
+                ImageToAwt.convert(heightMapImage.getImage(), false, true, 0));
+        heightmap.load();
+        terrain = new TerrainQuad("my terrain", 65, 1025, heightmap.getHeightMap());
+        terrain.setMaterial(mat_terrain);
+
+        terrain.setLocalTranslation(0, -100, 0);
+//<<<<<<< HEAD:src/mygame/BladeClient.java
+ //       terrain.setLocalScale(1f, 1f, 1f);
+
+//
+        terrain.setLocalScale(2f, 2f, 2f);
+
+//>>>>>>> 384534a1ee69e55357271112fa5003cb47fd87df:src/mygame/BladeClient.java
+        rootNode.attachChild(terrain);
+
+
+
+        terrain_phy = new RigidBodyControl(0.0f);
+        terrain_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
+        terrain_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_03);
+        terrain.addControl(terrain_phy);
+        bulletAppState.getPhysicsSpace().add(terrain_phy);
+
 
     }
 
@@ -481,6 +552,12 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             charVelocityMap.put(playerID, new Vector3f());
             charAngleMap.put(playerID, 0f);
             charTurnVelMap.put(playerID, 0f);
+
+            prevUpperArmAnglesMap.put(playerID, new Vector3f());
+            prevElbowWristAngleMap.put(playerID, new Float(CharMovement.Constraints.lRotMin));
+            prevCharPositionMap.put(playerID, new Vector3f());
+            prevCharAngleMap.put(playerID, 0f);
+
             client.send(new CharCreationMessage(playerID,true));
             for(Iterator<Long> playerIterator=playerSet.iterator();playerIterator.hasNext();){
                 long destPlayerID=playerIterator.next();
