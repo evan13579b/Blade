@@ -276,7 +276,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 mouseCurrentlyStopped = true;
             }
         }
-        //rootNode.updateGeometricState();
+        rootNode.updateGeometricState();
     }
 
     /*
@@ -369,10 +369,11 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             CollisionShapeFactory.shiftCompoundShapeContents(cShape, shiftPosition);
             cShape.addChildShape(new CapsuleCollisionShape(1.5f, 6f), Vector3f.ZERO);
             // remove GhostControl from PhysicsSpace, apply change, put in PhysicsSpace
-            GhostControl ghost = modelMap.get(nextPlayerID).getControl(GhostControl.class);
-            bulletAppState.getPhysicsSpace().remove(ghost);
-            ghost.setCollisionShape(cShape);
-            bulletAppState.getPhysicsSpace().add(ghost);
+    //        GhostControl ghost = modelMap.get(nextPlayerID).getControl(GhostControl.class);
+            
+    //        bulletAppState.getPhysicsSpace().remove(ghost);
+   //         ghost.setCollisionShape(cShape);
+   //        bulletAppState.getPhysicsSpace().add(ghost);
         }
     }
 
@@ -527,6 +528,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 }
             }
         }
+        
     }
 
     public void messageSent(Message message) {

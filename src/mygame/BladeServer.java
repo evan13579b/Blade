@@ -128,8 +128,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         AppSettings appSettings=new AppSettings(true);
         appSettings.setFrameRate(30);
         app.setSettings(appSettings);
-        app.start();
-        //app.start(JmeContext.Type.Headless);
+      //  app.start();
+        app.start(JmeContext.Type.Headless);
     }
 
     @Override
@@ -177,7 +177,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
                 Spatial a = event.getNodeA();
                 Spatial b = event.getNodeB();
-
+       
                 if ((a.getControl(GhostControl.class) != null
                         && b.getControl(GhostControl.class) != null)
                         || (a.getControl(CharacterControl.class) != null
