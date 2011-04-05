@@ -39,15 +39,18 @@ package mygame;
 import com.jme3.animation.AnimChannel;
 import com.jme3.animation.AnimControl;
 import com.jme3.animation.AnimEventListener;
-import com.jme3.bullet.collision.PhysicsCollisionEvent;
+import com.jme3.animation.Bone;
 import mygame.messages.InputMessages;
 import mygame.messages.CharPositionMessage;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.bounding.BoundingVolume;
 import com.jme3.bullet.BulletAppState;
+import com.jme3.bullet.collision.PhysicsCollisionEvent;
+import com.jme3.bullet.collision.PhysicsCollisionListener;
 import com.jme3.bullet.collision.PhysicsCollisionObject;
 import com.jme3.bullet.control.CharacterControl;
+import com.jme3.bullet.control.GhostControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.input.ChaseCamera;
 import com.jme3.input.KeyInput;
@@ -85,7 +88,11 @@ import jme3tools.converters.ImageToAwt;
 import mygame.messages.CharCreationMessage;
 import mygame.messages.CharDestructionMessage;
 import com.jme3.bullet.collision.shapes.BoxCollisionShape;
+import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
 import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
+import com.jme3.bullet.util.CollisionShapeFactory;
+import com.jme3.math.Matrix3f;
+import com.jme3.scene.Spatial;
 import com.jme3.system.AppSettings;
 
 /**
@@ -110,6 +117,14 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     ConcurrentHashMap<Long, Float> charTurnVelMap = new ConcurrentHashMap();
     ConcurrentHashMap<Long, AnimChannel> animChannelMap = new ConcurrentHashMap();
 
+    ConcurrentHashMap<Long, Vector3f> prevUpperArmAnglesMap = new ConcurrentHashMap();
+    //ConcurrentHashMap<Long, Vector3f> prevUpperArmVelsMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, Float> prevElbowWristAngleMap = new ConcurrentHashMap();
+    //ConcurrentHashMap<Long, Float> prevElbowWristVelMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, Vector3f> prevCharPositionMap = new ConcurrentHashMap();
+    //ConcurrentHashMap<Long, Vector3f> prevCharVelocityMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, Float> prevCharAngleMap = new ConcurrentHashMap();
+    //ConcurrentHashMap<Long, Float> prevCharTurnVelMap = new ConcurrentHashMap();
     
     private BulletAppState bulletAppState;
     private TerrainQuad terrain;
@@ -144,17 +159,14 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         Serializer.registerClass(CharCreationMessage.class);
         Serializer.registerClass(CharDestructionMessage.class);
         InputMessages.registerInputClasses();
-        ;
-
+        
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
         stateManager.attach(bulletAppState);
- //       bulletAppState.getPhysicsSpace().addCollisionListener(this);
         rootNode.attachChild(SkyFactory.createSky(assetManager, "Textures/Skysphere.jpg", true));
         initMaterials();
         initTerrain();
-       
-        
+               
         try {
             client = new Client(BladeMain.serverIP, BladeMain.port, BladeMain.port);
             client.start();
@@ -183,9 +195,66 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         rootNode.addLight(sun2);
 
         flyCam.setEnabled(false);
-       //  this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
-         
-           
+
+        PhysicsCollisionListener physListener = new PhysicsCollisionListener() {
+
+            public void collision(PhysicsCollisionEvent event) {
+
+                Spatial a = event.getNodeA();
+                Spatial b = event.getNodeB();
+
+                if ((a.getControl(GhostControl.class) != null
+                        && b.getControl(GhostControl.class) != null)
+                        || (a.getControl(CharacterControl.class) != null
+                        && b.getControl(CharacterControl.class) != null)) {
+                    System.out.println("Collision!");
+
+                    long playerID1 = Long.valueOf(a.getName());
+                    long playerID2 = Long.valueOf(b.getName());
+                    upperArmAnglesMap.put(playerID1, prevUpperArmAnglesMap.get(playerID1));
+                    upperArmAnglesMap.put(playerID2, prevUpperArmAnglesMap.get(playerID2));
+
+                    elbowWristAngleMap.put(playerID1, prevElbowWristAngleMap.get(playerID1));
+                    elbowWristAngleMap.put(playerID2, prevElbowWristAngleMap.get(playerID2));
+
+                    charAngleMap.put(playerID1, prevCharAngleMap.get(playerID1));
+                    charAngleMap.put(playerID2, prevCharAngleMap.get(playerID2));
+
+                    charPositionMap.put(playerID1, prevCharPositionMap.get(playerID1));
+                    charPositionMap.put(playerID2, prevCharPositionMap.get(playerID2));
+
+                    CharMovement.setUpperArmTransform(upperArmAnglesMap.get(playerID1), modelMap.get(playerID1));
+                    CharMovement.setLowerArmTransform(elbowWristAngleMap.get(playerID1), modelMap.get(playerID1));
+                    CharMovement.setUpperArmTransform(upperArmAnglesMap.get(playerID2), modelMap.get(playerID2));
+                    CharMovement.setLowerArmTransform(elbowWristAngleMap.get(playerID2), modelMap.get(playerID2));
+
+                    upperArmVelsMap.put(playerID1, upperArmVelsMap.get(playerID1).mult(-1.0f));
+                    upperArmVelsMap.put(playerID2, upperArmVelsMap.get(playerID2).mult(-1.0f));
+                    elbowWristVelMap.put(playerID1, elbowWristVelMap.get(playerID1)*-1.0f);
+                    elbowWristVelMap.put(playerID2, elbowWristVelMap.get(playerID2)*-1.0f);
+                    charVelocityMap.put(playerID1, charVelocityMap.get(playerID1).mult(-1.0f));
+                    charVelocityMap.put(playerID2, charVelocityMap.get(playerID2).mult(-1.0f));
+                    charTurnVelMap.put(playerID1, charTurnVelMap.get(playerID1)*-1.0f);
+                    charTurnVelMap.put(playerID2, charTurnVelMap.get(playerID2)*-1.0f);
+                    
+                }
+            }
+        };
+
+        /*
+        PhysicsTickListener physTickListener = new PhysicsTickListener() {
+            public void prePhysicsTick(PhysicsSpace space, float f) {
+
+            }
+
+            public void physicsTick(PhysicsSpace space, float f) {
+
+            }
+        };
+         *
+         */
+        this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().addCollisionListener(physListener);
+        this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
 
     }
     private boolean mouseCurrentlyStopped = true;
@@ -237,9 +306,16 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     public void characterUpdate(float tpf) {
         for (Iterator<Long> playerIterator = playerSet.iterator(); playerIterator.hasNext();) {
             long nextPlayerID = playerIterator.next();
+            prevUpperArmAnglesMap.put(nextPlayerID, upperArmAnglesMap.get(nextPlayerID));
             upperArmAnglesMap.put(nextPlayerID, CharMovement.extrapolateUpperArmAngles(upperArmAnglesMap.get(nextPlayerID), upperArmVelsMap.get(nextPlayerID), tpf));
+            
+            prevElbowWristAngleMap.put(nextPlayerID, elbowWristAngleMap.get(nextPlayerID));
             elbowWristAngleMap.put(nextPlayerID, CharMovement.extrapolateLowerArmAngles(elbowWristAngleMap.get(nextPlayerID), elbowWristVelMap.get(nextPlayerID), tpf));
+
+            prevCharAngleMap.put(nextPlayerID, charAngleMap.get(nextPlayerID));
             charAngleMap.put(nextPlayerID, CharMovement.extrapolateCharTurn(charAngleMap.get(nextPlayerID), charTurnVelMap.get(nextPlayerID), tpf));
+
+            prevCharPositionMap.put(nextPlayerID, charPositionMap.get(nextPlayerID));
             charPositionMap.put(nextPlayerID, CharMovement.extrapolateCharMovement(charPositionMap.get(nextPlayerID),
                     charVelocityMap.get(nextPlayerID), charAngleMap.get(nextPlayerID),tpf));
 
@@ -247,11 +323,12 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             CharMovement.setLowerArmTransform(elbowWristAngleMap.get(nextPlayerID), modelMap.get(nextPlayerID));
 
             Vector3f extrapolatedPosition,currentPosition;
-            extrapolatedPosition=charPositionMap.get(nextPlayerID);currentPosition=modelMap.get(nextPlayerID).getLocalTranslation();
+            extrapolatedPosition=charPositionMap.get(nextPlayerID);
+            currentPosition=modelMap.get(nextPlayerID).getLocalTranslation();
             float diffLength=FastMath.sqrt(FastMath.sqr(extrapolatedPosition.x-currentPosition.x)+FastMath.sqr(extrapolatedPosition.z-currentPosition.z));
             CharacterControl control=modelMap.get(nextPlayerID).getControl(CharacterControl.class);
-            if(diffLength>15){
-                  control.setPhysicsLocation(new Vector3f(extrapolatedPosition.x,currentPosition.y+1,extrapolatedPosition.z));
+            if(diffLength>5){
+                  control.setPhysicsLocation(extrapolatedPosition);//new Vector3f(extrapolatedPosition.x,currentPosition.y+1,extrapolatedPosition.z));
             }
 
             float xDir,zDir;
@@ -275,6 +352,27 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
             control.setWalkDirection(left.mult(xVel).add(forward.mult(zVel)));
             //handleCollisions(nextPlayerID);
+
+            // Adjust the sword collision shape in accordance with arm movement.
+            // first, get rotation and position of hand
+            Bone hand = modelMap.get(nextPlayerID).getControl(AnimControl.class).getSkeleton().getBone("HandR");
+            Matrix3f rotation = hand.getModelSpaceRotation().toRotationMatrix();
+            Vector3f position = hand.getModelSpacePosition();
+
+            // adjust for difference in position of wrist and middle of sword
+            Vector3f shiftPosition = rotation.mult(new Vector3f(0f, .5f, 2.5f));
+
+            // build new collision shape
+            CompoundCollisionShape cShape = new CompoundCollisionShape();
+            Vector3f boxSize = new Vector3f(.1f, .1f, 2.25f);
+            cShape.addChildShape(new BoxCollisionShape(boxSize), position, rotation);
+            CollisionShapeFactory.shiftCompoundShapeContents(cShape, shiftPosition);
+            cShape.addChildShape(new CapsuleCollisionShape(1.5f, 6f), Vector3f.ZERO);
+            // remove GhostControl from PhysicsSpace, apply change, put in PhysicsSpace
+            GhostControl ghost = modelMap.get(nextPlayerID).getControl(GhostControl.class);
+            bulletAppState.getPhysicsSpace().remove(ghost);
+            ghost.setCollisionShape(cShape);
+            bulletAppState.getPhysicsSpace().add(ghost);
         }
     }
 
@@ -402,6 +500,11 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             animChannelMap.put(newPlayerID, modelMap.get(newPlayerID).getControl(AnimControl.class).createChannel());
             animChannelMap.get(newPlayerID).setAnim("stand");
 
+            prevUpperArmAnglesMap.put(newPlayerID, new Vector3f());
+            prevElbowWristAngleMap.put(newPlayerID, new Float(CharMovement.Constraints.lRotMin));
+            prevCharPositionMap.put(newPlayerID, new Vector3f());
+            prevCharAngleMap.put(newPlayerID, 0f);
+            
         } else if (message instanceof CharPositionMessage) {
             if (clientSet) {
 
