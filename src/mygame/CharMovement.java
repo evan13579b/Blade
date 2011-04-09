@@ -19,7 +19,7 @@ import com.jme3.scene.Node;
 public class CharMovement {
     static public final float upperArmSpeed=3;
     static public final float lowerArmSpeed=3;
-    static public final float charTurnSpeed=3;
+    static public final float charTurnSpeed=1f;
     static public final float charStrafeSpeed=0.2f;
     static public final float charForwardSpeed=0.2f;
     static public final float charBackwordSpeed=0.2f;
@@ -30,7 +30,7 @@ public class CharMovement {
         static public final float uYRotMin=0;
         static public final float uXRotMax=FastMath.HALF_PI;
         static public final float uXRotMin=-FastMath.HALF_PI;
-        static public final float lRotMax=FastMath.HALF_PI;
+        static public final float lRotMax=FastMath.QUARTER_PI;//FastMath.HALF_PI;
         static public final float lRotMin=-FastMath.QUARTER_PI/2;
         static public final float uZRotMax=FastMath.HALF_PI+FastMath.QUARTER_PI;
         static public final float uZRotMin=-FastMath.HALF_PI;

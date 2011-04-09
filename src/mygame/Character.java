@@ -15,6 +15,7 @@ import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
 import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.GhostControl;
+import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.math.FastMath;
 import com.jme3.math.Matrix3f;
 import com.jme3.math.Vector3f;
@@ -49,10 +50,12 @@ public class Character{
             Bone hand = model.getControl(AnimControl.class).getSkeleton().getBone("HandR");
             Matrix3f rotation = hand.getModelSpaceRotation().toRotationMatrix();
             Vector3f position = hand.getModelSpacePosition();
-
+            Vector3f shiftPosition = rotation.mult(new Vector3f(0f, .5f, 2.5f));
             CompoundCollisionShape cShape = new CompoundCollisionShape();
-            Vector3f boxSize = new Vector3f(.1f, .1f, 2.0f);
+            Vector3f boxSize = new Vector3f(.1f, .1f, 2.25f);
             cShape.addChildShape(new BoxCollisionShape(boxSize), position, rotation);
+            CollisionShapeFactory.shiftCompoundShapeContents(cShape, shiftPosition);
+            cShape.addChildShape(new CapsuleCollisionShape(1.5f, 6f), Vector3f.ZERO);
 
             GhostControl ghost = new GhostControl(cShape);
             ghost.setCollisionGroup(PhysicsCollisionObject.COLLISION_GROUP_02);

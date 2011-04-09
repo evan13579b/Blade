@@ -228,14 +228,15 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                     CharMovement.setUpperArmTransform(upperArmAnglesMap.get(playerID2), modelMap.get(playerID2));
                     CharMovement.setLowerArmTransform(elbowWristAngleMap.get(playerID2), modelMap.get(playerID2));
 
-                    upperArmVelsMap.put(playerID1, Vector3f.ZERO);
-                    upperArmVelsMap.put(playerID2, Vector3f.ZERO);
-                    elbowWristVelMap.put(playerID1, 0f);
-                    elbowWristVelMap.put(playerID2, 0f);
-                    charVelocityMap.put(playerID1, Vector3f.ZERO);
-                    charVelocityMap.put(playerID2, Vector3f.ZERO);
-                    charTurnVelMap.put(playerID1, 0f);
-                    charTurnVelMap.put(playerID2, 0f);
+                    upperArmVelsMap.put(playerID1, upperArmVelsMap.get(playerID1).mult(-1.0f));
+                    upperArmVelsMap.put(playerID2, upperArmVelsMap.get(playerID2).mult(-1.0f));
+                    elbowWristVelMap.put(playerID1, elbowWristVelMap.get(playerID1)*-1.0f);
+                    elbowWristVelMap.put(playerID2, elbowWristVelMap.get(playerID2)*-1.0f);
+                    charVelocityMap.put(playerID1, charVelocityMap.get(playerID1).mult(-1.0f));
+                    charVelocityMap.put(playerID2, charVelocityMap.get(playerID2).mult(-1.0f));
+                    charTurnVelMap.put(playerID1, charTurnVelMap.get(playerID1)*-1.0f);
+                    charTurnVelMap.put(playerID2, charTurnVelMap.get(playerID2)*-1.0f);
+                    
                 }
             }
         };
@@ -326,8 +327,8 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             currentPosition=modelMap.get(nextPlayerID).getLocalTranslation();
             float diffLength=FastMath.sqrt(FastMath.sqr(extrapolatedPosition.x-currentPosition.x)+FastMath.sqr(extrapolatedPosition.z-currentPosition.z));
             CharacterControl control=modelMap.get(nextPlayerID).getControl(CharacterControl.class);
-            if(diffLength>15){
-                  control.setPhysicsLocation(new Vector3f(extrapolatedPosition.x,currentPosition.y+1,extrapolatedPosition.z));
+            if(diffLength>5){
+                  control.setPhysicsLocation(extrapolatedPosition);//new Vector3f(extrapolatedPosition.x,currentPosition.y+1,extrapolatedPosition.z));
             }
 
             float xDir,zDir;
@@ -469,7 +470,6 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             CharCreationMessage creationMessage = (CharCreationMessage) message;
             long newPlayerID = creationMessage.playerID;
             Node newModel = Character.createCharacter("Models/FighterRight.mesh.xml", assetManager, bulletAppState, true, newPlayerID);
-
             rootNode.attachChild(newModel);
             
             if (creationMessage.controllable) {
@@ -499,6 +499,11 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             animChannelMap.put(newPlayerID, modelMap.get(newPlayerID).getControl(AnimControl.class).createChannel());
             animChannelMap.get(newPlayerID).setAnim("stand");
 
+            prevUpperArmAnglesMap.put(newPlayerID, new Vector3f());
+            prevElbowWristAngleMap.put(newPlayerID, new Float(CharMovement.Constraints.lRotMin));
+            prevCharPositionMap.put(newPlayerID, new Vector3f());
+            prevCharAngleMap.put(newPlayerID, 0f);
+            
         } else if (message instanceof CharPositionMessage) {
             if (clientSet) {
 
