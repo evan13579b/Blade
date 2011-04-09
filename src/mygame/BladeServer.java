@@ -539,8 +539,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         try {
             long playerID=currentPlayerID++;
 
-            Node model = Character.createCharacter("Models/FighterRight.mesh.xml", assetManager, bulletAppState,true, playerID);
-
+           Node model = Character.createCharacter("Models/FighterRight.mesh.xml", assetManager, bulletAppState,true, playerID);
             rootNode.attachChild(model);
             //rootNode.attachChild(geom1);
             modelMap.put(playerID, model);
