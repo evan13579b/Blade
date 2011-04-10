@@ -40,6 +40,7 @@ import com.jme3.animation.AnimChannel;
 import com.jme3.animation.AnimControl;
 import com.jme3.animation.AnimEventListener;
 import com.jme3.animation.Bone;
+import java.io.FileNotFoundException;
 import mygame.messages.InputMessages;
 import mygame.messages.CharPositionMessage;
 import com.jme3.app.SimpleApplication;
@@ -92,7 +93,9 @@ import com.jme3.math.Matrix3f;
 import com.jme3.niftygui.NiftyJmeDisplay;
 import com.jme3.system.AppSettings;
 import de.lessvoid.nifty.Nifty;
-import mygame.ui.StartupScreen;
+import java.util.Map;
+import mygame.ui.LoginScreen;
+import mygame.util.IOLib;
 
 /**
  *
@@ -160,10 +163,11 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         Serializer.registerClass(CharCreationMessage.class);
         Serializer.registerClass(CharDestructionMessage.class);
         InputMessages.registerInputClasses();
-        
+        Map<String,String> ipAddressMap=IOLib.getIpAddressMap();
+
         NiftyJmeDisplay niftyDisplay = new NiftyJmeDisplay(assetManager,inputManager,audioRenderer,guiViewPort);
         Nifty ui=niftyDisplay.getNifty();
-        ui.fromXml("Interface/UI.xml","start",new StartupScreen(BladeMain.serverMap));
+        ui.fromXml("Interface/UI.xml","start",new LoginScreen(ipAddressMap,client,BladeMain.port));
         guiViewPort.addProcessor(niftyDisplay);
         flyCam.setDragToRotate(true);
         app.setDisplayStatView(false);

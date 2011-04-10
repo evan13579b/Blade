@@ -7,19 +7,9 @@ import javax.swing.JOptionPane;
 
 public class BladeMain {
     public static int port=5010;
-    public static HashMap<String,String> serverMap;
-    public static List<String> addressList;
-    public static String serverIP="localhost";
 
     static {
-        serverMap=new HashMap();
-        serverMap.put("larry", "24.20.242.41");
-        serverMap.put("evan", "67.160.181.221");
-        serverMap.put("localhost","localhost");
-        addressList=new ArrayList();
-        addressList.add("larry");
-        addressList.add("evan");
-        addressList.add("localhost");
+
     }
 
     public static void main(String[] args) {
