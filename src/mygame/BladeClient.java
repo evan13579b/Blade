@@ -202,7 +202,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
                 Spatial a = event.getNodeA();
                 Spatial b = event.getNodeB();
-
+                event.getNodeA().getName();
                 if ((a.getControl(GhostControl.class) != null
                         && b.getControl(GhostControl.class) != null)
                         || (a.getControl(CharacterControl.class) != null
@@ -554,7 +554,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
     public void onJoyButtonEvent(JoyButtonEvent evt) {
     }
-    private final int eventsPerPacket = 10; // how many events should happen before next packet is sent
+    private final int eventsPerPacket = 1; // how many events should happen before next packet is sent
     private final long mouseMovementTimeout = 100; // how long until we propose to send a StopMouseMovement message
     private long timeOfLastMouseMotion = 0; // how long since last movement
     private int currentMouseEvents = 0;
@@ -563,16 +563,18 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     private int prevDeltaWheel = 0;
 
     public void onMouseMotionEvent(MouseMotionEvent evt) {
-
+        System.out.println("x = " + evt.getDX());
         float dy = evt.getDY(), dx = evt.getDX();
         if (dy != 0 || dx != 0) {
+            System.out.println("x = " + evt.getDX());
             currentMouseEvents++;
             currentDX += dx;
             currentDY += dy;
 
             if (currentMouseEvents >= eventsPerPacket) {
                 try {
-                    float angle = FastMath.atan2(currentDY, currentDX);
+                    //float angle = (float) Math.atan2(currentDY,currentDX);
+                    float angle = FastMath.atan2(dy, dx);
                     if (angle < 0) {
                         angle = FastMath.TWO_PI + angle;
                     }

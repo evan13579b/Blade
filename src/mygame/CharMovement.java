@@ -17,8 +17,8 @@ import com.jme3.scene.Node;
  * @author blah
  */
 public class CharMovement {
-    static public final float upperArmSpeed=3;
-    static public final float lowerArmSpeed=3;
+    static public final float upperArmSpeed=2;
+    static public final float lowerArmSpeed=2;
     static public final float charTurnSpeed=1f;
     static public final float charStrafeSpeed=0.2f;
     static public final float charForwardSpeed=0.2f;
