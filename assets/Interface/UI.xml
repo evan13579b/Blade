@@ -25,4 +25,7 @@
             </panel>
         </layer>
     </screen>
+    <screen id="HUD" controller="mygame.ui.HUD">
+        <layer id="layer2" backgroundColro="#0000"/>
+    </screen>
 </nifty>

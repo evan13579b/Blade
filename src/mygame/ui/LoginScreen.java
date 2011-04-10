@@ -21,6 +21,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import mygame.BladeClient;
+import mygame.messages.InputMessages;
 
 /**
  *
@@ -34,8 +36,9 @@ public class LoginScreen implements ScreenController, ConnectionListener {
     private Label statusDisplay;
     private Client client;
     private int portNum;
+    private BladeClient bladeClient;
     
-    public LoginScreen(Map<String,String> ipAddressMap,Client client,int portNum){
+    public LoginScreen(Map<String,String> ipAddressMap,Client client,int portNum,BladeClient bladeClient){
         this.ipAddressMap=new HashMap(ipAddressMap);
         this.client=client;
         this.portNum=portNum;
@@ -58,6 +61,7 @@ public class LoginScreen implements ScreenController, ConnectionListener {
     }
 
     public void onEndScreen() {
+        
     }
     
     public void connect() {
@@ -67,6 +71,7 @@ public class LoginScreen implements ScreenController, ConnectionListener {
             client=new Client(entry.getValue(),portNum,portNum);
             client.start();
             client.addConnectionListener(this);
+            InputMessages.addInputMessageListeners(client, bladeClient);
         } catch (IOException ex) {
             Logger.getLogger(LoginScreen.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -83,6 +88,9 @@ public class LoginScreen implements ScreenController, ConnectionListener {
     }
 
     public void play(){
-        System.out.println("play");
+        client.removeConnectionListener(this);
+        screen.endScreen(null);
+        ui.exit();
+        bladeClient.isReadyToPlay();
     }
 }

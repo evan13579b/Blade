@@ -40,7 +40,6 @@ import com.jme3.animation.AnimChannel;
 import com.jme3.animation.AnimControl;
 import com.jme3.animation.AnimEventListener;
 import com.jme3.animation.Bone;
-import java.io.FileNotFoundException;
 import mygame.messages.InputMessages;
 import mygame.messages.CharPositionMessage;
 import com.jme3.app.SimpleApplication;
@@ -48,6 +47,7 @@ import com.jme3.asset.TextureKey;
 import com.jme3.bounding.BoundingVolume;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.collision.PhysicsCollisionEvent;
+import com.jme3.bullet.collision.PhysicsCollisionListener;
 import com.jme3.bullet.collision.PhysicsCollisionObject;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.GhostControl;
@@ -89,9 +89,12 @@ import com.jme3.bullet.collision.shapes.BoxCollisionShape;
 import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
 import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
 import com.jme3.bullet.util.CollisionShapeFactory;
+import com.jme3.light.DirectionalLight;
 import com.jme3.math.Matrix3f;
 import com.jme3.niftygui.NiftyJmeDisplay;
+import com.jme3.scene.Spatial;
 import com.jme3.system.AppSettings;
+import com.jme3.util.SkyFactory;
 import de.lessvoid.nifty.Nifty;
 import java.util.Map;
 import mygame.ui.LoginScreen;
@@ -143,6 +146,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     Geometry block;
     BoxCollisionShape leftShoulder;
     static BladeClient app;
+    boolean readyForPlay=false;
 
     Client client;
     boolean clientSet = false;
@@ -157,6 +161,10 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         app.start();
     }
 
+    public void isReadyToPlay(){
+        readyForPlay=true;
+    }
+    
     @Override
     public void simpleInitApp() {
         Serializer.registerClass(CharPositionMessage.class);
@@ -167,18 +175,18 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
         NiftyJmeDisplay niftyDisplay = new NiftyJmeDisplay(assetManager,inputManager,audioRenderer,guiViewPort);
         Nifty ui=niftyDisplay.getNifty();
-        ui.fromXml("Interface/UI.xml","start",new LoginScreen(ipAddressMap,client,BladeMain.port));
+        ui.fromXml("Interface/UI.xml","start",new LoginScreen(ipAddressMap,client,BladeMain.port,this));
         guiViewPort.addProcessor(niftyDisplay);
         flyCam.setDragToRotate(true);
         app.setDisplayStatView(false);
-     /*   
+        
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
         stateManager.attach(bulletAppState);
         rootNode.attachChild(SkyFactory.createSky(assetManager, "Textures/Skysphere.jpg", true));
         initMaterials();
         initTerrain();
-               
+     /*          
         try {
             client = new Client(BladeMain.serverIP, BladeMain.port, BladeMain.port);
             client.start();
@@ -194,10 +202,10 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         } catch (InterruptedException ex) {
             Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
         }
+*/
+        
 
-        InputMessages.addInputMessageListeners(client, this);
-
-        client.addConnectionListener(this);
+     //   client.addConnectionListener(this);
         DirectionalLight sun = new DirectionalLight();
         sun.setDirection(new Vector3f(-0.1f, -0.7f, -1.0f));
         rootNode.addLight(sun);
@@ -263,11 +271,11 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
             }
         };
-         *
+         */
          
         this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().addCollisionListener(physListener);
         this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
-*/
+
     }
     private boolean mouseCurrentlyStopped = true;
 
