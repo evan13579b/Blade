@@ -20,12 +20,9 @@
                     <control id="statusDisplay" name="label" align="left" text="Not Connected             "/>
                 </panel>
                 <control id="playButton" name="button" label="Play">
-                    <interact onClick="play()"/>
+                    <interact onClick="playPressed()"/>
                 </control>
             </panel>
         </layer>
-    </screen>
-    <screen id="HUD" controller="mygame.ui.HUD">
-        <layer id="layer2" backgroundColro="#0000"/>
     </screen>
 </nifty>

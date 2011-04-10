@@ -42,6 +42,7 @@ public class LoginScreen implements ScreenController, ConnectionListener {
         this.ipAddressMap=new HashMap(ipAddressMap);
         this.client=client;
         this.portNum=portNum;
+        this.bladeClient=bladeClient;
     }
 
     public void bind(Nifty ui, Screen screen) {
@@ -62,6 +63,7 @@ public class LoginScreen implements ScreenController, ConnectionListener {
 
     public void onEndScreen() {
         
+        
     }
     
     public void connect() {
@@ -71,7 +73,7 @@ public class LoginScreen implements ScreenController, ConnectionListener {
             client=new Client(entry.getValue(),portNum,portNum);
             client.start();
             client.addConnectionListener(this);
-            InputMessages.addInputMessageListeners(client, bladeClient);
+            
         } catch (IOException ex) {
             Logger.getLogger(LoginScreen.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -87,10 +89,11 @@ public class LoginScreen implements ScreenController, ConnectionListener {
         statusDisplay.setText("Connection Refused!");
     }
 
-    public void play(){
+    public void playPressed(){
         client.removeConnectionListener(this);
         screen.endScreen(null);
+        bladeClient.isReadyToStart();
+        bladeClient.setClient(client);
         ui.exit();
-        bladeClient.isReadyToPlay();
     }
 }

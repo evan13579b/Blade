@@ -97,6 +97,7 @@ import com.jme3.system.AppSettings;
 import com.jme3.util.SkyFactory;
 import de.lessvoid.nifty.Nifty;
 import java.util.Map;
+import mygame.messages.ClientReadyMessage;
 import mygame.ui.LoginScreen;
 import mygame.util.IOLib;
 
@@ -146,7 +147,8 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     Geometry block;
     BoxCollisionShape leftShoulder;
     static BladeClient app;
-    boolean readyForPlay=false;
+    boolean readyToStart=false;
+    boolean started=false;
 
     Client client;
     boolean clientSet = false;
@@ -161,8 +163,13 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         app.start();
     }
 
-    public void isReadyToPlay(){
-        readyForPlay=true;
+    public void isReadyToStart(){
+        System.out.println("Ready to start called");
+        readyToStart=true;
+    }
+    
+    public void setClient(Client client){
+        this.client=client;
     }
     
     @Override
@@ -170,6 +177,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         Serializer.registerClass(CharPositionMessage.class);
         Serializer.registerClass(CharCreationMessage.class);
         Serializer.registerClass(CharDestructionMessage.class);
+        Serializer.registerClass(ClientReadyMessage.class);
         InputMessages.registerInputClasses();
         Map<String,String> ipAddressMap=IOLib.getIpAddressMap();
 
@@ -281,7 +289,24 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
     @Override
     public void simpleUpdate(float tpf) {
-        
+        if (readyToStart && !started){
+            System.out.println("starting");
+            if(client==null){
+                System.out.println("Client is null");
+            }
+            client.addConnectionListener(this);
+            InputMessages.addInputMessageListeners(client, this);
+            client.addMessageListener(this, CharCreationMessage.class, CharDestructionMessage.class, CharPositionMessage.class,ClientReadyMessage.class);
+            try {
+                client.send(new ClientReadyMessage());
+                System.err.println("Sent ClientReadyMessage");
+            } catch (IOException ex) {
+                Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            started=true;
+            System.out.println("started");
+        }
+
         if (clientSet) {
             characterUpdate(tpf);
             if ((System.currentTimeMillis() - timeOfLastMouseMotion) > mouseMovementTimeout && !mouseCurrentlyStopped) {
@@ -299,29 +324,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         //rootNode.updateGeometricState();
     }
 
-    /*
-    private void handleCollisions(Long playerID) {
 
-        CollisionResults results = new CollisionResults();
-        Node player = modelMap.get(playerID);
-        for (Map.Entry<Long, Node> playerEntry : modelMap.entrySet()) {
-            if (playerEntry.getKey() != playerID) {
-                long pID = playerEntry.getKey();
-
-                BoundingVolume bv = modelMap.get(pID).getWorldBound();
-                
-                player.collideWith(player, results);
-                
-                //block.collideWith(block, results);
-                if (results.size() > 0) {
-                    System.out.println("Client: COLLISION DETECTED");
-                }
-                
-            }
-        }
-    }
-     *
-     */
     
     public void characterUpdate(float tpf) {
         for (Iterator<Long> playerIterator = playerSet.iterator(); playerIterator.hasNext();) {
