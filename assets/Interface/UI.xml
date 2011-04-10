@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nifty xmlns="http://nifty-gui.sourceforge.net/nifty.xsd" 
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+       xsi:schemaLocation="http://nifty-gui.sourceforge.net/nifty.xsd 
+                           http://nifty-gui.sourceforge.net/nifty.xsd">
+    <useStyles filename="nifty-default-styles.xml" />
+    <useControls filename="nifty-default-controls.xml" />
+ 
+    <screen id="start" controller="mygame.ui.StartupScreen">
+        <layer id="layer1" backgroundColor="#ffffffff" childLayout="vertical">
+            <panel id="topPanel" height="50%" width="100%" align="center" valign="center"
+                    backgroundColor="#ffff"  childLayout="vertical" visibleToMouse="true"> 
+            </panel>
+            <panel id="bottomPanel" height="50%" width="100%" align="center" valign="center"
+                    backgroundColor="#ffff"  childLayout="vertical" visibleToMouse="true"> 
+                <control width="50%" id="addressList" name="listBox" vertical="true" horizontol="false" displayItems="4" forceSelection="true" 
+                    viewConverterClass="mygame.ui.AddressEntryViewConverter"/>
+                <control id="connectButton" name="button" label="Connect">
+                    <interact onClick="connect()"/>
+                </control>
+            </panel>
+        </layer>
+    </screen>
+</nifty>

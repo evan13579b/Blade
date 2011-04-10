@@ -1,18 +1,25 @@
 package mygame;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import javax.swing.JOptionPane;
 
 public class BladeMain {
-    static int port=5010;
-    static final HashMap<String,String> serverMap;
-    static String serverIP="localhost";
+    public static int port=5010;
+    public static HashMap<String,String> serverMap;
+    public static List<String> addressList;
+    public static String serverIP="localhost";
 
     static {
         serverMap=new HashMap();
         serverMap.put("larry", "24.20.242.41");
         serverMap.put("evan", "67.160.181.221");
         serverMap.put("localhost","localhost");
+        addressList=new ArrayList();
+        addressList.add("larry");
+        addressList.add("evan");
+        addressList.add("localhost");
     }
 
     public static void main(String[] args) {
@@ -26,7 +33,7 @@ public class BladeMain {
             System.out.println("Starting Server");
         }
         else if(args[0].toLowerCase().equals("client")){
-            serverIP=JOptionPane.showInputDialog("ServerIP?", "localhost");
+      //      serverIP=JOptionPane.showInputDialog("ServerIP?", "localhost");
             BladeClient.main(args);
             System.out.println("Starting Client");
         }
