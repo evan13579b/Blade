@@ -87,6 +87,7 @@ import java.util.List;
 import jme3tools.converters.ImageToAwt;
 import mygame.messages.CharCreationMessage;
 import mygame.messages.CharDestructionMessage;
+import mygame.messages.CharStatusMessage;
 import mygame.messages.ClientReadyMessage;
 import mygame.messages.HasID;
 
@@ -108,6 +109,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     ConcurrentHashMap<Long, Float> prevElbowWristAngleMap = new ConcurrentHashMap();
     ConcurrentHashMap<Long, Vector3f> prevCharPositionMap = new ConcurrentHashMap();
     ConcurrentHashMap<Long, Float> prevCharAngleMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, Float> charLifeMap = new ConcurrentHashMap();
 
     private long currentPlayerID=0;
 
@@ -136,7 +138,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     @Override
     public void simpleInitApp() {
-        Serializer.registerClass(CharPositionMessage.class);
+        Serializer.registerClass(CharStatusMessage.class);
         Serializer.registerClass(CharCreationMessage.class);
         Serializer.registerClass(CharDestructionMessage.class);
         Serializer.registerClass(ClientReadyMessage.class);
@@ -152,7 +154,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
         InputMessages.addInputMessageListeners(server, this);
         server.addConnectionListener(this);
-        server.addMessageListener(this,CharCreationMessage.class,CharDestructionMessage.class,CharPositionMessage.class,ClientReadyMessage.class);
+        server.addMessageListener(this,CharCreationMessage.class,CharDestructionMessage.class,CharStatusMessage.class,ClientReadyMessage.class);
 
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
@@ -322,11 +324,11 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                 for (Long destPlayerID:playerList) {
                     try {
                        
-                        clientMap.get(destPlayerID).send(new CharPositionMessage(upperArmAnglesMap.get(sourcePlayerID), 
+                        clientMap.get(destPlayerID).send(new CharStatusMessage(upperArmAnglesMap.get(sourcePlayerID), 
                                 upperArmVelsMap.get(sourcePlayerID),charPositionMap.get(sourcePlayerID),
                                 charVelocityMap.get(sourcePlayerID),elbowWristAngleMap.get(sourcePlayerID),
                                 elbowWristVelMap.get(sourcePlayerID),charAngleMap.get(sourcePlayerID),
-                                charTurnVelMap.get(sourcePlayerID),sourcePlayerID));
+                                charTurnVelMap.get(sourcePlayerID),sourcePlayerID,charLifeMap.get(sourcePlayerID)));
                     } catch (IOException ex) {
                         Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
                     } catch (NullPointerException ex){
@@ -434,6 +436,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                 charVelocityMap.put(newPlayerID, new Vector3f());
                 charAngleMap.put(newPlayerID, 0f);
                 charTurnVelMap.put(newPlayerID, 0f);
+                charLifeMap.put(newPlayerID, 1f);
 
                 prevUpperArmAnglesMap.put(newPlayerID, new Vector3f());
                 prevElbowWristAngleMap.put(newPlayerID, new Float(CharMovement.Constraints.lRotMin));

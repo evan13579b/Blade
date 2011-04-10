@@ -7,7 +7,7 @@
     <useControls filename="nifty-default-controls.xml" />
  
     <screen id="start" controller="mygame.ui.LoginScreen">
-        <layer id="layer1" backgroundColor="#ffffffff" childLayout="horizontal"> 
+        <layer id="layer1" backgroundColor="#fff0" childLayout="horizontal"> 
             <panel id="mailPanel" height="100%" width="100%" align="left" valign="center" backgroundColor="#000f"  childLayout="vertical"> 
                 <control id="addressList" name="listBox" vertical="on" horizontol="off" displayItems="10" forceSelection="true" viewConverterClass="mygame.ui.AddressEntryViewConverter"/>
                
