@@ -55,7 +55,7 @@ public class Character{
             Vector3f boxSize = new Vector3f(.1f, .1f, 2.25f);
             cShape.addChildShape(new BoxCollisionShape(boxSize), position, rotation);
             CollisionShapeFactory.shiftCompoundShapeContents(cShape, shiftPosition);
-            cShape.addChildShape(new CapsuleCollisionShape(1.5f, 6f), Vector3f.ZERO);
+            //cShape.addChildShape(new CapsuleCollisionShape(1.5f, 6f), Vector3f.ZERO);
 
             GhostControl ghost = new GhostControl(cShape);
             ghost.setCollisionGroup(PhysicsCollisionObject.COLLISION_GROUP_02);

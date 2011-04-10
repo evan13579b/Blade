@@ -148,7 +148,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     public static void main(String[] args) {
         BladeClient app = new BladeClient();
         AppSettings appSettings=new AppSettings(true);
-        appSettings.setFrameRate(30);
+        appSettings.setFrameRate(60);
         app.setSettings(appSettings);
         app.start();
     }
@@ -196,6 +196,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
         flyCam.setEnabled(false);
 
+        /*
         PhysicsCollisionListener physListener = new PhysicsCollisionListener() {
 
             public void collision(PhysicsCollisionEvent event) {
@@ -240,6 +241,8 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 }
             }
         };
+         * 
+         */
 
         /*
         PhysicsTickListener physTickListener = new PhysicsTickListener() {
@@ -253,7 +256,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         };
          *
          */
-        this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().addCollisionListener(physListener);
+        //this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().addCollisionListener(physListener);
         this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
 
     }

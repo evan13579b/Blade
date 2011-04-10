@@ -47,6 +47,8 @@ import mygame.messages.CharPositionMessage;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.bullet.BulletAppState;
+import com.jme3.bullet.PhysicsSpace;
+import com.jme3.bullet.PhysicsTickListener;
 import com.jme3.bullet.collision.PhysicsCollisionEvent;
 import com.jme3.bullet.collision.PhysicsCollisionListener;
 import com.jme3.bullet.collision.PhysicsCollisionObject;
@@ -108,6 +110,9 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     ConcurrentHashMap<Long, Vector3f> prevCharPositionMap = new ConcurrentHashMap();
     ConcurrentHashMap<Long, Float> prevCharAngleMap = new ConcurrentHashMap();
 
+    private final long timeBetweenSyncs=100;
+    private long timeOfLastSync=0;
+    
     private long currentPlayerID=0;
 
     private BulletAppState bulletAppState;
@@ -127,7 +132,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     public static void main(String[] args) {
         BladeServer app = new BladeServer();
         AppSettings appSettings=new AppSettings(true);
-        appSettings.setFrameRate(30);
+        appSettings.setFrameRate(60);
         app.setSettings(appSettings);
         //app.start();
         app.start(JmeContext.Type.Headless);
@@ -154,7 +159,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
-
+        
         stateManager.attach(bulletAppState);
         rootNode.attachChild(SkyFactory.createSky(
         assetManager, "Textures/Skysphere.jpg", true));
@@ -171,7 +176,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
         flyCam.setEnabled(true);
         this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
-
+        
         PhysicsCollisionListener physListener = new PhysicsCollisionListener() {
 
             public void collision(PhysicsCollisionEvent event) {
@@ -182,7 +187,11 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                 if ((a.getControl(GhostControl.class) != null
                         && b.getControl(GhostControl.class) != null)
                         || (a.getControl(CharacterControl.class) != null
-                        && b.getControl(CharacterControl.class) != null)) {
+                        && b.getControl(CharacterControl.class) != null)
+                        || (a.getControl(GhostControl.class) != null
+                        && b.getControl(CharacterControl.class) != null)
+                        || (a.getControl(CharacterControl.class) != null
+                        && b.getControl(GhostControl.class) != null)) {
                     System.out.println("Collision!");
 
                     long playerID1 = Long.valueOf(a.getName());
@@ -204,6 +213,31 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     CharMovement.setUpperArmTransform(upperArmAnglesMap.get(playerID2), modelMap.get(playerID2));
                     CharMovement.setLowerArmTransform(elbowWristAngleMap.get(playerID2), modelMap.get(playerID2));
 
+                    // rotateStop
+                    upperArmVelsMap.get(playerID1).z = 0;
+                    upperArmVelsMap.get(playerID2).z = 0;
+
+                    // stopMouseMovement
+                    upperArmVelsMap.get(playerID1).x = upperArmVelsMap.get(playerID1).y = 0;
+                    upperArmVelsMap.get(playerID2).x = upperArmVelsMap.get(playerID2).y = 0;
+
+                    // stop arm
+                    elbowWristVelMap.put(playerID1, 0f);
+                    elbowWristVelMap.put(playerID2, 0f);
+
+                    // stop char turn
+                    charTurnVelMap.put(playerID1, 0f);
+                    charTurnVelMap.put(playerID2, 0f);
+
+                    // stop forward move
+                    charVelocityMap.get(playerID1).z = 0;
+                    charVelocityMap.get(playerID2).z = 0;
+
+                    // stop left right move
+                    charVelocityMap.get(playerID1).x = 0;
+                    charVelocityMap.get(playerID2).x = 0;
+                    
+                    /*
                     upperArmVelsMap.put(playerID1, upperArmVelsMap.get(playerID1).mult(-1.0f));
                     upperArmVelsMap.put(playerID2, upperArmVelsMap.get(playerID2).mult(-1.0f));
                     elbowWristVelMap.put(playerID1, elbowWristVelMap.get(playerID1)*-1.0f);
@@ -212,19 +246,35 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     charVelocityMap.put(playerID2, charVelocityMap.get(playerID2).mult(-1.0f));
                     charTurnVelMap.put(playerID1, charTurnVelMap.get(playerID1)*-1.0f);
                     charTurnVelMap.put(playerID2, charTurnVelMap.get(playerID2)*-1.0f);
-
+                     * 
+                     * 
+                     */
                     //updateNow = true;
                 }
             }
         };
+           
+        PhysicsTickListener physTickListener = new PhysicsTickListener() {
+            public void prePhysicsTick(PhysicsSpace space, float f) {
+                updateCharacters(timer.getTimePerFrame());                    
+            }
 
+            public void physicsTick(PhysicsSpace space, float f) {
+                updateClients();
+            }
+        };
+        
+        //bulletAppState.getPhysicsSpace().setAccuracy((float)(1.0/120.0));
+        System.out.println("Accuracy: " + bulletAppState.getPhysicsSpace().getAccuracy());
+        
         this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().addCollisionListener(physListener);
+        this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().addTickListener(physTickListener);
         updateNow = false;
     }
 
     @Override
     public void simpleUpdate(float tpf){
-        updateCharacters(tpf);
+        //updateCharacters(tpf);
     }
 
     /*
@@ -247,8 +297,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
      *
      */
 
-    private long timeOfLastSync=0;
-    private final long timeBetweenSyncs=100;
+    
     public void updateCharacters(float tpf) {
         for(Iterator<Long> playerIterator=playerSet.iterator(); playerIterator.hasNext();){
             long playerID = playerIterator.next();
@@ -310,7 +359,9 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             ghost.setCollisionShape(cShape);
             bulletAppState.getPhysicsSpace().add(ghost);
         }
-        
+    }
+    
+    public void updateClients() {
         long currentTime = System.currentTimeMillis();
         if ((currentTime - timeOfLastSync > timeBetweenSyncs)|| updateNow) {
             timeOfLastSync = currentTime;
