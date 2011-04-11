@@ -45,10 +45,8 @@ import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.bounding.BoundingVolume;
 import com.jme3.bullet.BulletAppState;
-import com.jme3.bullet.collision.PhysicsCollisionEvent;
 import com.jme3.bullet.collision.PhysicsCollisionObject;
 import com.jme3.bullet.control.CharacterControl;
-import com.jme3.bullet.control.GhostControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.input.ChaseCamera;
 import com.jme3.input.KeyInput;
@@ -84,13 +82,13 @@ import jme3tools.converters.ImageToAwt;
 import mygame.messages.CharCreationMessage;
 import mygame.messages.CharDestructionMessage;
 import com.jme3.bullet.collision.shapes.BoxCollisionShape;
-import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
 import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
 import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.light.DirectionalLight;
+import com.jme3.math.ColorRGBA;
 import com.jme3.math.Matrix3f;
 import com.jme3.niftygui.NiftyJmeDisplay;
-import com.jme3.scene.Spatial;
+import com.jme3.scene.debug.SkeletonDebugger;
 import com.jme3.system.AppSettings;
 import com.jme3.util.SkyFactory;
 import de.lessvoid.nifty.Nifty;
@@ -122,6 +120,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     ConcurrentHashMap<Long, Float> charAngleMap = new ConcurrentHashMap();
     ConcurrentHashMap<Long, Float> charTurnVelMap = new ConcurrentHashMap();
     ConcurrentHashMap<Long, AnimChannel> animChannelMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, Float> charLifeMap = new ConcurrentHashMap();
 
     private final boolean debug = true;
     private BulletAppState bulletAppState;
@@ -452,10 +451,6 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             animChannelMap.get(newPlayerID).setAnim("stand");
             charLifeMap.put(newPlayerID, 1f);
 
-            prevUpperArmAnglesMap.put(newPlayerID, new Vector3f());
-            prevElbowWristAngleMap.put(newPlayerID, new Float(CharMovement.Constraints.lRotMin));
-            prevCharPositionMap.put(newPlayerID, new Vector3f());
-            prevCharAngleMap.put(newPlayerID, 0f);
         } else if (message instanceof CharStatusMessage) {
             if (clientSet) {
 
