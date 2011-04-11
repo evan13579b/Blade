@@ -581,7 +581,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     }
 
     public void clientConnected(Client client) {
-        
+         
     }
 
     public void clientDisconnected(Client client) {

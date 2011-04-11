@@ -9,7 +9,7 @@ public class BladeMain {
     public static int port=5010;
 
     static {
-
+ 
     }
 
     public static void main(String[] args) {
