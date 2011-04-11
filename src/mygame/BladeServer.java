@@ -187,22 +187,22 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
             public void collision(PhysicsCollisionEvent event) {
 
-                GhostControl a = event.getNodeA().getControl(GhostControl.class);
-                GhostControl b = event.getNodeB().getControl(GhostControl.class);
+                PhysicsCollisionObject a = event.getObjectA();
+                PhysicsCollisionObject b = event.getObjectB();
                 
                 if ((a != null && b != null && a instanceof ControlID && b instanceof ControlID
                         && ((ControlID)a).getID() != ((ControlID)b).getID())) {
                     
                     System.out.println("Collision!");
-                    System.out.println("A: " + a.getOverlappingCount()
-                            + " B: " + b.getOverlappingCount());
+                    //System.out.println("A: " + a.getOverlappingCount()
+                    //        + " B: " + b.getOverlappingCount());
                     
                     long hurtPlayerID;
-                    if(a instanceof SwordControl && b instanceof BodyControl){
+                    if((a instanceof SwordControl) && (b instanceof BodyControl)){
                         hurtPlayerID=((ControlID)b).getID();
                         charLifeMap.put(hurtPlayerID, charLifeMap.get(hurtPlayerID)*0.999f);
                     }
-                    else if(b instanceof SwordControl && a instanceof BodyControl){
+                    else if((b instanceof SwordControl) && (a instanceof BodyControl)){
                         hurtPlayerID=((ControlID)a).getID();
                         charLifeMap.put(hurtPlayerID, charLifeMap.get(hurtPlayerID)*0.999f);
                     }
@@ -245,8 +245,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     modelMap.get(playerID2).getControl(CharacterControl.class).setPhysicsLocation(charPositionMap.get(playerID2));
                     updateCharacters(timer.getTimePerFrame());
                     
-                    System.out.println("A1: " + a.getOverlappingCount()
-                            + " B1: " + b.getOverlappingCount());
+                    //System.out.println("A1: " + a.getOverlappingCount()
+                    //        + " B1: " + b.getOverlappingCount());
                     /* zeroing out velocities
                     // rotateStop
                     upperArmVelsMap.get(playerID1).z = 0;
