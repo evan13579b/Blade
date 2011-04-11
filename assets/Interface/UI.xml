@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nifty xmlns="http://nifty-gui.sourceforge.net/nifty.xsd" 
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+       xsi:schemaLocation="http://nifty-gui.sourceforge.net/nifty.xsd 
+                           http://nifty-gui.sourceforge.net/nifty.xsd">
+    <useStyles filename="nifty-default-styles.xml" />
+    <useControls filename="nifty-default-controls.xml" />
+ 
+    <screen id="start" controller="mygame.ui.LoginScreen">
+        <layer id="layer1" backgroundColor="#fff0" childLayout="horizontal"> 
+            <panel id="mailPanel" height="100%" width="100%" align="left" valign="center" backgroundColor="#000f"  childLayout="vertical"> 
+                <control id="addressList" name="listBox" vertical="on" horizontol="off" displayItems="10" forceSelection="true" viewConverterClass="mygame.ui.AddressEntryViewConverter"/>
+               
+                <control id="connectButton" name="button" label="Connect">
+                    <interact onClick="connect()"/>
+                </control>
+                <panel height="20%"/>
+                <panel childLayout="horizontal">
+                    <control id="statusLabel" name="label" align="right" text="Status: "/>
+                    <control id="statusDisplay" name="label" align="left" text="Not Connected             "/>
+                </panel>
+                <control id="playButton" name="button" label="Play">
+                    <interact onClick="playPressed()"/>
+                </control>
+            </panel>
+        </layer>
+    </screen>
+</nifty>
