@@ -139,7 +139,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     public static void main(String[] args) {
         BladeServer app = new BladeServer();
         AppSettings appSettings=new AppSettings(true);
-        appSettings.setFrameRate(30);
+        appSettings.setFrameRate(60);
         app.setSettings(appSettings);
         //app.start();
         app.start(JmeContext.Type.Headless);
@@ -194,10 +194,6 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                 if ((a != null && b != null && a instanceof ControlID && b instanceof ControlID
                         && ((ControlID)a).getID() != ((ControlID)b).getID())) {
                     
-                    if (a instanceof ControlID && b instanceof ControlID)
-                        
-                            
-                    
                     System.out.println("Collision!");
                     System.out.println("A: " + a.getOverlappingCount()
                             + " B: " + b.getOverlappingCount());
@@ -215,7 +211,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     }
                     
                     Vector3f[] p1State = (Vector3f[])player1Deque.pollLast();
-                    Vector3f[] p2State = (Vector3f[])player2Deque.pollFirst();
+                    Vector3f[] p2State = (Vector3f[])player2Deque.pollLast();
                     
                     // replace the removed states with the one that was grabbed
                     for (int i = 1; i < goBackNumStates; i++) {
