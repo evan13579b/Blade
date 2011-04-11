@@ -64,7 +64,7 @@ public class Character{
             sword.setCollisionGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
             sword.removeCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_01);
             sword.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
-            
+             
             // create control for body
             BodyControl body = new BodyControl(capsule, playerID);
             body.setCollisionGroup(PhysicsCollisionObject.COLLISION_GROUP_02);

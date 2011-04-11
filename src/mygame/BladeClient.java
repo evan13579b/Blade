@@ -211,7 +211,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
     }
     private boolean mouseCurrentlyStopped = true;
-
+ 
     @Override
     public void simpleUpdate(float tpf) {
         if (readyToStart && !started){
