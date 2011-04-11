@@ -26,8 +26,8 @@
 		</bone>
 		<bone id="13" name="UpArmR">
 			<position x="-0.835069" y="1.536498" z="-0.010725"/>
-			<rotation angle="2.926229">
-				<axis x="-0.897726" y="0.311519" z="0.311519"/>
+			<rotation angle="2.606961">
+				<axis x="-0.716949" y="0.155550" z="0.679550"/>
 			</rotation>
 		</bone>
 		<bone id="5" name="UpArmL">
@@ -56,8 +56,8 @@
 		</bone>
 		<bone id="1" name="LowArmR">
 			<position x="0.000000" y="0.999431" z="0.000000"/>
-			<rotation angle="0.051685">
-				<axis x="-0.621803" y="0.684270" z="-0.380966"/>
+			<rotation angle="0.376994">
+				<axis x="0.448361" y="0.068874" z="0.891195"/>
 			</rotation>
 		</bone>
 		<bone id="14" name="LowArmL">
@@ -80,8 +80,8 @@
 		</bone>
 		<bone id="11" name="HandR">
 			<position x="0.000000" y="0.790890" z="0.000000"/>
-			<rotation angle="0.106776">
-				<axis x="0.419708" y="-0.711913" z="0.563050"/>
+			<rotation angle="1.618196">
+				<axis x="-0.302774" y="-0.942718" z="0.140040"/>
 			</rotation>
 		</bone>
 		<bone id="9" name="HandL">
