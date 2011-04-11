@@ -110,12 +110,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     ConcurrentHashMap<Long,Float> charTurnVelMap=new ConcurrentHashMap();
 
     ConcurrentHashMap<Long, Deque<Vector3f[]>> prevStates = new ConcurrentHashMap();
-    
-    
-    ConcurrentHashMap<Long, Vector3f> prevUpperArmAnglesMap = new ConcurrentHashMap();
-    ConcurrentHashMap<Long, Float> prevElbowWristAngleMap = new ConcurrentHashMap();
-    ConcurrentHashMap<Long, Vector3f> prevCharPositionMap = new ConcurrentHashMap();
-    ConcurrentHashMap<Long, Float> prevCharAngleMap = new ConcurrentHashMap();
+   
     ConcurrentHashMap<Long, Float> charLifeMap = new ConcurrentHashMap();
 
     private final long timeBetweenSyncs=10;
@@ -496,11 +491,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                 charTurnVelMap.put(newPlayerID, 0f);
                 charLifeMap.put(newPlayerID, 1f);
 
-                prevUpperArmAnglesMap.put(newPlayerID, new Vector3f());
-                prevElbowWristAngleMap.put(newPlayerID, new Float(CharMovement.Constraints.lRotMin));
-                prevCharPositionMap.put(newPlayerID, new Vector3f());
-                prevCharAngleMap.put(newPlayerID, 0f);
-
+                prevStates.put(newPlayerID, new ArrayDeque<Vector3f[]>(numPrevStates));
+                
                 client.send(new CharCreationMessage(newPlayerID, true));
                 for (Iterator<Long> playerIterator = playerSet.iterator(); playerIterator.hasNext();) {
                     long destPlayerID = playerIterator.next();
