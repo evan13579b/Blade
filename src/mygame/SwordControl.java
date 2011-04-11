@@ -11,7 +11,7 @@ import com.jme3.bullet.control.GhostControl;
  *
  * @author Thor
  */
-public class SwordControl extends GhostControl {
+public class SwordControl extends GhostControl implements ControlID {
     
     private long id;
     

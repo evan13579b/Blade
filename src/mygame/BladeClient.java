@@ -259,16 +259,17 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
             control.setWalkDirection(left.mult(xVel).add(forward.mult(zVel)));
 
-            // Adjust the sword collision shape in accordance with arm movement.
-            // first, get rotation and position of hand
-            Bone hand = modelMap.get(nextPlayerID).getControl(AnimControl.class).getSkeleton().getBone("HandR");
-            Matrix3f rotation = hand.getModelSpaceRotation().toRotationMatrix();
-            Vector3f position = hand.getModelSpacePosition();
-
-            // adjust for difference in position of wrist and middle of sword
-            Vector3f shiftPosition = rotation.mult(new Vector3f(0f, .5f, 2.5f));
-
             if (debug) {
+                
+                // Adjust the sword collision shape in accordance with arm movement.
+                // first, get rotation and position of hand
+                Bone hand = modelMap.get(nextPlayerID).getControl(AnimControl.class).getSkeleton().getBone("HandR");
+                Matrix3f rotation = hand.getModelSpaceRotation().toRotationMatrix();
+                Vector3f position = hand.getModelSpacePosition();
+
+                // adjust for difference in position of wrist and middle of sword
+                Vector3f shiftPosition = rotation.mult(new Vector3f(0f, .5f, 2.5f));
+
                 // build new collision shape
                 CompoundCollisionShape cShape = new CompoundCollisionShape();
                 Vector3f boxSize = new Vector3f(.1f, .1f, 2.25f);
