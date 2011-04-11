@@ -237,7 +237,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         }
 
         if (clientSet) {
-            characterUpdate(tpf);
+      //      characterUpdate(tpf);
             if ((System.currentTimeMillis() - timeOfLastMouseMotion) > mouseMovementTimeout && !mouseCurrentlyStopped) {
                 try {
 

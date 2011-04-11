@@ -390,7 +390,6 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             for (Long sourcePlayerID:playerList) {
                 for (Long destPlayerID:playerList) {
                     try {
-                       
                         clientMap.get(destPlayerID).send(new CharStatusMessage(upperArmAnglesMap.get(sourcePlayerID), 
                                 upperArmVelsMap.get(sourcePlayerID),charPositionMap.get(sourcePlayerID),
                                 charVelocityMap.get(sourcePlayerID),elbowWristAngleMap.get(sourcePlayerID),
