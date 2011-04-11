@@ -643,6 +643,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         players.addAll(playerSet);
         playerSet.remove(playerID);
         players.remove(playerID);
+        prevStates.remove(playerID);
         for (Long destID : players) {
             try {
                 clientMap.get(destID).send(new CharDestructionMessage(playerID));
