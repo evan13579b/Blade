@@ -277,7 +277,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 CollisionShapeFactory.shiftCompoundShapeContents(cShape, shiftPosition);
                 
                 // remove GhostControl from PhysicsSpace, apply change, put in PhysicsSpace
-                SwordControl sword = modelMap.get(playerID).getControl(SwordControl.class);
+                SwordControl sword = modelMap.get(nextPlayerID).getControl(SwordControl.class);
                 bulletAppState.getPhysicsSpace().remove(sword);
                 sword.setCollisionShape(cShape);
                 bulletAppState.getPhysicsSpace().add(sword);
