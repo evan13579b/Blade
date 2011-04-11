@@ -197,6 +197,16 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     System.out.println("A: " + a.getOverlappingCount()
                             + " B: " + b.getOverlappingCount());
                     
+                    long hurtPlayerID;
+                    if(a instanceof SwordControl && b instanceof BodyControl){
+                        hurtPlayerID=((ControlID)b).getID();
+                        charLifeMap.put(hurtPlayerID, charLifeMap.get(hurtPlayerID)*0.999f);
+                    }
+                    else if(b instanceof SwordControl && a instanceof BodyControl){
+                        hurtPlayerID=((ControlID)a).getID();
+                        charLifeMap.put(hurtPlayerID, charLifeMap.get(hurtPlayerID)*0.999f);
+                    }
+                    
                     long playerID1 = Long.valueOf(((ControlID)a).getID());
                     long playerID2 = Long.valueOf(((ControlID)b).getID());
                     

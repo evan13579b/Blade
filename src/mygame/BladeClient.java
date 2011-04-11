@@ -237,7 +237,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         }
 
         if (clientSet) {
-      //      characterUpdate(tpf);
+            characterUpdate(tpf);
             if ((System.currentTimeMillis() - timeOfLastMouseMotion) > mouseMovementTimeout && !mouseCurrentlyStopped) {
                 try {
 
@@ -486,7 +486,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     }
 
     public void messageSent(Message message) {
-        System.out.println(message.getClass());
+    //    System.out.println(message.getClass());
     }
 
     public void objectReceived(Object object) {
