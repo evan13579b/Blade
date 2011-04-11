@@ -274,12 +274,12 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 Vector3f boxSize = new Vector3f(.1f, .1f, 2.25f);
                 cShape.addChildShape(new BoxCollisionShape(boxSize), position, rotation);
                 CollisionShapeFactory.shiftCompoundShapeContents(cShape, shiftPosition);
-                cShape.addChildShape(new CapsuleCollisionShape(1.5f, 6f), Vector3f.ZERO);
+                
                 // remove GhostControl from PhysicsSpace, apply change, put in PhysicsSpace
-                GhostControl ghost = modelMap.get(nextPlayerID).getControl(GhostControl.class);
-                bulletAppState.getPhysicsSpace().remove(ghost);
-                ghost.setCollisionShape(cShape);
-                bulletAppState.getPhysicsSpace().add(ghost);
+                SwordControl sword = modelMap.get(playerID).getControl(SwordControl.class);
+                bulletAppState.getPhysicsSpace().remove(sword);
+                sword.setCollisionShape(cShape);
+                bulletAppState.getPhysicsSpace().add(sword);
             }
         }
     }
@@ -456,7 +456,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
     public void onJoyButtonEvent(JoyButtonEvent evt) {
     }
-    private final int eventsPerPacket = 10; // how many events should happen before next packet is sent
+    private final int eventsPerPacket = 1; // how many events should happen before next packet is sent
     private final long mouseMovementTimeout = 100; // how long until we propose to send a StopMouseMovement message
     private long timeOfLastMouseMotion = 0; // how long since last movement
     private int currentMouseEvents = 0;
