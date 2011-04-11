@@ -637,6 +637,10 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         System.out.println("client disconnecting is " + client);
         long playerID = playerIDMap.get(client);
         List<Long> players = new LinkedList();
+        Node model=modelMap.get(playerID);
+        bulletAppState.getPhysicsSpace().remove(model.getControl(SwordControl.class));
+        bulletAppState.getPhysicsSpace().remove(model.getControl(BodyControl.class));
+        bulletAppState.getPhysicsSpace().remove(model.getControl(CharacterControl.class));
         rootNode.detachChild(modelMap.get(playerID));
         playerIDMap.remove(client);
         clientMap.remove(playerID);
