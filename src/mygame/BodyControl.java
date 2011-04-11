@@ -11,7 +11,7 @@ import com.jme3.bullet.control.GhostControl;
  *
  * @author Thor
  */
-public class BodyControl extends GhostControl {
+public class BodyControl extends GhostControl implements ControlID {
     private long id;
     
     public BodyControl(CollisionShape cShape, long id) {

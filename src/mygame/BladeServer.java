@@ -56,6 +56,7 @@ import com.jme3.bullet.collision.shapes.BoxCollisionShape;
 import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.GhostControl;
+import com.jme3.bullet.control.PhysicsControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.light.DirectionalLight;
@@ -138,7 +139,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     public static void main(String[] args) {
         BladeServer app = new BladeServer();
         AppSettings appSettings=new AppSettings(true);
-        appSettings.setFrameRate(60);
+        appSettings.setFrameRate(30);
         app.setSettings(appSettings);
         //app.start();
         app.start(JmeContext.Type.Headless);
@@ -187,18 +188,22 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
             public void collision(PhysicsCollisionEvent event) {
 
-                Spatial a = event.getNodeA();
-                Spatial b = event.getNodeB();
-
-                if ((a.getControl(GhostControl.class) != null
-                        && b.getControl(GhostControl.class) != null)) {
+                GhostControl a = event.getNodeA().getControl(GhostControl.class);
+                GhostControl b = event.getNodeB().getControl(GhostControl.class);
+                
+                if ((a != null && b != null && a instanceof ControlID && b instanceof ControlID
+                        && ((ControlID)a).getID() != ((ControlID)b).getID())) {
+                    
+                    if (a instanceof ControlID && b instanceof ControlID)
+                        
+                            
                     
                     System.out.println("Collision!");
-                    System.out.println("A: " + a.getControl(GhostControl.class).getOverlappingCount()
-                            + " B: " + b.getControl(GhostControl.class).getOverlappingCount());
+                    System.out.println("A: " + a.getOverlappingCount()
+                            + " B: " + b.getOverlappingCount());
                     
-                    long playerID1 = Long.valueOf(a.getName());
-                    long playerID2 = Long.valueOf(b.getName());
+                    long playerID1 = Long.valueOf(((ControlID)a).getID());
+                    long playerID2 = Long.valueOf(((ControlID)b).getID());
                     
                     Deque player1Deque = prevStates.get(playerID1);
                     Deque player2Deque = prevStates.get(playerID2);
@@ -235,8 +240,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     modelMap.get(playerID2).getControl(CharacterControl.class).setPhysicsLocation(charPositionMap.get(playerID2));
                     updateCharacters(timer.getTimePerFrame());
                     
-                    System.out.println("A1: " + a.getControl(GhostControl.class).getOverlappingCount()
-                            + " B1: " + b.getControl(GhostControl.class).getOverlappingCount());
+                    System.out.println("A1: " + a.getOverlappingCount()
+                            + " B1: " + b.getOverlappingCount());
                     /* zeroing out velocities
                     // rotateStop
                     upperArmVelsMap.get(playerID1).z = 0;

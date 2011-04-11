@@ -140,7 +140,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     public static void main(String[] args) {
         BladeClient app = new BladeClient();
         AppSettings appSettings=new AppSettings(true);
-        appSettings.setFrameRate(60);
+        appSettings.setFrameRate(30);
         app.setSettings(appSettings);
         app.start();
     }
@@ -236,6 +236,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             CharacterControl control=modelMap.get(nextPlayerID).getControl(CharacterControl.class);
             if(diffLength>1.5f){
                   control.setPhysicsLocation(extrapolatedPosition);//new Vector3f(extrapolatedPosition.x,currentPosition.y+1,extrapolatedPosition.z));
+                  System.out.println("warping");
             }
 
             float xDir,zDir;
@@ -258,17 +259,18 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             }
 
             control.setWalkDirection(left.mult(xVel).add(forward.mult(zVel)));
-            System.out.println("walk direction is "+control.getWalkDirection());
-            // Adjust the sword collision shape in accordance with arm movement.
-            // first, get rotation and position of hand
-            Bone hand = modelMap.get(nextPlayerID).getControl(AnimControl.class).getSkeleton().getBone("HandR");
-            Matrix3f rotation = hand.getModelSpaceRotation().toRotationMatrix();
-            Vector3f position = hand.getModelSpacePosition();
-
-            // adjust for difference in position of wrist and middle of sword
-            Vector3f shiftPosition = rotation.mult(new Vector3f(0f, .5f, 2.5f));
 
             if (debug) {
+                
+                // Adjust the sword collision shape in accordance with arm movement.
+                // first, get rotation and position of hand
+                Bone hand = modelMap.get(nextPlayerID).getControl(AnimControl.class).getSkeleton().getBone("HandR");
+                Matrix3f rotation = hand.getModelSpaceRotation().toRotationMatrix();
+                Vector3f position = hand.getModelSpacePosition();
+
+                // adjust for difference in position of wrist and middle of sword
+                Vector3f shiftPosition = rotation.mult(new Vector3f(0f, .5f, 2.5f));
+
                 // build new collision shape
                 CompoundCollisionShape cShape = new CompoundCollisionShape();
                 Vector3f boxSize = new Vector3f(.1f, .1f, 2.25f);
