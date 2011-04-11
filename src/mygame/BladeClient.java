@@ -224,7 +224,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             charAngleMap.put(nextPlayerID, CharMovement.extrapolateCharTurn(charAngleMap.get(nextPlayerID), charTurnVelMap.get(nextPlayerID), tpf));
 
             charPositionMap.put(nextPlayerID, CharMovement.extrapolateCharMovement(charPositionMap.get(nextPlayerID),
-                    charVelocityMap.get(nextPlayerID), charAngleMap.get(nextPlayerID),tpf));
+                    charVelocityMap.get(nextPlayerID), charTurnVelMap.get(nextPlayerID), charAngleMap.get(nextPlayerID),tpf));
 
             CharMovement.setUpperArmTransform(upperArmAnglesMap.get(nextPlayerID), modelMap.get(nextPlayerID));
             CharMovement.setLowerArmTransform(elbowWristAngleMap.get(nextPlayerID), modelMap.get(nextPlayerID));

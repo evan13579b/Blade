@@ -139,7 +139,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     public static void main(String[] args) {
         BladeServer app = new BladeServer();
         AppSettings appSettings=new AppSettings(true);
-        appSettings.setFrameRate(30);
+        appSettings.setFrameRate(120);
         app.setSettings(appSettings);
         //app.start();
         app.start(JmeContext.Type.Headless);
