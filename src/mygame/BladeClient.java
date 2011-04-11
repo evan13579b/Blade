@@ -258,7 +258,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             }
 
             control.setWalkDirection(left.mult(xVel).add(forward.mult(zVel)));
-
+            System.out.println("walk direction is "+control.getWalkDirection());
             // Adjust the sword collision shape in accordance with arm movement.
             // first, get rotation and position of hand
             Bone hand = modelMap.get(nextPlayerID).getControl(AnimControl.class).getSkeleton().getBone("HandR");
