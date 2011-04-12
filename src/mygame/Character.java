@@ -32,7 +32,8 @@ public class Character{
         model.scale(1.0f, 1.0f, 1.0f);
         model.rotate(0.0f, FastMath.HALF_PI, 0.0f);
         model.setLocalTranslation(0.0f, 100.0f, 0.0f);
-
+        model.setName(Long.toString(playerID));
+        
         if (applyPhysics) {
             CapsuleCollisionShape capsule = new CapsuleCollisionShape(1.5f, 6f);
 
@@ -47,6 +48,8 @@ public class Character{
             model.addControl(rigidControl);
              */
             //bulletAppState.getPhysicsSpace().add(rigidControl);
+            
+            // create collision shape for sword
             Bone hand = model.getControl(AnimControl.class).getSkeleton().getBone("HandR");
             Matrix3f rotation = hand.getModelSpaceRotation().toRotationMatrix();
             Vector3f position = hand.getModelSpacePosition();
@@ -55,22 +58,30 @@ public class Character{
             Vector3f boxSize = new Vector3f(.1f, .1f, 2.25f);
             cShape.addChildShape(new BoxCollisionShape(boxSize), position, rotation);
             CollisionShapeFactory.shiftCompoundShapeContents(cShape, shiftPosition);
-            cShape.addChildShape(new CapsuleCollisionShape(1.5f, 6f), Vector3f.ZERO);
-
-            GhostControl ghost = new GhostControl(cShape);
-            ghost.setCollisionGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
-            ghost.removeCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_01);
-            ghost.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
-            model.addControl(ghost);
+            
+            // create control for sword
+            SwordControl sword = new SwordControl(cShape, playerID);
+            sword.setCollisionGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
+            sword.removeCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_01);
+            sword.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
+             
+            // create control for body
+            BodyControl body = new BodyControl(capsule, playerID);
+            body.setCollisionGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
+            body.removeCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_01);
+            body.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
+            
+            // create control for character
             CharacterControl charControl = new CharacterControl(capsule, 0.01f);
-
-            model.addControl(charControl);
-            model.setName(Long.toString(playerID));
-
-            bulletAppState.getPhysicsSpace().add(ghost);
-
+            
+            model.addControl(sword); // control 0
+            model.addControl(body);// control 1
+            model.addControl(charControl); // control 2
+            
+            bulletAppState.getPhysicsSpace().add(sword);
+            bulletAppState.getPhysicsSpace().add(body);
             bulletAppState.getPhysicsSpace().add(charControl);
         }
         return model;
-    }
+    }       
 }
