@@ -14,6 +14,7 @@
 		</bone>
 	</bones>
 	<bonehierarchy>
+		<boneparent bone="swordTip" parent="swordBone" />
 	</bonehierarchy>
 	<animations>
 		<animation name="animate" length="0.000000">
