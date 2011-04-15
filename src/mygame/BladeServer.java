@@ -486,7 +486,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                 Client client = message.getClient();
                 System.out.println("Received ClientReadyMessage");
 
-                Node model = Character.createCharacter("Models/FighterRight.mesh.xml", assetManager, bulletAppState, true, newPlayerID);
+                Node model = Character.createCharacter("Models/Female.mesh.xml", assetManager, bulletAppState, true, newPlayerID);
 
                 rootNode.attachChild(model);
                 //rootNode.attachChild(geom1);

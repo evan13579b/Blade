@@ -410,7 +410,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             System.out.println("Creating character");
             CharCreationMessage creationMessage = (CharCreationMessage) message;
             long newPlayerID = creationMessage.playerID;
-            Node newModel = Character.createCharacter("Models/FighterRight.mesh.xml", assetManager, bulletAppState, true, newPlayerID);
+            Node newModel = Character.createCharacter("Models/Female.mesh.xml", assetManager, bulletAppState, true, newPlayerID);
             rootNode.attachChild(newModel);
             
             if (debug) {

@@ -104,8 +104,8 @@
 		</bone>
 		<bone id="12" name="swordHandTip">
 			<position x="0.000001" y="3.963011" z="0.000003"/>
-			<rotation angle="0.059704">
-				<axis x="0.222082" y="0.616306" z="0.755543"/>
+				<rotation angle="0.103490">
+				<axis x="-0.508869" y="-0.397386" z="0.763634"/>
 			</rotation>
 		</bone>
 	</bones>
