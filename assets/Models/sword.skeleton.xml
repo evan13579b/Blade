@@ -1,9 +1,15 @@
 <skeleton>
 	<bones>
 		<bone id="0" name="swordBone">
-			<position x="-0.005753" y="0.010074" z="-0.014256"/>
+			<position x="-0.005753" y="0.010073" z="-0.014256"/>
 			<rotation angle="3.020342">
 				<axis x="-0.236074" y="-0.000000" z="-0.971735"/>
+			</rotation>
+		</bone>
+		<bone id="1" name="swordTip">
+			<position x="0.460041" y="-3.923842" z="-0.127416"/>
+			<rotation angle="3.091322">
+				<axis x="0.863194" y="0.080175" z="-0.498465"/>
 			</rotation>
 		</bone>
 	</bones>
