@@ -359,12 +359,14 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
             // Adjust the sword collision shape in accordance with arm movement.
             // first, get rotation and position of hand
-            Bone hand = modelMap.get(playerID).getControl(AnimControl.class).getSkeleton().getBone("HandR");
+            Bone hand = modelMap.get(playerID).getControl(AnimControl.class).getSkeleton().getBone("swordHand");
             Matrix3f rotation = hand.getModelSpaceRotation().toRotationMatrix();
             Vector3f position = hand.getModelSpacePosition();
 
+            modelMap.get(playerID).getChild("sword").setLocalTranslation(position);
+            
             // adjust for difference in position of wrist and middle of sword
-            Vector3f shiftPosition = rotation.mult(new Vector3f(0f, .5f, 2.5f));
+            Vector3f shiftPosition = rotation.mult(new Vector3f(0f, 0f, 2.25f));
 
             // build new collision shape
             CompoundCollisionShape cShape = new CompoundCollisionShape();
@@ -373,7 +375,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             CollisionShapeFactory.shiftCompoundShapeContents(cShape, shiftPosition);
             
             // remove GhostControl from PhysicsSpace, apply change, put in PhysicsSpace
-            SwordControl sword = modelMap.get(playerID).getControl(SwordControl.class);
+            SwordControl sword = modelMap.get(playerID).getChild("sword").getControl(SwordControl.class);
             bulletAppState.getPhysicsSpace().remove(sword);
             sword.setCollisionShape(cShape);
             bulletAppState.getPhysicsSpace().add(sword);
@@ -486,7 +488,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                 Client client = message.getClient();
                 System.out.println("Received ClientReadyMessage");
 
-                Node model = Character.createCharacter("Models/Female.mesh.xml", assetManager, bulletAppState, true, newPlayerID);
+                Node model = Character.createCharacter("Models/Female.mesh.xml", "Models/sword.mesh.xml", assetManager, bulletAppState, true, newPlayerID);
 
                 rootNode.attachChild(model);
                 //rootNode.attachChild(geom1);
@@ -599,7 +601,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         long playerID = playerIDMap.get(client);
         List<Long> players = new LinkedList();
         Node model=modelMap.get(playerID);
-        bulletAppState.getPhysicsSpace().remove(model.getControl(SwordControl.class));
+        bulletAppState.getPhysicsSpace().remove(model.getChild("sword").getControl(SwordControl.class));
         bulletAppState.getPhysicsSpace().remove(model.getControl(BodyControl.class));
         bulletAppState.getPhysicsSpace().remove(model.getControl(CharacterControl.class));
         rootNode.detachChild(modelMap.get(playerID));

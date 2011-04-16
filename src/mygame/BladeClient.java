@@ -87,6 +87,7 @@ import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.light.DirectionalLight;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Matrix3f;
+import com.jme3.math.Quaternion;
 import com.jme3.niftygui.NiftyJmeDisplay;
 import com.jme3.scene.debug.SkeletonDebugger;
 import com.jme3.system.AppSettings;
@@ -302,21 +303,29 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 
                 // Adjust the sword collision shape in accordance with arm movement.
                 // first, get rotation and position of hand
-                Bone hand = modelMap.get(nextPlayerID).getControl(AnimControl.class).getSkeleton().getBone("HandR");
-                Matrix3f rotation = hand.getModelSpaceRotation().toRotationMatrix();
+                Bone hand = modelMap.get(nextPlayerID).getControl(AnimControl.class).getSkeleton().getBone("swordHand");
+                Quaternion rotQ = hand.getModelSpaceRotation();
+                Matrix3f rotation = rotQ.toRotationMatrix();
                 Vector3f position = hand.getModelSpacePosition();
 
+                //Quaternion adjust = (new Quaternion()).fromAngles(0, 0, FastMath.HALF_PI);
+                //rotQ = rotQ.mult(adjust);
+                                
+                Node swordNode = (Node)modelMap.get(nextPlayerID).getChild("sword");
+                swordNode.setLocalRotation(rotation);
+                swordNode.setLocalTranslation(position);
+                
                 // adjust for difference in position of wrist and middle of sword
-                Vector3f shiftPosition = rotation.mult(new Vector3f(0f, .5f, 2.5f));
+                Vector3f shiftPosition = rotation.mult(new Vector3f(0f, 0f, 2.5f));
 
                 // build new collision shape
                 CompoundCollisionShape cShape = new CompoundCollisionShape();
                 Vector3f boxSize = new Vector3f(.1f, .1f, 2.25f);
-                cShape.addChildShape(new BoxCollisionShape(boxSize), position, rotation);
+                cShape.addChildShape(new BoxCollisionShape(boxSize), Vector3f.ZERO, rotation);
                 CollisionShapeFactory.shiftCompoundShapeContents(cShape, shiftPosition);
                 
                 // remove GhostControl from PhysicsSpace, apply change, put in PhysicsSpace
-                SwordControl sword = modelMap.get(nextPlayerID).getControl(SwordControl.class);
+                SwordControl sword = modelMap.get(nextPlayerID).getChild("sword").getControl(SwordControl.class);
                 bulletAppState.getPhysicsSpace().remove(sword);
                 sword.setCollisionShape(cShape);
                 bulletAppState.getPhysicsSpace().add(sword);
@@ -410,7 +419,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             System.out.println("Creating character");
             CharCreationMessage creationMessage = (CharCreationMessage) message;
             long newPlayerID = creationMessage.playerID;
-            Node newModel = Character.createCharacter("Models/Female.mesh.xml", assetManager, bulletAppState, true, newPlayerID);
+            Node newModel = Character.createCharacter("Models/Female.mesh.xml", "Models/sword.mesh.xml", assetManager, bulletAppState, true, newPlayerID);
             rootNode.attachChild(newModel);
             
             if (debug) {
@@ -421,6 +430,16 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 mat2.getAdditionalRenderState().setDepthTest(false);
                 skeletonDebug.setMaterial(mat2);
                 newModel.attachChild(skeletonDebug);
+                
+                Node newSword = (Node)newModel.getChild("sword");
+                
+                AnimControl control1 = newSword.getControl(AnimControl.class);
+                SkeletonDebugger skeletonDebug1 = new SkeletonDebugger("skeleton1", control1.getSkeleton());
+                Material mat21 = new Material(assetManager, "Common/MatDefs/Misc/WireColor.j3md");
+                mat21.setColor("Color", ColorRGBA.Green);
+                mat21.getAdditionalRenderState().setDepthTest(false);
+                skeletonDebug1.setMaterial(mat21);
+                newSword.attachChild(skeletonDebug1);
             }
             
             if (creationMessage.controllable) {
