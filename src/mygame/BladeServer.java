@@ -43,7 +43,6 @@ import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import mygame.messages.InputMessages;
-import mygame.messages.CharPositionMessage;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.bullet.BulletAppState;
@@ -55,14 +54,13 @@ import com.jme3.bullet.collision.PhysicsCollisionObject;
 import com.jme3.bullet.collision.shapes.BoxCollisionShape;
 import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
 import com.jme3.bullet.control.CharacterControl;
-import com.jme3.bullet.control.GhostControl;
-import com.jme3.bullet.control.PhysicsControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.FastMath;
 import com.jme3.math.Matrix3f;
+import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.network.connection.Client;
 import com.jme3.network.connection.Server;
@@ -72,7 +70,6 @@ import com.jme3.network.message.Message;
 import com.jme3.network.serializing.Serializer;
 import com.jme3.network.sync.ServerSyncService;
 import com.jme3.scene.Node;
-import com.jme3.scene.Spatial;
 import com.jme3.system.AppSettings;
 import com.jme3.system.JmeContext;
 import com.jme3.terrain.geomipmap.TerrainQuad;
@@ -359,25 +356,36 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
             // Adjust the sword collision shape in accordance with arm movement.
             // first, get rotation and position of hand
-            Bone hand = modelMap.get(playerID).getControl(AnimControl.class).getSkeleton().getBone("HandR");
+            Bone hand = modelMap.get(playerID).getControl(AnimControl.class).getSkeleton().getBone("swordHand");
             Matrix3f rotation = hand.getModelSpaceRotation().toRotationMatrix();
             Vector3f position = hand.getModelSpacePosition();
 
+            // set the position of the sword to the position of the hand
+            Node swordNode = (Node) modelMap.get(playerID).getChild("sword");
+            Bone swordBone = swordNode.getControl(AnimControl.class).getSkeleton().getBone("swordBone");
+            swordNode.setLocalRotation(rotation);
+            swordNode.setLocalTranslation(position);
+
+            // adjust for difference in rotation
+            Quaternion swordRot = swordBone.getModelSpaceRotation();
+            Quaternion adjust = (new Quaternion()).fromAngles(FastMath.HALF_PI, 0, 0);
+            Matrix3f swordRotMat = swordRot.mult(adjust).toRotationMatrix();
+
             // adjust for difference in position of wrist and middle of sword
-            Vector3f shiftPosition = rotation.mult(new Vector3f(0f, .5f, 2.5f));
+            Vector3f shiftPosition = swordRot.mult(new Vector3f(0f, 1.8f, 0f));
 
             // build new collision shape
             CompoundCollisionShape cShape = new CompoundCollisionShape();
             Vector3f boxSize = new Vector3f(.1f, .1f, 2.25f);
-            cShape.addChildShape(new BoxCollisionShape(boxSize), position, rotation);
+            cShape.addChildShape(new BoxCollisionShape(boxSize), Vector3f.ZERO, swordRotMat);
             CollisionShapeFactory.shiftCompoundShapeContents(cShape, shiftPosition);
-            
+
             // remove GhostControl from PhysicsSpace, apply change, put in PhysicsSpace
-            SwordControl sword = modelMap.get(playerID).getControl(SwordControl.class);
+            SwordControl sword = modelMap.get(playerID).getChild("sword").getControl(SwordControl.class);
             bulletAppState.getPhysicsSpace().remove(sword);
             sword.setCollisionShape(cShape);
             bulletAppState.getPhysicsSpace().add(sword);
-            
+
             // get rid of oldest, add newest previous state
             if (prevStates.get(playerID).size() >= numPrevStates) {
                 prevStates.get(playerID).pollFirst();
@@ -486,7 +494,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                 Client client = message.getClient();
                 System.out.println("Received ClientReadyMessage");
 
-                Node model = Character.createCharacter("Models/Female.mesh.xml", assetManager, bulletAppState, true, newPlayerID);
+                Node model = Character.createCharacter("Models/Female.mesh.xml", "Models/sword.mesh.xml", assetManager, bulletAppState, true, newPlayerID);
 
                 rootNode.attachChild(model);
                 //rootNode.attachChild(geom1);
@@ -599,7 +607,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         long playerID = playerIDMap.get(client);
         List<Long> players = new LinkedList();
         Node model=modelMap.get(playerID);
-        bulletAppState.getPhysicsSpace().remove(model.getControl(SwordControl.class));
+        bulletAppState.getPhysicsSpace().remove(model.getChild("sword").getControl(SwordControl.class));
         bulletAppState.getPhysicsSpace().remove(model.getControl(BodyControl.class));
         bulletAppState.getPhysicsSpace().remove(model.getControl(CharacterControl.class));
         rootNode.detachChild(modelMap.get(playerID));
