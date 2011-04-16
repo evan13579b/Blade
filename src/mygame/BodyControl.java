@@ -8,7 +8,7 @@ import com.jme3.bullet.collision.shapes.CollisionShape;
 import com.jme3.bullet.control.GhostControl;
 
 /**
- *
+ * 
  * @author Thor
  */
 public class BodyControl extends GhostControl implements ControlID {
