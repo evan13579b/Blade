@@ -40,7 +40,7 @@ public class Character{
         bodyModel.attachChild(swordModel);
         
         if (applyPhysics) {
-            CapsuleCollisionShape capsule = new CapsuleCollisionShape(1.5f, 6f);
+            CapsuleCollisionShape capsule = new CapsuleCollisionShape(1f, 4.5f);
 
             /*
             Mesh mesh = findMesh(model);

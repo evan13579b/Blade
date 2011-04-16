@@ -307,20 +307,19 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 Matrix3f rotation = hand.getModelSpaceRotation().toRotationMatrix();
                 Vector3f position = hand.getModelSpacePosition();
 
+                // set the position of the sword to the position of the hand
                 Node swordNode = (Node)modelMap.get(nextPlayerID).getChild("sword");
                 Bone swordBone = swordNode.getControl(AnimControl.class).getSkeleton().getBone("swordBone");
                 swordNode.setLocalRotation(rotation);
                 swordNode.setLocalTranslation(position);
                 
+                // adjust for difference in rotation
                 Quaternion swordRot = swordBone.getModelSpaceRotation();
                 Quaternion adjust = (new Quaternion()).fromAngles(FastMath.HALF_PI, 0, 0);
                 Matrix3f swordRotMat = swordRot.mult(adjust).toRotationMatrix();
                 
-                
                 // adjust for difference in position of wrist and middle of sword
                 Vector3f shiftPosition = swordRot.mult(new Vector3f(0f, 1.8f, 0f));
-
-                
                 
                 // build new collision shape
                 CompoundCollisionShape cShape = new CompoundCollisionShape();
