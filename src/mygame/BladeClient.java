@@ -304,24 +304,28 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 // Adjust the sword collision shape in accordance with arm movement.
                 // first, get rotation and position of hand
                 Bone hand = modelMap.get(nextPlayerID).getControl(AnimControl.class).getSkeleton().getBone("swordHand");
-                Quaternion rotQ = hand.getModelSpaceRotation();
-                Matrix3f rotation = rotQ.toRotationMatrix();
+                Matrix3f rotation = hand.getModelSpaceRotation().toRotationMatrix();
                 Vector3f position = hand.getModelSpacePosition();
 
-                //Quaternion adjust = (new Quaternion()).fromAngles(0, 0, FastMath.HALF_PI);
-                //rotQ = rotQ.mult(adjust);
-                                
                 Node swordNode = (Node)modelMap.get(nextPlayerID).getChild("sword");
+                Bone swordBone = swordNode.getControl(AnimControl.class).getSkeleton().getBone("swordBone");
                 swordNode.setLocalRotation(rotation);
                 swordNode.setLocalTranslation(position);
                 
+                Quaternion swordRot = swordBone.getModelSpaceRotation();
+                Quaternion adjust = (new Quaternion()).fromAngles(FastMath.HALF_PI, 0, 0);
+                Matrix3f swordRotMat = swordRot.mult(adjust).toRotationMatrix();
+                
+                
                 // adjust for difference in position of wrist and middle of sword
-                Vector3f shiftPosition = rotation.mult(new Vector3f(0f, 0f, 2.5f));
+                Vector3f shiftPosition = swordRot.mult(new Vector3f(0f, 1.8f, 0f));
 
+                
+                
                 // build new collision shape
                 CompoundCollisionShape cShape = new CompoundCollisionShape();
                 Vector3f boxSize = new Vector3f(.1f, .1f, 2.25f);
-                cShape.addChildShape(new BoxCollisionShape(boxSize), Vector3f.ZERO, rotation);
+                cShape.addChildShape(new BoxCollisionShape(boxSize), Vector3f.ZERO, swordRotMat);
                 CollisionShapeFactory.shiftCompoundShapeContents(cShape, shiftPosition);
                 
                 // remove GhostControl from PhysicsSpace, apply change, put in PhysicsSpace
