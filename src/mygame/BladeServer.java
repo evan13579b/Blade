@@ -504,9 +504,9 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         bulletAppState.getPhysicsSpace().add(terrain_phy);
         
         House = (Node)assetManager.loadModel("Models/Cube.mesh.j3o");
-        House.setLocalTranslation(0.0f, 0.0f, 70.0f);
+        House.setLocalTranslation(0.0f, 3.0f, 70.0f);
         House.setShadowMode(ShadowMode.CastAndReceive);
-        House.setLocalScale(10f);
+        House.setLocalScale(13f);
         House.setMaterial(wall_mat); 
         //Does not work atm house_mat.setTexture("m_Tex1", rock);
         //House.setMaterial(house_mat);

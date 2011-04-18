@@ -439,9 +439,10 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         bulletAppState.getPhysicsSpace().add(terrain_phy);
         
         House = (Node)assetManager.loadModel("Models/Cube.mesh.j3o");
-        House.setLocalTranslation(0.0f, 0.0f, 70.0f);
-        House.setShadowMode(ShadowMode.Off);
-        House.setLocalScale(10f);
+        House.setLocalTranslation(0.0f, 3.0f, 70.0f);
+        House.setShadowMode(ShadowMode.CastAndReceive);
+        House.setLocalScale(13f);
+        House.setMaterial(wall_mat); 
         //Does not work atm house_mat.setTexture("m_Tex1", rock);
         //House.setMaterial(house_mat);
         rootNode.attachChild(House);
@@ -451,13 +452,9 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         House.addControl(house_phy);
         bulletAppState.getPhysicsSpace().add(house_phy);
         
-        DirectionalLight light = new DirectionalLight();
+         DirectionalLight light = new DirectionalLight();
         light.setDirection((new Vector3f(-0.5f,-1f, -0.5f)).normalize());
         rootNode.addLight(light);
-
-        AmbientLight ambLight = new AmbientLight();
-        ambLight.setColor(new ColorRGBA(1f, 1f, 0.8f, 0.2f));
-        rootNode.addLight(ambLight);
         
         
     }
