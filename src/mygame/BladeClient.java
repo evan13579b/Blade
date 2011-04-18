@@ -467,7 +467,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     public void initWater(){
           SimpleWaterProcessor waterProcessor = new SimpleWaterProcessor(assetManager);
             waterProcessor.setReflectionScene(rootNode);
-            Vector3f waterLocation = new Vector3f(0,-7,0);
+            Vector3f waterLocation = new Vector3f(0,-10,0);
             waterProcessor.setPlane(new Plane(Vector3f.UNIT_Y, waterLocation.dot(Vector3f.UNIT_Y)));
             viewPort.addProcessor(waterProcessor);
             
@@ -475,12 +475,12 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             waterProcessor.setDistortionScale(0.05f);
             waterProcessor.setWaveSpeed(0.06f);
             
-            Quad quad = new Quad(400,400);
+            Quad quad = new Quad(1400,1400);
             quad.scaleTextureCoordinates(new Vector2f(6f,6f));
             
             Geometry water = new Geometry("water",quad);
             water.setLocalRotation(new Quaternion().fromAngleAxis(-FastMath.HALF_PI, Vector3f.UNIT_X));
-            water.setLocalTranslation(-200, -6, 250);
+            water.setLocalTranslation(-200, -7, 250);
             water.setShadowMode(ShadowMode.Receive);
             water.setMaterial(waterProcessor.getMaterial());
             rootNode.attachChild(water);
