@@ -262,21 +262,34 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
             charAngleMap.put(nextPlayerID, CharMovement.extrapolateCharTurn(charAngleMap.get(nextPlayerID), charTurnVelMap.get(nextPlayerID), tpf));
 
+    //        Vector3f alternateExtrap=CharMovement.oldExtrapolateCharMovement(charPositionMap.get(nextPlayerID),charVelocityMap.get(nextPlayerID),
+      //              charAngleMap.get(nextPlayerID),charTurnVelMap.get(nextPlayerID),tpf);
             charPositionMap.put(nextPlayerID, CharMovement.extrapolateCharMovement(charPositionMap.get(nextPlayerID),
+                    charVelocityMap.get(nextPlayerID), charAngleMap.get(nextPlayerID),charTurnVelMap.get(nextPlayerID),tpf));
                     charVelocityMap.get(nextPlayerID), charTurnVelMap.get(nextPlayerID), charAngleMap.get(nextPlayerID),tpf));
 
             CharMovement.setUpperArmTransform(upperArmAnglesMap.get(nextPlayerID), modelMap.get(nextPlayerID));
             CharMovement.setLowerArmTransform(elbowWristAngleMap.get(nextPlayerID), modelMap.get(nextPlayerID));
 
+        //    Vector3f correctiveVelocity=correctiveVelocityMap.get(nextPlayerID);
+            
+            
             Vector3f extrapolatedPosition,currentPosition;
             extrapolatedPosition=charPositionMap.get(nextPlayerID);
             currentPosition=modelMap.get(nextPlayerID).getLocalTranslation();
-            float diffLength=FastMath.sqrt(FastMath.sqr(extrapolatedPosition.x-currentPosition.x)+FastMath.sqr(extrapolatedPosition.z-currentPosition.z));
+     //       float diffLength=FastMath.sqrt(FastMath.sqr(extrapolatedPosition.x-currentPosition.x)+FastMath.sqr(extrapolatedPosition.z-currentPosition.z));
             CharacterControl control=modelMap.get(nextPlayerID).getControl(CharacterControl.class);
-            if(diffLength>1.5f){
-                  control.setPhysicsLocation(extrapolatedPosition);//new Vector3f(extrapolatedPosition.x,currentPosition.y+1,extrapolatedPosition.z));
-                  System.out.println("warping");
-            }
+            
+            Vector3f diffVect=new Vector3f(extrapolatedPosition.x-currentPosition.x,0,extrapolatedPosition.z-currentPosition.z);
+            Vector3f correctiveVelocity=new Vector3f(diffVect.x*0.1f,0,diffVect.z*0.1f);
+        //    correctiveVelocityMap.put(nextPlayerID, correctiveVelocity);
+            
+    //        float oldDiffLength=FastMath.sqrt(FastMath.sqr(alternateExtrap.x-currentPosition.x)+FastMath.sqr(alternateExtrap.z-currentPosition.z));
+      //      System.out.println("new diff is "+diffLength+", old dif is "+oldDiffLength);
+   //         if(diffLength>1.5f){
+    //              control.setPhysicsLocation(extrapolatedPosition);//new Vector3f(extrapolatedPosition.x,currentPosition.y+1,extrapolatedPosition.z));
+   //               System.out.println("warping");
+    //        }
 
             float xDir,zDir;
             zDir=FastMath.cos(charAngleMap.get(nextPlayerID));
@@ -297,7 +310,9 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 cam.setLocation(modelMap.get(nextPlayerID).getLocalTranslation().add(new Vector3f(0,4,0)).subtract(viewDirection.mult(8)));
             }
 
-            control.setWalkDirection(left.mult(xVel).add(forward.mult(zVel)));
+            Vector3f velocity=left.mult(xVel).add(forward.mult(zVel));
+            
+            control.setWalkDirection(velocity.add(correctiveVelocity));
 
             // first, get rotation and position of hand
             Bone hand = modelMap.get(nextPlayerID).getControl(AnimControl.class).getSkeleton().getBone("swordHand");
