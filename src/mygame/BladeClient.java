@@ -425,7 +425,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             System.out.println("my id is "+playerID+", and destroID is "+destroyedPlayerID);
             playerSet.remove(destroyedPlayerID);
             Node model=modelMap.get(destroyedPlayerID);
-            bulletAppState.getPhysicsSpace().remove(model.getControl(SwordControl.class));
+            bulletAppState.getPhysicsSpace().remove(model.getChild("sword").getControl(SwordControl.class));
             bulletAppState.getPhysicsSpace().remove(model.getControl(BodyControl.class));
             bulletAppState.getPhysicsSpace().remove(model.getControl(CharacterControl.class));
             rootNode.detachChild(modelMap.get(destroyedPlayerID));
