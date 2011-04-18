@@ -584,7 +584,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     public void onJoyButtonEvent(JoyButtonEvent evt) {
     }
     private final int eventsPerPacket = 1; // how many events should happen before next packet is sent
-    private final long mouseMovementTimeout = 0;// 100; // how long until we propose to send a StopMouseMovement message
+    private final long mouseMovementTimeout = 20;// 100; // how long until we propose to send a StopMouseMovement message
     private long timeOfLastMouseMotion = 0; // how long since last movement
     private int currentMouseEvents = 0;
     private int currentDX = 0;
