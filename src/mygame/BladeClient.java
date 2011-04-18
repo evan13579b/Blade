@@ -283,12 +283,12 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             
             Vector3f diffVect=new Vector3f(extrapolatedPosition.x-currentPosition.x,0,extrapolatedPosition.z-currentPosition.z);
             System.out.println("diffVect:"+diffVect);
-            float correctiveConstant=0;
+            float correctiveConstant=0.2f;
             float correctiveX=0;
             float correctiveZ=0;
             float diffX=extrapolatedPosition.x-currentPosition.x;
             float diffZ=extrapolatedPosition.z-currentPosition.z;
-            float diffLength=diffVect.length();
+            float diffLength=diffVect.length();/*
             if(diffLength>10){
                 control.setPhysicsLocation(extrapolatedPosition);
             }
@@ -301,9 +301,9 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                     correctiveZ=1.0f/3.0f;
                 else
                     correctiveZ=FastMath.abs(diffZ)/3;
-            }
+            }*/
                 
-            Vector3f correctiveVelocity=new Vector3f(diffVect.x*correctiveX,0,diffVect.z*correctiveZ);
+            Vector3f correctiveVelocity=new Vector3f(diffVect.x*correctiveConstant,0,diffVect.z*correctiveConstant);
         //    correctiveVelocityMap.put(nextPlayerID, correctiveVelocity);
             
     //        float oldDiffLength=FastMath.sqrt(FastMath.sqr(alternateExtrap.x-currentPosition.x)+FastMath.sqr(alternateExtrap.z-currentPosition.z));
