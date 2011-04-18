@@ -127,7 +127,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     ConcurrentHashMap<Long, AnimChannel> animChannelMap = new ConcurrentHashMap();
     ConcurrentHashMap<Long, Float> charLifeMap = new ConcurrentHashMap();
 
-    private final boolean debug = true;
+    private final boolean debug = false;
     private BulletAppState bulletAppState;
     private TerrainQuad terrain;
     Material mat_terrain;
