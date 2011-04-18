@@ -56,10 +56,8 @@ import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.bullet.util.CollisionShapeFactory;
-import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
-import com.jme3.math.ColorRGBA;
 import com.jme3.math.FastMath;
 import com.jme3.math.Matrix3f;
 import com.jme3.math.Quaternion;
@@ -74,6 +72,7 @@ import com.jme3.network.sync.ServerSyncService;
 import com.jme3.renderer.queue.RenderQueue.ShadowMode;
 import com.jme3.scene.Node;
 import com.jme3.system.AppSettings;
+import com.jme3.system.JmeContext;
 import com.jme3.terrain.geomipmap.TerrainQuad;
 import com.jme3.terrain.heightmap.AbstractHeightMap;
 import com.jme3.terrain.heightmap.ImageBasedHeightMap;
@@ -148,8 +147,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         appSettings.setFrameRate(60);
         app.setPauseOnLostFocus(false);
         app.setSettings(appSettings);
-        app.start();
-        //app.start(JmeContext.Type.Headless);
+        //app.start();
+        app.start(JmeContext.Type.Headless);
     }
 
     @Override
@@ -508,6 +507,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         House.setShadowMode(ShadowMode.CastAndReceive);
         House.setLocalScale(10f);
         House.setMaterial(wall_mat); 
+        
         //Does not work atm house_mat.setTexture("m_Tex1", rock);
         //House.setMaterial(house_mat);
         rootNode.attachChild(House);
