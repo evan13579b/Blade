@@ -280,7 +280,15 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             CharacterControl control=modelMap.get(nextPlayerID).getControl(CharacterControl.class);
             
             Vector3f diffVect=new Vector3f(extrapolatedPosition.x-currentPosition.x,0,extrapolatedPosition.z-currentPosition.z);
-            Vector3f correctiveVelocity=new Vector3f(diffVect.x*0.1f,0,diffVect.z*0.1f);
+            System.out.println("diffVect:"+diffVect);
+            float correctiveConstant;
+            float diffLength=diffVect.length();
+            if(diffLength>1)
+                correctiveConstant=1.0f/3.0f;
+            else
+                correctiveConstant=diffLength/3;
+            
+            Vector3f correctiveVelocity=new Vector3f(diffVect.x*correctiveConstant,0,diffVect.z*correctiveConstant);
         //    correctiveVelocityMap.put(nextPlayerID, correctiveVelocity);
             
     //        float oldDiffLength=FastMath.sqrt(FastMath.sqr(alternateExtrap.x-currentPosition.x)+FastMath.sqr(alternateExtrap.z-currentPosition.z));
