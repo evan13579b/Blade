@@ -26,16 +26,21 @@ import com.jme3.scene.Node;
  * @author blah
  */
 public class Character{
-    static public Node createCharacter(String assetPath,AssetManager assetManager,BulletAppState bulletAppState,boolean applyPhysics, long playerID){
+    static public Node createCharacter(String bodyAssetPath,String swordAssetPath,AssetManager assetManager,BulletAppState bulletAppState,boolean applyPhysics, long playerID){
         
-        Node model=(Node)assetManager.loadModel(assetPath);
-        model.scale(1.0f, 1.0f, 1.0f);
-        model.rotate(0.0f, FastMath.HALF_PI, 0.0f);
-        model.setLocalTranslation(0.0f, 100.0f, 0.0f);
-        model.setName(Long.toString(playerID));
+        Node bodyModel=(Node)assetManager.loadModel(bodyAssetPath);
+        bodyModel.scale(1.0f, 1.0f, 1.0f);
+        bodyModel.rotate(0.0f, FastMath.HALF_PI, 0.0f);
+        bodyModel.setLocalTranslation(0.0f, 20.0f, 0.0f);
+        bodyModel.setName(Long.toString(playerID));
+        
+        Node swordModel=(Node)assetManager.loadModel(swordAssetPath);
+        swordModel.scale(1.0f, 1.0f, 1.0f);
+        swordModel.setName("sword");
+        bodyModel.attachChild(swordModel);
         
         if (applyPhysics) {
-            CapsuleCollisionShape capsule = new CapsuleCollisionShape(1.5f, 6f);
+            CapsuleCollisionShape capsule = new CapsuleCollisionShape(1f, 4.5f);
 
             /*
             Mesh mesh = findMesh(model);
@@ -50,10 +55,17 @@ public class Character{
             //bulletAppState.getPhysicsSpace().add(rigidControl);
             
             // create collision shape for sword
-            Bone hand = model.getControl(AnimControl.class).getSkeleton().getBone("HandR");
+            Bone hand = bodyModel.getControl(AnimControl.class).getSkeleton().getBone("swordHand");
             Matrix3f rotation = hand.getModelSpaceRotation().toRotationMatrix();
             Vector3f position = hand.getModelSpacePosition();
-            Vector3f shiftPosition = rotation.mult(new Vector3f(0f, .5f, 2.5f));
+            
+            swordModel.setLocalRotation(rotation);
+            swordModel.setLocalTranslation(position);
+            
+            //swordModel.getControl(AnimControl.class).getSkeleton().getBone("swordBone").getModelSpacePosition();
+            //swordModel.setLocalTranslation(position);
+            
+            Vector3f shiftPosition = rotation.mult(new Vector3f(0f, 0f, 2.5f));
             CompoundCollisionShape cShape = new CompoundCollisionShape();
             Vector3f boxSize = new Vector3f(.1f, .1f, 2.25f);
             cShape.addChildShape(new BoxCollisionShape(boxSize), position, rotation);
@@ -74,14 +86,14 @@ public class Character{
             // create control for character
             CharacterControl charControl = new CharacterControl(capsule, 0.01f);
             
-            model.addControl(sword); // control 0
-            model.addControl(body);// control 1
-            model.addControl(charControl); // control 2
+            swordModel.addControl(sword);
+            bodyModel.addControl(body);
+            bodyModel.addControl(charControl);
             
             bulletAppState.getPhysicsSpace().add(sword);
             bulletAppState.getPhysicsSpace().add(body);
             bulletAppState.getPhysicsSpace().add(charControl);
         }
-        return model;
+        return bodyModel;
     }       
 }
