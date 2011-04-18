@@ -281,9 +281,12 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             
             Vector3f diffVect=new Vector3f(extrapolatedPosition.x-currentPosition.x,0,extrapolatedPosition.z-currentPosition.z);
             System.out.println("diffVect:"+diffVect);
-            float correctiveConstant;
+            float correctiveConstant=0;
             float diffLength=diffVect.length();
-            if(diffLength>1)
+            if(diffLength>10){
+                control.setPhysicsLocation(extrapolatedPosition);
+            }
+            else if(diffLength>1)
                 correctiveConstant=1.0f/3.0f;
             else
                 correctiveConstant=diffLength/3;
