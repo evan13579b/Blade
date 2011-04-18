@@ -143,6 +143,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     private RigidBodyControl basic_phy;
     private RigidBodyControl body_phy;
     private Node House;
+    private Node sceneNodes;
     CharacterControl character;
     CompoundCollisionShape collisionShape;
     BoundingVolume ballBound;
@@ -198,11 +199,13 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         guiViewPort.addProcessor(niftyDisplay);
         flyCam.setDragToRotate(true);
         //app.setDisplayStatView(false);
-        
+        sceneNodes = new Node("Scene");
+
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
         stateManager.attach(bulletAppState);
-        rootNode.attachChild(SkyFactory.createSky(assetManager, "Textures/Skysphere.jpg", true));
+        //rootNode.attachChild(SkyFactory.createSky(assetManager, "Textures/Skysphere.jpg", true));
+        sceneNodes.attachChild(SkyFactory.createSky(assetManager, "Textures/Skysphere.jpg", true));
         initMaterials();
         initTerrain();
         initWater();
@@ -215,7 +218,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         rootNode.addLight(sun2);
 
         flyCam.setEnabled(false);
-        
+        rootNode.attachChild(sceneNodes);
         if (debug) {
             bulletAppState.getPhysicsSpace().enableDebug(this.getAssetManager());
         }
@@ -434,8 +437,8 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         terrain.setLocalTranslation(0, -100, 0);
         terrain.setLocalScale(2f, 2f, 2f);
         
-        rootNode.attachChild(terrain);
-
+        //rootNode.attachChild(terrain);
+        sceneNodes.attachChild(terrain);
         terrain_phy = new RigidBodyControl(0.0f);
         terrain_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
         terrain_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_03);
@@ -450,7 +453,8 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         //Does not work atm house_mat.setTexture("m_Tex1", rock);
         //House.setMaterial(house_mat);
         House.setMaterial(wall_mat);
-        rootNode.attachChild(House);
+        //rootNode.attachChild(House);
+        sceneNodes.attachChild(House);
         RigidBodyControl house_phy = new RigidBodyControl(0.0f);
         house_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
         house_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_03);
@@ -458,32 +462,36 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         bulletAppState.getPhysicsSpace().add(house_phy);
         
          DirectionalLight light = new DirectionalLight();
-        light.setDirection((new Vector3f(-0.5f,-1f, -0.5f)).normalize());
+        light.setDirection((new Vector3f(4.9f,1.3f, -5.9f)).normalize());
         rootNode.addLight(light);
         
-        
+        AmbientLight ambLight = new AmbientLight();
+        ambLight.setColor(new ColorRGBA(0.5f, 0.5f, 0.8f, 0.2f));
+        sceneNodes.addLight(ambLight);
     }
     
     public void initWater(){
           SimpleWaterProcessor waterProcessor = new SimpleWaterProcessor(assetManager);
-            waterProcessor.setReflectionScene(rootNode);
-            Vector3f waterLocation = new Vector3f(0,-10,0);
+            waterProcessor.setReflectionScene(sceneNodes);
+            Vector3f waterLocation = new Vector3f(0,-7,0);
             waterProcessor.setPlane(new Plane(Vector3f.UNIT_Y, waterLocation.dot(Vector3f.UNIT_Y)));
             viewPort.addProcessor(waterProcessor);
             
-            waterProcessor.setWaterDepth(40);
+            waterProcessor.setWaterDepth(30);
             waterProcessor.setDistortionScale(0.05f);
             waterProcessor.setWaveSpeed(0.06f);
-            
-            Quad quad = new Quad(1400,1400);
+            waterProcessor.setWaterTransparency(0.5f);
+            Quad quad = new Quad(400,400);
             quad.scaleTextureCoordinates(new Vector2f(6f,6f));
             
             Geometry water = new Geometry("water",quad);
             water.setLocalRotation(new Quaternion().fromAngleAxis(-FastMath.HALF_PI, Vector3f.UNIT_X));
             water.setLocalTranslation(-200, -7, 250);
             water.setShadowMode(ShadowMode.Receive);
+            
             water.setMaterial(waterProcessor.getMaterial());
             rootNode.attachChild(water);
+            //waterProcessor.setRenderSize(128,128);
     }   
 
     public void initMaterials() {
