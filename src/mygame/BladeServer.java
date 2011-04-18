@@ -116,7 +116,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     private final long timeBetweenSyncs=10;
     private final int numPrevStates = 9;
-    private final int goBackNumStates = 3;
+    private final int goBackNumStates = 1;
 
     private Queue<Callable> actions = new ConcurrentLinkedQueue<Callable>();
     private long timeOfLastSync=0;
@@ -195,8 +195,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
             public void collision(PhysicsCollisionEvent event) {
 
-                PhysicsCollisionObject a = event.getObjectA();
-                PhysicsCollisionObject b = event.getObjectB();
+                final PhysicsCollisionObject a = event.getObjectA();
+                final PhysicsCollisionObject b = event.getObjectB();
                 
                 if ((a != null && b != null && a instanceof ControlID && b instanceof ControlID
                         && ((ControlID)a).getID() != ((ControlID)b).getID())) {
@@ -205,58 +205,63 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     //System.out.println("A: " + a.getOverlappingCount()
                     //        + " B: " + b.getOverlappingCount());
                     
-                    long hurtPlayerID;
-                    if((a instanceof SwordControl) && (b instanceof BodyControl)){
-                        hurtPlayerID=((ControlID)b).getID();
-                        charLifeMap.put(hurtPlayerID, charLifeMap.get(hurtPlayerID)*0.999f);
-                    }
-                    else if((b instanceof SwordControl) && (a instanceof BodyControl)){
-                        hurtPlayerID=((ControlID)a).getID();
-                        charLifeMap.put(hurtPlayerID, charLifeMap.get(hurtPlayerID)*0.999f);
-                    }
-                    
-                    long playerID1 = Long.valueOf(((ControlID)a).getID());
-                    long playerID2 = Long.valueOf(((ControlID)b).getID());
-                    
-                    Deque player1Deque = prevStates.get(playerID1);
-                    Deque player2Deque = prevStates.get(playerID2);
-                    
-                    // go back some number of states
-                    for (int i = 1; i < goBackNumStates; i++) {
-                        player1Deque.pollLast();
-                        player2Deque.pollLast();
-                    }
-                    
-                    Vector3f[] p1State = (Vector3f[])player1Deque.pollLast();
-                    Vector3f[] p2State = (Vector3f[])player2Deque.pollLast();
-                    
-                    // replace the removed states
-                    
-                    Vector3f[] p1Next = (Vector3f[])player1Deque.pollLast();
-                    Vector3f[] p2Next = (Vector3f[])player2Deque.pollLast();
-                    
-                    for (int i = 0; i < goBackNumStates; i++) {
-                        player1Deque.offerLast(p1Next);
-                        player2Deque.offerLast(p2Next);
-                    }
-                    
-                    // reposition the character as recorded in the previous state
-                    upperArmAnglesMap.put(playerID1, p1State[0]);
-                    upperArmAnglesMap.put(playerID2, p2State[0]);
+                    actions.add(new Callable() {
 
-                    elbowWristAngleMap.put(playerID1, p1State[1].getX());
-                    elbowWristAngleMap.put(playerID2, p2State[1].getX());
+                        public Object call() throws Exception {
 
-                    charAngleMap.put(playerID1, p1State[1].getY());
-                    charAngleMap.put(playerID2, p2State[1].getY());
+                            long hurtPlayerID;
+                            if ((a instanceof SwordControl) && (b instanceof BodyControl)) {
+                                hurtPlayerID = ((ControlID) b).getID();
+                                charLifeMap.put(hurtPlayerID, charLifeMap.get(hurtPlayerID) * 0.999f);
+                            } else if ((b instanceof SwordControl) && (a instanceof BodyControl)) {
+                                hurtPlayerID = ((ControlID) a).getID();
+                                charLifeMap.put(hurtPlayerID, charLifeMap.get(hurtPlayerID) * 0.999f);
+                            }
 
-                    charPositionMap.put(playerID1, p1State[2]);
-                    charPositionMap.put(playerID2, p2State[2]);
-                    
-                    modelMap.get(playerID1).getControl(CharacterControl.class).setPhysicsLocation(charPositionMap.get(playerID1));
-                    modelMap.get(playerID2).getControl(CharacterControl.class).setPhysicsLocation(charPositionMap.get(playerID2));
-                    updateCharacters(timer.getTimePerFrame());
-                    
+                            long playerID1 = Long.valueOf(((ControlID) a).getID());
+                            long playerID2 = Long.valueOf(((ControlID) b).getID());
+
+                            Deque player1Deque = prevStates.get(playerID1);
+                            Deque player2Deque = prevStates.get(playerID2);
+
+                            // go back some number of states
+                            for (int i = 1; i < goBackNumStates; i++) {
+                                player1Deque.pollLast();
+                                player2Deque.pollLast();
+                            }
+
+                            Vector3f[] p1State = (Vector3f[]) player1Deque.pollLast();
+                            Vector3f[] p2State = (Vector3f[]) player2Deque.pollLast();
+
+                            // replace the removed states
+
+                            Vector3f[] p1Next = (Vector3f[]) player1Deque.pollLast();
+                            Vector3f[] p2Next = (Vector3f[]) player2Deque.pollLast();
+
+                            for (int i = 0; i < goBackNumStates; i++) {
+                                player1Deque.offerLast(p1Next);
+                                player2Deque.offerLast(p2Next);
+                            }
+
+                            // reposition the character as recorded in the previous state
+                            upperArmAnglesMap.put(playerID1, p1State[0]);
+                            upperArmAnglesMap.put(playerID2, p2State[0]);
+
+                            elbowWristAngleMap.put(playerID1, p1State[1].getX());
+                            elbowWristAngleMap.put(playerID2, p2State[1].getX());
+
+                            charAngleMap.put(playerID1, p1State[1].getY());
+                            charAngleMap.put(playerID2, p2State[1].getY());
+
+                            charPositionMap.put(playerID1, p1State[2]);
+                            charPositionMap.put(playerID2, p2State[2]);
+
+                            modelMap.get(playerID1).getControl(CharacterControl.class).setPhysicsLocation(charPositionMap.get(playerID1));
+                            modelMap.get(playerID2).getControl(CharacterControl.class).setPhysicsLocation(charPositionMap.get(playerID2));
+                            //updateCharacters(timer.getTimePerFrame());
+                            return null;
+                        }
+                    });
                     //System.out.println("A1: " + a.getOverlappingCount()
                     //        + " B1: " + b.getOverlappingCount());
                     /* zeroing out velocities
@@ -600,56 +605,167 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             }
         } else {
             HasID hasID=(HasID)message;
-            long playerID=hasID.getID();
+            final long playerID=hasID.getID();
             
             if (playerSet.contains(playerID)) {
                 if (message instanceof InputMessages.RotateUArmCC) {
                     System.out.println("rotateCC");
-                    upperArmVelsMap.get(playerID).z = -1;
+                    actions.add(new Callable() {
+                        public Object call() throws Exception {
+                            upperArmVelsMap.get(playerID).z = -1;
+                            return null;
+                        }
+                    });
                 } else if (message instanceof InputMessages.RotateUArmC) {
                     System.out.println("rotateC");
-                    upperArmVelsMap.get(playerID).z = 1;
+                    actions.add(new Callable() {
+                        public Object call() throws Exception {
+                            upperArmVelsMap.get(playerID).z = 1;
+                            return null;
+                        }
+                    });
                 } else if (message instanceof InputMessages.StopRotateTwist) {
                     System.out.println("rotateStop");
-                    upperArmVelsMap.get(playerID).z = 0;
+                    actions.add(new Callable() {
+                        public Object call() throws Exception {
+                            upperArmVelsMap.get(playerID).z = 0;
+                            return null;
+                        }
+                    });
                 } else if (message instanceof InputMessages.MouseMovement) {
-                    InputMessages.MouseMovement mouseMovement = (InputMessages.MouseMovement) message;
-                    upperArmVelsMap.get(playerID).x = FastMath.cos(mouseMovement.angle);
-                    upperArmVelsMap.get(playerID).y = FastMath.sin(mouseMovement.angle);
+                    final InputMessages.MouseMovement mouseMovement = (InputMessages.MouseMovement) message;
+                    actions.add(new Callable() {
+                        public Object call() throws Exception {
+                            upperArmVelsMap.get(playerID).x = FastMath.cos(mouseMovement.angle);
+                            upperArmVelsMap.get(playerID).y = FastMath.sin(mouseMovement.angle);
+                            return null;
+                        }
+                    });
                 } else if (message instanceof InputMessages.StopMouseMovement) {
-                    upperArmVelsMap.get(playerID).x = upperArmVelsMap.get(playerID).y = 0;
+                    
+                    actions.add(new Callable() {
+                        public Object call() throws Exception {
+                            upperArmVelsMap.get(playerID).x = upperArmVelsMap.get(playerID).y = 0;
+                            return null;
+                        }
+                    });
+                    
                 } else if (message instanceof InputMessages.LArmUp) {
                     System.out.println("arm up");
-                    elbowWristVelMap.put(playerID, 1f);
+                    
+                    actions.add(new Callable() {
+                        public Object call() throws Exception {
+                            elbowWristVelMap.put(playerID, 1f);
+                            return null;
+                        }
+                    });
+                    
                 } else if (message instanceof InputMessages.LArmDown) {
                     System.out.println("arm down");
-                    elbowWristVelMap.put(playerID, -1f);
+                    
+                    actions.add(new Callable() {
+                        public Object call() throws Exception {
+                            elbowWristVelMap.put(playerID, -1f);
+                            return null;
+                        }
+                    });
+                    
                 } else if (message instanceof InputMessages.StopLArm) {
                     System.out.println("arm stop");
-                    elbowWristVelMap.put(playerID, 0f);
+                    
+                    actions.add(new Callable() {
+                        public Object call() throws Exception {
+                            elbowWristVelMap.put(playerID, 0f);
+                            return null;
+                        }
+                    });
+                    
                 } else if (message instanceof InputMessages.MoveCharBackword) {
                     System.out.println("Move foreward");
-                    charVelocityMap.get(playerID).z = -CharMovement.charBackwordSpeed;
+                    
+                    actions.add(new Callable() {
+                        public Object call() throws Exception {
+                            charVelocityMap.get(playerID).z = -CharMovement.charBackwordSpeed;
+                            return null;
+                        }
+                    });
+                    
                 } else if (message instanceof InputMessages.MoveCharForward) {
                     System.out.println("Move backword");
-                    charVelocityMap.get(playerID).z = CharMovement.charForwardSpeed;
+                    
+                    actions.add(new Callable() {
+                        public Object call() throws Exception {
+                            charVelocityMap.get(playerID).z = CharMovement.charForwardSpeed;
+                            return null;
+                        }
+                    });
+                    
                 } else if (message instanceof InputMessages.MoveCharLeft) {
                     System.out.println("Move left");
-                    charVelocityMap.get(playerID).x = CharMovement.charStrafeSpeed;
+                    
+                    actions.add(new Callable() {
+                        public Object call() throws Exception {
+                            charVelocityMap.get(playerID).x = CharMovement.charStrafeSpeed;
+                            return null;
+                        }
+                    });
+                    
                 } else if (message instanceof InputMessages.MoveCharRight) {
                     System.out.println("Move right");
-                    charVelocityMap.get(playerID).x = -CharMovement.charStrafeSpeed;
+                    
+                    actions.add(new Callable() {
+                        public Object call() throws Exception {
+                            charVelocityMap.get(playerID).x = -CharMovement.charStrafeSpeed;
+                            return null;
+                        }
+                    });
+                    
                 } else if (message instanceof InputMessages.TurnCharLeft) {
-                    charTurnVelMap.put(playerID, 1f);
+                    
+                    actions.add(new Callable() {
+                        public Object call() throws Exception {
+                            charTurnVelMap.put(playerID, 1f);
+                            return null;
+                        }
+                    });
+                    
                 } else if (message instanceof InputMessages.TurnCharRight) {
-                    charTurnVelMap.put(playerID, -1f);
+                    
+                    actions.add(new Callable() {
+                        public Object call() throws Exception {
+                            charTurnVelMap.put(playerID, -1f);
+                            return null;
+                        }
+                    });
+                    
                 } else if (message instanceof InputMessages.StopCharTurn) {
-                    charTurnVelMap.put(playerID, 0f);
+                    
+                    actions.add(new Callable() {
+                        public Object call() throws Exception {
+                            charTurnVelMap.put(playerID, 0f);
+                            return null;
+                        }
+                    });
+                    
                 } else if (message instanceof InputMessages.StopForwardMove) {
-                    charVelocityMap.get(playerID).z = 0;
+                    
+                    actions.add(new Callable() {
+                        public Object call() throws Exception {
+                            charVelocityMap.get(playerID).z = 0;
+                            return null;
+                        }
+                    });
+                    
                 } else if (message instanceof InputMessages.StopLeftRightMove) {
                     System.out.println("Stop Left Right Move");
-                    charVelocityMap.get(playerID).x = 0;
+                    
+                    actions.add(new Callable() {
+                        public Object call() throws Exception {
+                            charVelocityMap.get(playerID).x = 0;
+                            return null;
+                        }
+                    });
+                    
                 }
             } else {
                 System.out.println("PlayerID " + playerID + " is not in the set");
