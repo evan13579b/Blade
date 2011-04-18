@@ -299,20 +299,19 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
             control.setWalkDirection(left.mult(xVel).add(forward.mult(zVel)));
 
-            if (debug) {
-                
-                // Adjust the sword collision shape in accordance with arm movement.
-                // first, get rotation and position of hand
-                Bone hand = modelMap.get(nextPlayerID).getControl(AnimControl.class).getSkeleton().getBone("swordHand");
-                Matrix3f rotation = hand.getModelSpaceRotation().toRotationMatrix();
-                Vector3f position = hand.getModelSpacePosition();
+            // first, get rotation and position of hand
+            Bone hand = modelMap.get(nextPlayerID).getControl(AnimControl.class).getSkeleton().getBone("swordHand");
+            Matrix3f rotation = hand.getModelSpaceRotation().toRotationMatrix();
+            Vector3f position = hand.getModelSpacePosition();
 
-                // set the position of the sword to the position of the hand
-                Node swordNode = (Node)modelMap.get(nextPlayerID).getChild("sword");
-                Bone swordBone = swordNode.getControl(AnimControl.class).getSkeleton().getBone("swordBone");
-                swordNode.setLocalRotation(rotation);
-                swordNode.setLocalTranslation(position);
-                
+            // set the position of the sword to the position of the hand
+            Node swordNode = (Node) modelMap.get(nextPlayerID).getChild("sword");
+            Bone swordBone = swordNode.getControl(AnimControl.class).getSkeleton().getBone("swordBone");
+            swordNode.setLocalRotation(rotation);
+            swordNode.setLocalTranslation(position);
+
+            if (debug) {
+                // Adjust the sword collision shape in accordance with arm movement.
                 // adjust for difference in rotation
                 Quaternion swordRot = swordBone.getModelSpaceRotation();
                 Quaternion adjust = (new Quaternion()).fromAngles(FastMath.HALF_PI, 0, 0);

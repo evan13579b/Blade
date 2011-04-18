@@ -219,10 +219,14 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     Vector3f[] p1State = (Vector3f[])player1Deque.pollLast();
                     Vector3f[] p2State = (Vector3f[])player2Deque.pollLast();
                     
-                    // replace the removed states with the one that was grabbed
-                    for (int i = 1; i < goBackNumStates; i++) {
-                        player1Deque.offerLast(p1State);
-                        player2Deque.offerLast(p2State);
+                    // replace the removed states
+                    
+                    Vector3f[] p1Next = (Vector3f[])player1Deque.pollLast();
+                    Vector3f[] p2Next = (Vector3f[])player2Deque.pollLast();
+                    
+                    for (int i = 0; i < goBackNumStates; i++) {
+                        player1Deque.offerLast(p1Next);
+                        player2Deque.offerLast(p2Next);
                     }
                     
                     // reposition the character as recorded in the previous state
