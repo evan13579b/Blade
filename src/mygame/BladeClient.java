@@ -187,7 +187,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         
         guiViewPort.addProcessor(niftyDisplay);
         flyCam.setDragToRotate(true);
-        app.setDisplayStatView(false);
+        //app.setDisplayStatView(false);
         
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
