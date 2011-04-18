@@ -56,8 +56,10 @@ import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.bullet.util.CollisionShapeFactory;
+import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
+import com.jme3.math.ColorRGBA;
 import com.jme3.math.FastMath;
 import com.jme3.math.Matrix3f;
 import com.jme3.math.Quaternion;
@@ -69,6 +71,7 @@ import com.jme3.network.events.MessageListener;
 import com.jme3.network.message.Message;
 import com.jme3.network.serializing.Serializer;
 import com.jme3.network.sync.ServerSyncService;
+import com.jme3.renderer.queue.RenderQueue.ShadowMode;
 import com.jme3.scene.Node;
 import com.jme3.system.AppSettings;
 import com.jme3.terrain.geomipmap.TerrainQuad;
@@ -121,9 +124,13 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     
     private long currentPlayerID=0;
     private static BladeServer app;
+    private Node House;
     private BulletAppState bulletAppState;
     private TerrainQuad terrain;
     Material mat_terrain;
+    Material lighting;
+
+    Material house_mat;
     Material wall_mat;
     Material stone_mat;
     Material floor_mat;
@@ -447,24 +454,40 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     public void initTerrain() {
 
-        mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/Terrain.j3md");
-
-        mat_terrain.setTexture("m_Alpha", assetManager.loadTexture("Textures/alpha1.1.png"));
-
+        mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/TerrainLighting.j3md");
+        //house_mat = new Material(assetManager,"Common/MatDefs/Water/SimpleWater.j3md");
+        mat_terrain.setBoolean("useTriPlanarMapping", false);
+        mat_terrain.setBoolean("WardIso", true);
+        mat_terrain.setTexture("AlphaMap", assetManager.loadTexture("Textures/alpha1.1.png"));
+        
         Texture grass = assetManager.loadTexture("Textures/grass.jpg");
         grass.setWrap(WrapMode.Repeat);
-        mat_terrain.setTexture("m_Tex1", grass);
-        mat_terrain.setFloat("m_Tex1Scale", 64f);
+        mat_terrain.setTexture("m_DiffuseMap", grass);
+        mat_terrain.setFloat("m_DiffuseMap_0_scale", 64f);
 
         Texture dirt = assetManager.loadTexture("Textures/TiZeta_SmlssWood1.jpg");
         dirt.setWrap(WrapMode.Repeat);
-        mat_terrain.setTexture("m_Tex2", dirt);
-        mat_terrain.setFloat("m_Tex2Scale", 32f);
+        mat_terrain.setTexture("m_DiffuseMap_1", dirt);
+        mat_terrain.setFloat("m_DiffuseMap_1_scale", 16f);
 
         Texture rock = assetManager.loadTexture("Textures/TiZeta_cem1.jpg");
         rock.setWrap(WrapMode.Repeat);
-        mat_terrain.setTexture("m_Tex3", rock);
-        mat_terrain.setFloat("m_Tex3Scale", 128f);
+        mat_terrain.setTexture("m_DiffuseMap_2", rock);
+        mat_terrain.setFloat("m_DiffuseMap_2_scale", 128f);
+
+        Texture normalMap0 = assetManager.loadTexture("Textures/grass_normal.png");
+        normalMap0.setWrap(WrapMode.Repeat);
+        Texture normalMap1 = assetManager.loadTexture("Textures/dirt_normal.png");
+        normalMap1.setWrap(WrapMode.Repeat);
+        Texture normalMap2 = assetManager.loadTexture("Textures/road_normal.png");
+        normalMap2.setWrap(WrapMode.Repeat);
+        mat_terrain.setTexture("NormalMap", normalMap0);
+        mat_terrain.setTexture("NormalMap_1", normalMap2);
+        mat_terrain.setTexture("NormalMap_2", normalMap2);
+        lighting = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
+        lighting.setTexture("DiffuseMap", grass);
+        lighting.setTexture("NormalMap", normalMap1);
+        lighting.setBoolean("WardIso", true);
 
         AbstractHeightMap heightmap = null;
         Texture heightMapImage = assetManager.loadTexture("Textures/flatland.png");
@@ -476,7 +499,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
         terrain.setLocalTranslation(0, -100, 0);
         terrain.setLocalScale(2f, 2f, 2f);
-
+        
         rootNode.attachChild(terrain);
 
         terrain_phy = new RigidBodyControl(0.0f);
@@ -484,7 +507,28 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         terrain_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_03);
         terrain.addControl(terrain_phy);
         bulletAppState.getPhysicsSpace().add(terrain_phy);
+        
+        House = (Node)assetManager.loadModel("Models/Cube.mesh.j3o");
+        House.setLocalTranslation(0.0f, 5.0f, 70.0f);
+        House.setShadowMode(ShadowMode.Off);
+        House.setLocalScale(10f);
+        //Does not work atm house_mat.setTexture("m_Tex1", rock);
+        //House.setMaterial(house_mat);
+        rootNode.attachChild(House);
+        RigidBodyControl house_phy = new RigidBodyControl(0.0f);
+        house_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
+        house_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_03);
+        House.addControl(house_phy);
+        bulletAppState.getPhysicsSpace().add(house_phy);
+        
+         DirectionalLight light = new DirectionalLight();
+        light.setDirection((new Vector3f(-0.5f,-1f, -0.5f)).normalize());
+        rootNode.addLight(light);
 
+        AmbientLight ambLight = new AmbientLight();
+        ambLight.setColor(new ColorRGBA(1f, 1f, 0.8f, 0.2f));
+        rootNode.addLight(ambLight);
+         
     }
 
     public void initMaterials() {
@@ -500,14 +544,14 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
         Texture tex2 = assetManager.loadTexture(key2);
         stone_mat.setTexture("ColorMap", tex2);
-
+        
         floor_mat = new Material(assetManager, "Common/MatDefs/Misc/SimpleTextured.j3md");
         TextureKey key3 = new TextureKey("Textures/grass.jpg");
         key3.setGenerateMips(true);
         Texture tex3 = assetManager.loadTexture(key3);
         tex3.setWrap(WrapMode.Repeat);
         floor_mat.setTexture("ColorMap", tex3);
-
+        
     }
 
     public void messageReceived(Message message) {

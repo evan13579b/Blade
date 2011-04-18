@@ -84,11 +84,13 @@ import mygame.messages.CharDestructionMessage;
 import com.jme3.bullet.collision.shapes.BoxCollisionShape;
 import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
 import com.jme3.bullet.util.CollisionShapeFactory;
+import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Matrix3f;
 import com.jme3.math.Quaternion;
 import com.jme3.niftygui.NiftyJmeDisplay;
+import com.jme3.renderer.queue.RenderQueue.ShadowMode;
 import com.jme3.scene.debug.SkeletonDebugger;
 import com.jme3.system.AppSettings;
 import com.jme3.util.SkyFactory;
@@ -129,12 +131,14 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     private BulletAppState bulletAppState;
     private TerrainQuad terrain;
     Material mat_terrain;
+    Material lighting;
     Material wall_mat;
     Material stone_mat;
     Material floor_mat;
     private RigidBodyControl terrain_phy;
     private RigidBodyControl basic_phy;
     private RigidBodyControl body_phy;
+    private Node House;
     CharacterControl character;
     CompoundCollisionShape collisionShape;
     BoundingVolume ballBound;
@@ -189,7 +193,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         
         guiViewPort.addProcessor(niftyDisplay);
         flyCam.setDragToRotate(true);
-        app.setDisplayStatView(false);
+        //app.setDisplayStatView(false);
         
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
@@ -380,24 +384,40 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     public void initTerrain() {
 
 
-        mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/Terrain.j3md");
-
-        mat_terrain.setTexture("m_Alpha", assetManager.loadTexture("Textures/alpha1.1.png"));
-
+        mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/TerrainLighting.j3md");
+        //house_mat = new Material(assetManager,"Common/MatDefs/Water/SimpleWater.j3md");
+        mat_terrain.setBoolean("useTriPlanarMapping", false);
+        mat_terrain.setBoolean("WardIso", true);
+        mat_terrain.setTexture("AlphaMap", assetManager.loadTexture("Textures/alpha1.1.png"));
+        
         Texture grass = assetManager.loadTexture("Textures/grass.jpg");
         grass.setWrap(WrapMode.Repeat);
-        mat_terrain.setTexture("m_Tex1", grass);
-        mat_terrain.setFloat("m_Tex1Scale", 64f);
+        mat_terrain.setTexture("m_DiffuseMap", grass);
+        mat_terrain.setFloat("m_DiffuseMap_0_scale", 64f);
 
         Texture dirt = assetManager.loadTexture("Textures/TiZeta_SmlssWood1.jpg");
         dirt.setWrap(WrapMode.Repeat);
-        mat_terrain.setTexture("m_Tex2", dirt);
-        mat_terrain.setFloat("m_Tex2Scale", 32f);
+        mat_terrain.setTexture("m_DiffuseMap_1", dirt);
+        mat_terrain.setFloat("m_DiffuseMap_1_scale", 16f);
 
         Texture rock = assetManager.loadTexture("Textures/TiZeta_cem1.jpg");
         rock.setWrap(WrapMode.Repeat);
-        mat_terrain.setTexture("m_Tex3", rock);
-        mat_terrain.setFloat("m_Tex3Scale", 128f);
+        mat_terrain.setTexture("m_DiffuseMap_2", rock);
+        mat_terrain.setFloat("m_DiffuseMap_2_scale", 128f);
+
+        Texture normalMap0 = assetManager.loadTexture("Textures/grass_normal.png");
+        normalMap0.setWrap(WrapMode.Repeat);
+        Texture normalMap1 = assetManager.loadTexture("Textures/dirt_normal.png");
+        normalMap1.setWrap(WrapMode.Repeat);
+        Texture normalMap2 = assetManager.loadTexture("Textures/road_normal.png");
+        normalMap2.setWrap(WrapMode.Repeat);
+        mat_terrain.setTexture("NormalMap", normalMap0);
+        mat_terrain.setTexture("NormalMap_1", normalMap2);
+        mat_terrain.setTexture("NormalMap_2", normalMap2);
+        lighting = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
+        lighting.setTexture("DiffuseMap", grass);
+        lighting.setTexture("NormalMap", normalMap1);
+        lighting.setBoolean("WardIso", true);
 
         AbstractHeightMap heightmap = null;
         Texture heightMapImage = assetManager.loadTexture("Textures/flatland.png");
@@ -406,10 +426,10 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         heightmap.load();
         terrain = new TerrainQuad("my terrain", 65, 1025, heightmap.getHeightMap());
         terrain.setMaterial(mat_terrain);
-        
+
         terrain.setLocalTranslation(0, -100, 0);
         terrain.setLocalScale(2f, 2f, 2f);
-
+        
         rootNode.attachChild(terrain);
 
         terrain_phy = new RigidBodyControl(0.0f);
@@ -417,6 +437,29 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         terrain_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_03);
         terrain.addControl(terrain_phy);
         bulletAppState.getPhysicsSpace().add(terrain_phy);
+        
+        House = (Node)assetManager.loadModel("Models/Cube.mesh.j3o");
+        House.setLocalTranslation(0.0f, 5.0f, 70.0f);
+        House.setShadowMode(ShadowMode.Off);
+        House.setLocalScale(10f);
+        //Does not work atm house_mat.setTexture("m_Tex1", rock);
+        //House.setMaterial(house_mat);
+        rootNode.attachChild(House);
+        RigidBodyControl house_phy = new RigidBodyControl(0.0f);
+        house_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
+        house_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_03);
+        House.addControl(house_phy);
+        bulletAppState.getPhysicsSpace().add(house_phy);
+        
+         DirectionalLight light = new DirectionalLight();
+        light.setDirection((new Vector3f(-0.5f,-1f, -0.5f)).normalize());
+        rootNode.addLight(light);
+
+        AmbientLight ambLight = new AmbientLight();
+        ambLight.setColor(new ColorRGBA(1f, 1f, 0.8f, 0.2f));
+        rootNode.addLight(ambLight);
+        
+        
     }
 
     public void initMaterials() {
