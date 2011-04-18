@@ -445,6 +445,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         House.setMaterial(wall_mat); 
         //Does not work atm house_mat.setTexture("m_Tex1", rock);
         //House.setMaterial(house_mat);
+        House.setMaterial(wall_mat);
         rootNode.attachChild(House);
         RigidBodyControl house_phy = new RigidBodyControl(0.0f);
         house_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
