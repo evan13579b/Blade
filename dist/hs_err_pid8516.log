@@ -1,12 +1,12 @@
 #
 # A fatal error has been detected by the Java Runtime Environment:
 #
-#  EXCEPTION_ACCESS_VIOLATION (0xc0000005) at pc=0x038e8f8c, pid=7256, tid=6696
+#  EXCEPTION_ACCESS_VIOLATION (0xc0000005) at pc=0x04b7c5b5, pid=8516, tid=8684
 #
 # JRE version: 6.0_24-b07
 # Java VM: Java HotSpot(TM) Client VM (19.1-b02 mixed mode, sharing windows-x86 )
 # Problematic frame:
-# C  [OpenAL32.dll+0x18f8c]
+# C  [OpenAL32.dll+0x1c5b5]
 #
 # If you would like to submit a bug report, please visit:
 #   http://java.sun.com/webapps/bugreport/crash.jsp
@@ -14,50 +14,62 @@
 
 ---------------  T H R E A D  ---------------
 
-Current thread (0x02c1a400):  VMThread [stack: 0x02d00000,0x02d50000] [id=6696]
+Current thread (0x02c1a400):  VMThread [stack: 0x02d00000,0x02d50000] [id=8684]
 
-siginfo: ExceptionCode=0xc0000005, reading address 0x04a8c9b0
+siginfo: ExceptionCode=0xc0000005, reading address 0x03a6cf20
 
 Registers:
-EAX=0x04a8c9b0, EBX=0x7c901000, ECX=0x00000082, EDX=0x00000000
-ESP=0x02d4fbb8, EBP=0x00000000, ESI=0x03602a30, EDI=0x00000000
-EIP=0x038e8f8c, EFLAGS=0x00010206
+EAX=0x03a6cf20, EBX=0x00000000, ECX=0x037921e0, EDX=0x00000000
+ESP=0x02d4f9cc, EBP=0x02d4fa50, ESI=0x037921a0, EDI=0x00000000
+EIP=0x04b7c5b5, EFLAGS=0x00010202
 
 Register to memory mapping:
 
-EAX=0x04a8c9b0
+EAX=0x03a6cf20
 
 [error occurred during error reporting (printing registers, top of stack, instructions near pc), id 0xc0000005]
 
-Stack: [0x02d00000,0x02d50000],  sp=0x02d4fbb8,  free space=318k
+Stack: [0x02d00000,0x02d50000],  sp=0x02d4f9cc,  free space=318k
 Native frames: (J=compiled Java code, j=interpreted, Vv=VM code, C=native code)
-C  [OpenAL32.dll+0x18f8c]
+C  [OpenAL32.dll+0x1c5b5]
+C  [OpenAL32.dll+0x21b6c]
+C  [ntdll.dll+0x118a]
+C  [ntdll.dll+0x224ca]
+C  [kernel32.dll+0x1caae]
+C  [kernel32.dll+0x1cb26]
+C  [msvcr71.dll+0x8d04]
+C  [msvcr71.dll+0x8d11]
+V  [jvm.dll+0x1fd8bd]
+V  [jvm.dll+0x1fcbde]
+V  [jvm.dll+0x1fcf00]
+V  [jvm.dll+0x1fd302]
+V  [jvm.dll+0x18317c]
+C  [msvcr71.dll+0x9565]
+C  [kernel32.dll+0xb729]
 
-[error occurred during error reporting (printing native stack), id 0xc0000005]
-
-VM_Operation (0x0305fa40): Exit, mode: safepoint, requested by thread 0x05035800
+VM_Operation (0x0305f840): Exit, mode: safepoint, requested by thread 0x06d62800
 
 
 ---------------  P R O C E S S  ---------------
 
 Java Threads: ( => current thread )
-  0x03245800 JavaThread "AWT-Shutdown" [_thread_blocked, id=7840, stack(0x032f0000,0x03340000)]
-  0x05035800 JavaThread "SIGINT handler" daemon [_thread_blocked, id=8148, stack(0x03010000,0x03060000)]
-  0x03279800 JavaThread "Thread-3" [_thread_blocked, id=7428, stack(0x05370000,0x053c0000)]
-  0x03225400 JavaThread "jME3 Audio Thread" daemon [_thread_blocked, id=1324, stack(0x03880000,0x038d0000)]
-  0x003b6800 JavaThread "DestroyJavaVM" [_thread_blocked, id=6240, stack(0x009a0000,0x009f0000)]
-  0x0318f000 JavaThread "Headless Application Thread" [_thread_blocked, id=7268, stack(0x03830000,0x03880000)]
-  0x0315f800 JavaThread "TimerQueue" daemon [_thread_blocked, id=5496, stack(0x03510000,0x03560000)]
-  0x02c9e400 JavaThread "Java2D Disposer" daemon [_thread_blocked, id=5316, stack(0x02fc0000,0x03010000)]
-  0x02c67800 JavaThread "Low Memory Detector" daemon [_thread_blocked, id=6680, stack(0x02ee0000,0x02f30000)]
-  0x02c61800 JavaThread "CompilerThread0" daemon [_thread_blocked, id=8164, stack(0x02e90000,0x02ee0000)]
-  0x02c60000 JavaThread "Attach Listener" daemon [_thread_blocked, id=4752, stack(0x02e40000,0x02e90000)]
-  0x02c5ec00 JavaThread "Signal Dispatcher" daemon [_thread_blocked, id=3748, stack(0x02df0000,0x02e40000)]
-  0x02c57c00 JavaThread "Finalizer" daemon [_thread_blocked, id=6336, stack(0x02da0000,0x02df0000)]
-  0x02c56800 JavaThread "Reference Handler" daemon [_thread_blocked, id=6572, stack(0x02d50000,0x02da0000)]
+  0x02c80800 JavaThread "AWT-Shutdown" [_thread_blocked, id=8888, stack(0x03480000,0x034d0000)]
+  0x06d62800 JavaThread "SIGINT handler" daemon [_thread_blocked, id=9024, stack(0x03010000,0x03060000)]
+  0x03423400 JavaThread "Thread-3" [_thread_blocked, id=8916, stack(0x05470000,0x054c0000)]
+  0x033d4400 JavaThread "jME3 Audio Thread" daemon [_thread_blocked, id=7492, stack(0x03a10000,0x03a60000)]
+  0x003b6800 JavaThread "DestroyJavaVM" [_thread_blocked, id=9844, stack(0x009a0000,0x009f0000)]
+  0x0338f000 JavaThread "Headless Application Thread" [_thread_blocked, id=8676, stack(0x039c0000,0x03a10000)]
+  0x032efc00 JavaThread "TimerQueue" daemon [_thread_blocked, id=8840, stack(0x036a0000,0x036f0000)]
+  0x02ccd400 JavaThread "Java2D Disposer" daemon [_thread_blocked, id=8520, stack(0x02fc0000,0x03010000)]
+  0x02c67800 JavaThread "Low Memory Detector" daemon [_thread_blocked, id=8320, stack(0x02ee0000,0x02f30000)]
+  0x02c61800 JavaThread "CompilerThread0" daemon [_thread_blocked, id=8224, stack(0x02e90000,0x02ee0000)]
+  0x02c60000 JavaThread "Attach Listener" daemon [_thread_blocked, id=8528, stack(0x02e40000,0x02e90000)]
+  0x02c5ec00 JavaThread "Signal Dispatcher" daemon [_thread_blocked, id=8552, stack(0x02df0000,0x02e40000)]
+  0x02c5b000 JavaThread "Finalizer" daemon [_thread_blocked, id=8712, stack(0x02da0000,0x02df0000)]
+  0x02c56800 JavaThread "Reference Handler" daemon [_thread_blocked, id=8548, stack(0x02d50000,0x02da0000)]
 
 Other Threads:
-=>0x02c1a400 VMThread [stack: 0x02d00000,0x02d50000] [id=6696]
+=>0x02c1a400 VMThread [stack: 0x02d00000,0x02d50000] [id=8684]
 
 VM state:at safepoint (shutting down)
 
@@ -65,14 +77,14 @@ VM Mutex/Monitor currently owned by a thread:  ([mutex/lock_event])
 [0x003b59b8] Threads_lock - owner thread: 0x02c1a400
 
 Heap
- def new generation   total 6464K, used 5401K [0x22990000, 0x23090000, 0x27ee0000)
-  eden space 5760K,  92% used [0x22990000, 0x22ec9320, 0x22f30000)
-  from space 704K,   7% used [0x22f30000, 0x22f3d2b8, 0x22fe0000)
-  to   space 704K,   0% used [0x22fe0000, 0x22fe0000, 0x23090000)
- tenured generation   total 14212K, used 11001K [0x27ee0000, 0x28cc1000, 0x32990000)
-   the space 14212K,  77% used [0x27ee0000, 0x2899e7f8, 0x2899e800, 0x28cc1000)
- compacting perm gen  total 12288K, used 4490K [0x32990000, 0x33590000, 0x36990000)
-   the space 12288K,  36% used [0x32990000, 0x32df2a28, 0x32df2c00, 0x33590000)
+ def new generation   total 10112K, used 3660K [0x22990000, 0x23480000, 0x27ee0000)
+  eden space 9024K,  40% used [0x22990000, 0x22d20838, 0x23260000)
+  from space 1088K,   0% used [0x23260000, 0x23262b78, 0x23370000)
+  to   space 1088K,   0% used [0x23370000, 0x23370000, 0x23480000)
+ tenured generation   total 22316K, used 14895K [0x27ee0000, 0x294ab000, 0x32990000)
+   the space 22316K,  66% used [0x27ee0000, 0x28d6bfd8, 0x28d6c000, 0x294ab000)
+ compacting perm gen  total 12288K, used 4542K [0x32990000, 0x33590000, 0x36990000)
+   the space 12288K,  36% used [0x32990000, 0x32dffaa8, 0x32dffc00, 0x33590000)
     ro space 10240K,  51% used [0x36990000, 0x36ebcf58, 0x36ebd000, 0x37390000)
     rw space 12288K,  54% used [0x37390000, 0x37a28f50, 0x37a29000, 0x37f90000)
 
@@ -102,23 +114,27 @@ Dynamic libraries:
 0x774e0000 - 0x7761e000 	C:\WINDOWS2\system32\ole32.dll
 0x773d0000 - 0x774d3000 	C:\WINDOWS2\WinSxS\x86_Microsoft.Windows.Common-Controls_6595b64144ccf1df_6.0.2600.6028_x-ww_61e65202\COMCTL32.dll
 0x77f60000 - 0x77fd6000 	C:\WINDOWS2\system32\SHLWAPI.dll
+0x60c40000 - 0x60ca9000 	C:\PROGRAM FILES\NORTON SECURITY SUITE\ENGINE\4.3.0.5\ASOEHOOK.DLL
+0x77120000 - 0x771ab000 	C:\WINDOWS2\system32\OLEAUT32.dll
+0x78520000 - 0x785c3000 	C:\WINDOWS2\WinSxS\x86_Microsoft.VC90.CRT_1fc8b3b9a1e18e3b_9.0.30729.4974_x-ww_d889290f\MSVCR90.dll
+0x78480000 - 0x7850e000 	C:\WINDOWS2\WinSxS\x86_Microsoft.VC90.CRT_1fc8b3b9a1e18e3b_9.0.30729.4974_x-ww_d889290f\MSVCP90.dll
 0x74720000 - 0x7476c000 	C:\WINDOWS2\system32\MSCTF.dll
+0x62d00000 - 0x62d1c000 	C:\Program Files\Comcast\Desktop Doctor\bin\sprthook.dll
+0x61880000 - 0x618ba000 	C:\WINDOWS2\system32\OLEACC.dll
+0x7c9c0000 - 0x7d1d7000 	C:\WINDOWS2\system32\SHELL32.dll
 0x755c0000 - 0x755ee000 	C:\WINDOWS2\system32\msctfime.ime
-0x7c9c0000 - 0x7d1d7000 	C:\WINDOWS2\system32\shell32.dll
 0x6d230000 - 0x6d27f000 	D:\Program Files\Java\jre6\bin\fontmanager.dll
 0x77c00000 - 0x77c08000 	C:\WINDOWS2\system32\VERSION.dll
 0x6d600000 - 0x6d613000 	D:\Program Files\Java\jre6\bin\net.dll
 0x71ab0000 - 0x71ac7000 	C:\WINDOWS2\system32\WS2_32.dll
 0x71aa0000 - 0x71aa8000 	C:\WINDOWS2\system32\WS2HELP.dll
 0x6d620000 - 0x6d629000 	D:\Program Files\Java\jre6\bin\nio.dll
-0x77120000 - 0x771ab000 	C:\WINDOWS2\system32\OLEAUT32.DLL
-0x10000000 - 0x10047000 	C:\Documents and Settings\blah.EVAN-51B80CBFB2\My Documents\jMonkeyProjects\Blade\dist\lwjgl.dll
+0x10000000 - 0x10072000 	C:\Documents and Settings\blah.EVAN-51B80CBFB2\My Documents\jMonkeyProjects\Blade\dist\lwjgl.dll
 0x5ed00000 - 0x5edcc000 	C:\WINDOWS2\system32\OPENGL32.dll
 0x68b20000 - 0x68b40000 	C:\WINDOWS2\system32\GLU32.dll
 0x73760000 - 0x737ab000 	C:\WINDOWS2\system32\DDRAW.dll
 0x73bc0000 - 0x73bc6000 	C:\WINDOWS2\system32\DCIMAN32.dll
-0x038d0000 - 0x0390a000 	C:\Documents and Settings\blah.EVAN-51B80CBFB2\My Documents\jMonkeyProjects\Blade\dist\OpenAL32.dll
-0x78520000 - 0x785c3000 	C:\WINDOWS2\WinSxS\x86_Microsoft.VC90.CRT_1fc8b3b9a1e18e3b_9.0.30729.4974_x-ww_d889290f\MSVCR90.dll
+0x04b60000 - 0x04bb0000 	C:\Documents and Settings\blah.EVAN-51B80CBFB2\My Documents\jMonkeyProjects\Blade\dist\OpenAL32.dll
 0x73f10000 - 0x73f6c000 	C:\WINDOWS2\system32\dsound.dll
 0x76c30000 - 0x76c5e000 	C:\WINDOWS2\system32\WINTRUST.dll
 0x77a80000 - 0x77b15000 	C:\WINDOWS2\system32\CRYPT32.dll
@@ -156,10 +172,10 @@ OS: Windows XP Build 2600 Service Pack 3
 
 CPU:total 2 (2 cores per cpu, 1 threads per core) family 15 model 107 stepping 1, cmov, cx8, fxsr, mmx, sse, sse2, sse3, mmxext, 3dnow, 3dnowext
 
-Memory: 4k page, physical 3406252k(1770548k free), swap 6645928k(4725188k free)
+Memory: 4k page, physical 3406252k(1641308k free), swap 6646400k(4340564k free)
 
 vm_info: Java HotSpot(TM) Client VM (19.1-b02) for windows-x86 JRE (1.6.0_24-b07), built on Feb  2 2011 17:44:41 by "java_re" with MS VC++ 7.1 (VS2003)
 
-time: Mon Mar 14 21:32:53 2011
-elapsed time: 9 seconds
+time: Mon Apr 18 08:53:45 2011
+elapsed time: 15 seconds
 
