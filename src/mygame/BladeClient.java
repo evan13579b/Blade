@@ -41,15 +41,12 @@ import com.jme3.animation.AnimControl;
 import com.jme3.animation.AnimEventListener;
 import com.jme3.animation.Bone;
 import mygame.messages.InputMessages;
-import mygame.messages.CharPositionMessage;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.bounding.BoundingVolume;
 import com.jme3.bullet.BulletAppState;
-import com.jme3.bullet.collision.PhysicsCollisionEvent;
 import com.jme3.bullet.collision.PhysicsCollisionObject;
 import com.jme3.bullet.control.CharacterControl;
-import com.jme3.bullet.control.GhostControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.input.ChaseCamera;
 import com.jme3.input.KeyInput;
@@ -60,7 +57,6 @@ import com.jme3.input.event.JoyButtonEvent;
 import com.jme3.input.event.KeyInputEvent;
 import com.jme3.input.event.MouseButtonEvent;
 import com.jme3.input.event.MouseMotionEvent;
-import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.FastMath;
 import com.jme3.math.Vector3f;
@@ -76,7 +72,6 @@ import com.jme3.terrain.geomipmap.TerrainQuad;
 import com.jme3.terrain.heightmap.ImageBasedHeightMap;
 import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.WrapMode;
-import com.jme3.util.SkyFactory;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashSet;
@@ -87,13 +82,23 @@ import jme3tools.converters.ImageToAwt;
 import mygame.messages.CharCreationMessage;
 import mygame.messages.CharDestructionMessage;
 import com.jme3.bullet.collision.shapes.BoxCollisionShape;
-import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
 import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
 import com.jme3.bullet.util.CollisionShapeFactory;
+import com.jme3.light.DirectionalLight;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Matrix3f;
+import com.jme3.math.Quaternion;
+import com.jme3.niftygui.NiftyJmeDisplay;
 import com.jme3.scene.debug.SkeletonDebugger;
 import com.jme3.system.AppSettings;
+import com.jme3.util.SkyFactory;
+import de.lessvoid.nifty.Nifty;
+import java.util.Map;
+import mygame.messages.CharStatusMessage;
+import mygame.messages.ClientReadyMessage;
+import mygame.ui.HUD;
+import mygame.ui.LoginScreen;
+import mygame.util.IOLib;
 
 /**
  *
@@ -116,6 +121,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     ConcurrentHashMap<Long, Float> charAngleMap = new ConcurrentHashMap();
     ConcurrentHashMap<Long, Float> charTurnVelMap = new ConcurrentHashMap();
     ConcurrentHashMap<Long, AnimChannel> animChannelMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, Float> charLifeMap = new ConcurrentHashMap();
 
     private final boolean debug = true;
     private BulletAppState bulletAppState;
@@ -132,25 +138,56 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     BoundingVolume ballBound;
     Geometry block;
     BoxCollisionShape leftShoulder;
+    static BladeClient app;
+    boolean readyToStart=false;
+    boolean started=false;
+    Nifty ui;
+    HUD hud;
 
     Client client;
     boolean clientSet = false;
     private long playerID = 0;
 
     public static void main(String[] args) {
-        BladeClient app = new BladeClient();
+        app = new BladeClient();
         AppSettings appSettings=new AppSettings(true);
         appSettings.setFrameRate(30);
         app.setSettings(appSettings);
+        
         app.start();
     }
+    
+    public AppSettings getSettings(){
+        return this.settings;
+    }
 
+    public void isReadyToStart(){
+        System.out.println("Ready to start called");
+        readyToStart=true;
+    }
+    
+    public void setClient(Client client){
+        this.client=client;
+    }
+    
+    
+    
     @Override
     public void simpleInitApp() {
-        Serializer.registerClass(CharPositionMessage.class);
+        Serializer.registerClass(CharStatusMessage.class);
         Serializer.registerClass(CharCreationMessage.class);
         Serializer.registerClass(CharDestructionMessage.class);
+        Serializer.registerClass(ClientReadyMessage.class);
         InputMessages.registerInputClasses();
+        Map<String,String> ipAddressMap=IOLib.getIpAddressMap();
+
+        NiftyJmeDisplay niftyDisplay = new NiftyJmeDisplay(assetManager,inputManager,audioRenderer,guiViewPort);
+        ui=niftyDisplay.getNifty();
+        ui.fromXml("Interface/UI.xml","start",new LoginScreen(ipAddressMap,client,BladeMain.port,this));
+        
+        guiViewPort.addProcessor(niftyDisplay);
+        flyCam.setDragToRotate(true);
+        app.setDisplayStatView(false);
         
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
@@ -158,26 +195,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         rootNode.attachChild(SkyFactory.createSky(assetManager, "Textures/Skysphere.jpg", true));
         initMaterials();
         initTerrain();
-               
-        try {
-            client = new Client(BladeMain.serverIP, BladeMain.port, BladeMain.port);
-            client.start();
 
-            client.addMessageListener(this, CharCreationMessage.class, CharDestructionMessage.class, CharPositionMessage.class);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException ex) {
-            Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
-        }
-
-        InputMessages.addInputMessageListeners(client, this);
-
-        client.addConnectionListener(this);
         DirectionalLight sun = new DirectionalLight();
         sun.setDirection(new Vector3f(-0.1f, -0.7f, -1.0f));
         rootNode.addLight(sun);
@@ -194,10 +212,31 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
     }
     private boolean mouseCurrentlyStopped = true;
-
+ 
     @Override
     public void simpleUpdate(float tpf) {
-        
+        if (readyToStart && !started){
+            System.out.println("starting");
+            if(client==null){
+                System.out.println("Client is null");
+            }
+            client.addConnectionListener(this);
+            InputMessages.addInputMessageListeners(client, this);
+            client.addMessageListener(this, CharCreationMessage.class, CharDestructionMessage.class, CharStatusMessage.class,ClientReadyMessage.class);
+            try {
+                client.send(new ClientReadyMessage());
+                System.err.println("Sent ClientReadyMessage");
+            } catch (IOException ex) {
+                Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            started=true;
+            System.out.println("started");
+            hud=new HUD(this);
+            hud.enableLifeDisplay();
+            app.getGuiNode().attachChild(hud);
+            
+        }
+
         if (clientSet) {
             characterUpdate(tpf);
             if ((System.currentTimeMillis() - timeOfLastMouseMotion) > mouseMovementTimeout && !mouseCurrentlyStopped) {
@@ -260,25 +299,35 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
             control.setWalkDirection(left.mult(xVel).add(forward.mult(zVel)));
 
+            // first, get rotation and position of hand
+            Bone hand = modelMap.get(nextPlayerID).getControl(AnimControl.class).getSkeleton().getBone("swordHand");
+            Matrix3f rotation = hand.getModelSpaceRotation().toRotationMatrix();
+            Vector3f position = hand.getModelSpacePosition();
+
+            // set the position of the sword to the position of the hand
+            Node swordNode = (Node) modelMap.get(nextPlayerID).getChild("sword");
+            Bone swordBone = swordNode.getControl(AnimControl.class).getSkeleton().getBone("swordBone");
+            swordNode.setLocalRotation(rotation);
+            swordNode.setLocalTranslation(position);
+
             if (debug) {
-                
                 // Adjust the sword collision shape in accordance with arm movement.
-                // first, get rotation and position of hand
-                Bone hand = modelMap.get(nextPlayerID).getControl(AnimControl.class).getSkeleton().getBone("HandR");
-                Matrix3f rotation = hand.getModelSpaceRotation().toRotationMatrix();
-                Vector3f position = hand.getModelSpacePosition();
-
+                // adjust for difference in rotation
+                Quaternion swordRot = swordBone.getModelSpaceRotation();
+                Quaternion adjust = (new Quaternion()).fromAngles(FastMath.HALF_PI, 0, 0);
+                Matrix3f swordRotMat = swordRot.mult(adjust).toRotationMatrix();
+                
                 // adjust for difference in position of wrist and middle of sword
-                Vector3f shiftPosition = rotation.mult(new Vector3f(0f, .5f, 2.5f));
-
+                Vector3f shiftPosition = swordRot.mult(new Vector3f(0f, 1.8f, 0f));
+                
                 // build new collision shape
                 CompoundCollisionShape cShape = new CompoundCollisionShape();
                 Vector3f boxSize = new Vector3f(.1f, .1f, 2.25f);
-                cShape.addChildShape(new BoxCollisionShape(boxSize), position, rotation);
+                cShape.addChildShape(new BoxCollisionShape(boxSize), Vector3f.ZERO, swordRotMat);
                 CollisionShapeFactory.shiftCompoundShapeContents(cShape, shiftPosition);
                 
                 // remove GhostControl from PhysicsSpace, apply change, put in PhysicsSpace
-                SwordControl sword = modelMap.get(nextPlayerID).getControl(SwordControl.class);
+                SwordControl sword = modelMap.get(nextPlayerID).getChild("sword").getControl(SwordControl.class);
                 bulletAppState.getPhysicsSpace().remove(sword);
                 sword.setCollisionShape(cShape);
                 bulletAppState.getPhysicsSpace().add(sword);
@@ -372,7 +421,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             System.out.println("Creating character");
             CharCreationMessage creationMessage = (CharCreationMessage) message;
             long newPlayerID = creationMessage.playerID;
-            Node newModel = Character.createCharacter("Models/FighterRight.mesh.xml", assetManager, bulletAppState, true, newPlayerID);
+            Node newModel = Character.createCharacter("Models/Female.mesh.xml", "Models/sword.mesh.xml", assetManager, bulletAppState, true, newPlayerID);
             rootNode.attachChild(newModel);
             
             if (debug) {
@@ -383,6 +432,16 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 mat2.getAdditionalRenderState().setDepthTest(false);
                 skeletonDebug.setMaterial(mat2);
                 newModel.attachChild(skeletonDebug);
+                
+                Node newSword = (Node)newModel.getChild("sword");
+                
+                AnimControl control1 = newSword.getControl(AnimControl.class);
+                SkeletonDebugger skeletonDebug1 = new SkeletonDebugger("skeleton1", control1.getSkeleton());
+                Material mat21 = new Material(assetManager, "Common/MatDefs/Misc/WireColor.j3md");
+                mat21.setColor("Color", ColorRGBA.Green);
+                mat21.getAdditionalRenderState().setDepthTest(false);
+                skeletonDebug1.setMaterial(mat21);
+                newSword.attachChild(skeletonDebug1);
             }
             
             if (creationMessage.controllable) {
@@ -411,21 +470,23 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             charTurnVelMap.put(newPlayerID, 0f);
             animChannelMap.put(newPlayerID, modelMap.get(newPlayerID).getControl(AnimControl.class).createChannel());
             animChannelMap.get(newPlayerID).setAnim("stand");
+            charLifeMap.put(newPlayerID, 1f);
 
-        } else if (message instanceof CharPositionMessage) {
+        } else if (message instanceof CharStatusMessage) {
             if (clientSet) {
 
-                CharPositionMessage charPosition = (CharPositionMessage) message;
-                long messagePlayerID = charPosition.playerID;
+                CharStatusMessage charStatus = (CharStatusMessage) message;
+                long messagePlayerID = charStatus.playerID;
 
-                upperArmAnglesMap.put(messagePlayerID, charPosition.upperArmAngles.clone());
-                upperArmVelsMap.put(messagePlayerID, charPosition.upperArmVels.clone());
-                elbowWristAngleMap.put(messagePlayerID, charPosition.elbowWristAngle);
-                elbowWristVelMap.put(messagePlayerID, charPosition.elbowWristVel);
-                charPositionMap.put(messagePlayerID, charPosition.charPosition);
-                charVelocityMap.put(messagePlayerID, charPosition.charVelocity);
-                charAngleMap.put(messagePlayerID, charPosition.charAngle);
-                charTurnVelMap.put(messagePlayerID, charPosition.charTurnVel);
+                upperArmAnglesMap.put(messagePlayerID, charStatus.upperArmAngles.clone());
+                upperArmVelsMap.put(messagePlayerID, charStatus.upperArmVels.clone());
+                elbowWristAngleMap.put(messagePlayerID, charStatus.elbowWristAngle);
+                elbowWristVelMap.put(messagePlayerID, charStatus.elbowWristVel);
+                charPositionMap.put(messagePlayerID, charStatus.charPosition);
+                charVelocityMap.put(messagePlayerID, charStatus.charVelocity);
+                charAngleMap.put(messagePlayerID, charStatus.charAngle);
+                charTurnVelMap.put(messagePlayerID, charStatus.charTurnVel);
+                charLifeMap.put(messagePlayerID, charStatus.life);
                 if (animChannelMap.get(messagePlayerID) != null) {
                     if (charVelocityMap.get(messagePlayerID).equals(new Vector3f(0, 0, 0))) {
                         if (animChannelMap.get(messagePlayerID).getAnimationName().equals("walk")) {
@@ -437,12 +498,16 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                         }
                     }
                 }
+                
+                if(messagePlayerID==playerID){
+                    hud.setLifeDisplayValue(charStatus.life);
+                }
             }
         }
     }
 
     public void messageSent(Message message) {
-        System.out.println(message.getClass());
+    //    System.out.println(message.getClass());
     }
 
     public void objectReceived(Object object) {
