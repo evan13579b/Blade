@@ -296,11 +296,11 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 if(diffX>1)
                     correctiveX=1.0f/3.0f;
                 else
-                    correctiveX=diffX/3;
+                    correctiveX=FastMath.abs(diffX)/3;
                 if(diffZ>1)
                     correctiveZ=1.0f/3.0f;
                 else
-                    correctiveZ=diffZ/3;
+                    correctiveZ=FastMath.abs(diffZ)/3;
             }
                 
             Vector3f correctiveVelocity=new Vector3f(diffVect.x*correctiveX,0,diffVect.z*correctiveZ);
