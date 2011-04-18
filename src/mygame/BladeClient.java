@@ -88,12 +88,16 @@ import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Matrix3f;
+import com.jme3.math.Plane;
 import com.jme3.math.Quaternion;
+import com.jme3.math.Vector2f;
 import com.jme3.niftygui.NiftyJmeDisplay;
 import com.jme3.renderer.queue.RenderQueue.ShadowMode;
 import com.jme3.scene.debug.SkeletonDebugger;
+import com.jme3.scene.shape.Quad;
 import com.jme3.system.AppSettings;
 import com.jme3.util.SkyFactory;
+import com.jme3.water.SimpleWaterProcessor;
 import de.lessvoid.nifty.Nifty;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -201,7 +205,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         rootNode.attachChild(SkyFactory.createSky(assetManager, "Textures/Skysphere.jpg", true));
         initMaterials();
         initTerrain();
-
+        initWater();
         DirectionalLight sun = new DirectionalLight();
         sun.setDirection(new Vector3f(-0.1f, -0.7f, -1.0f));
         rootNode.addLight(sun);
@@ -459,6 +463,28 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         
         
     }
+    
+    public void initWater(){
+          SimpleWaterProcessor waterProcessor = new SimpleWaterProcessor(assetManager);
+            waterProcessor.setReflectionScene(rootNode);
+            Vector3f waterLocation = new Vector3f(0,-7,0);
+            waterProcessor.setPlane(new Plane(Vector3f.UNIT_Y, waterLocation.dot(Vector3f.UNIT_Y)));
+            viewPort.addProcessor(waterProcessor);
+            
+            waterProcessor.setWaterDepth(40);
+            waterProcessor.setDistortionScale(0.05f);
+            waterProcessor.setWaveSpeed(0.06f);
+            
+            Quad quad = new Quad(400,400);
+            quad.scaleTextureCoordinates(new Vector2f(6f,6f));
+            
+            Geometry water = new Geometry("water",quad);
+            water.setLocalRotation(new Quaternion().fromAngleAxis(-FastMath.HALF_PI, Vector3f.UNIT_X));
+            water.setLocalTranslation(-200, -6, 250);
+            water.setShadowMode(ShadowMode.Receive);
+            water.setMaterial(waterProcessor.getMaterial());
+            rootNode.attachChild(water);
+    }   
 
     public void initMaterials() {
         wall_mat = new Material(assetManager, "Common/MatDefs/Misc/SimpleTextured.j3md");
