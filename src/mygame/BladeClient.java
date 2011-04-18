@@ -84,6 +84,8 @@ import mygame.messages.CharDestructionMessage;
 import com.jme3.bullet.collision.shapes.BoxCollisionShape;
 import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
 import com.jme3.bullet.util.CollisionShapeFactory;
+import com.jme3.input.controls.ActionListener;
+import com.jme3.input.controls.KeyTrigger;
 import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
 import com.jme3.math.ColorRGBA;
@@ -92,12 +94,15 @@ import com.jme3.math.Plane;
 import com.jme3.math.Quaternion;
 import com.jme3.math.Vector2f;
 import com.jme3.niftygui.NiftyJmeDisplay;
+import com.jme3.post.FilterPostProcessor;
 import com.jme3.renderer.queue.RenderQueue.ShadowMode;
 import com.jme3.scene.debug.SkeletonDebugger;
 import com.jme3.scene.shape.Quad;
 import com.jme3.system.AppSettings;
+import com.jme3.texture.Texture2D;
 import com.jme3.util.SkyFactory;
 import com.jme3.water.SimpleWaterProcessor;
+import com.jme3.water.WaterFilter;
 import de.lessvoid.nifty.Nifty;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -139,6 +144,15 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     Material wall_mat;
     Material stone_mat;
     Material floor_mat;
+    //WATER VARIABLES
+    private Vector3f lightDir = new Vector3f(-4.9236743f, -1.27054665f, 5.896916f);
+    private float time = 0.0f;
+    private float waterHeight = -10.0f;
+    private float initialWaterHeight = -9.2f;
+    private WaterFilter water;
+    private FilterPostProcessor fpp;
+
+
     private RigidBodyControl terrain_phy;
     private RigidBodyControl basic_phy;
     private RigidBodyControl body_phy;
@@ -200,25 +214,31 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         flyCam.setDragToRotate(true);
         //app.setDisplayStatView(false);
         sceneNodes = new Node("Scene");
+        rootNode.attachChild(sceneNodes);
 
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
         stateManager.attach(bulletAppState);
-        //rootNode.attachChild(SkyFactory.createSky(assetManager, "Textures/Skysphere.jpg", true));
-        sceneNodes.attachChild(SkyFactory.createSky(assetManager, "Textures/Skysphere.jpg", true));
+        
         initMaterials();
         initTerrain();
         initWater();
         DirectionalLight sun = new DirectionalLight();
-        sun.setDirection(new Vector3f(-0.1f, -0.7f, -1.0f));
-        rootNode.addLight(sun);
+        sun.setDirection(lightDir);
+        sun.setColor(ColorRGBA.White.clone().multLocal(1.7f));
+        sceneNodes.addLight(sun);
 
         DirectionalLight sun2 = new DirectionalLight();
-        sun2.setDirection(new Vector3f(0.1f, 0.7f, 1.0f));
-        rootNode.addLight(sun2);
+        sun2.setDirection(Vector3f.UNIT_Y.mult(-1));
+        sun2.setColor(ColorRGBA.White.clone().multLocal(0.3f));
+        sceneNodes.addLight(sun2);
 
+        //rootNode.addLight(sun2);
+
+        //rootNode.attachChild(SkyFactory.createSky(assetManager, "Textures/Skysphere.jpg", true));
+        sceneNodes.attachChild(SkyFactory.createSky(assetManager, "Textures/Skysphere.jpg", true));
+        
         flyCam.setEnabled(false);
-        rootNode.attachChild(sceneNodes);
         if (debug) {
             bulletAppState.getPhysicsSpace().enableDebug(this.getAssetManager());
         }
@@ -228,6 +248,13 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
  
     @Override
     public void simpleUpdate(float tpf) {
+        
+        super.simpleUpdate(tpf);
+        time += tpf;
+        waterHeight = (float) Math.cos(((time * 0.6f) % FastMath.TWO_PI)) * 1.5f;
+        water.setWaterHeight(initialWaterHeight + waterHeight);
+
+        
         if (readyToStart && !started){
             System.out.println("starting");
             if(client==null){
@@ -436,7 +463,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
         terrain.setLocalTranslation(0, -100, 0);
         terrain.setLocalScale(2f, 2f, 2f);
-        
+        terrain.setShadowMode(ShadowMode.CastAndReceive);
         //rootNode.attachChild(terrain);
         sceneNodes.attachChild(terrain);
         terrain_phy = new RigidBodyControl(0.0f);
@@ -465,13 +492,46 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         light.setDirection((new Vector3f(4.9f,1.3f, -5.9f)).normalize());
         rootNode.addLight(light);
         
-        AmbientLight ambLight = new AmbientLight();
+        /*AmbientLight ambLight = new AmbientLight();
         ambLight.setColor(new ColorRGBA(0.5f, 0.5f, 0.8f, 0.2f));
-        sceneNodes.addLight(ambLight);
+        sceneNodes.addLight(ambLight);*/
     }
     
     public void initWater(){
-          SimpleWaterProcessor waterProcessor = new SimpleWaterProcessor(assetManager);
+        //NEW WATER
+        
+        fpp = new FilterPostProcessor(assetManager);
+        water = new WaterFilter(rootNode, lightDir);
+        water.setWaveScale(0.003f);
+        water.setMaxAmplitude(2f);
+        water.setFoamExistence(new Vector3f(1f, 4, 0.5f));
+        water.setFoamTexture((Texture2D) assetManager.loadTexture("Common/MatDefs/Water/Textures/foam2.jpg"));
+        water.setRefractionStrength(0.2f);
+        water.setWaterHeight(initialWaterHeight);
+        fpp.addFilter(water);
+        viewPort.addProcessor(fpp);
+        inputManager.addListener(new ActionListener() {
+
+            public void onAction(String name, boolean isPressed, float tpf) {
+                if(isPressed){
+                    if(name.equals("foam1")){
+                        water.setFoamTexture((Texture2D) assetManager.loadTexture("Common/MatDefs/Water/Textures/foam.jpg"));                      
+                    }
+                    if(name.equals("foam2")){
+                        water.setFoamTexture((Texture2D) assetManager.loadTexture("Common/MatDefs/Water/Textures/foam2.jpg"));
+                    }
+                    if(name.equals("foam3")){
+                        water.setFoamTexture((Texture2D) assetManager.loadTexture("Common/MatDefs/Water/Textures/foam3.jpg"));
+                    }
+                }
+            }
+        }, "foam1","foam2","foam3");
+        inputManager.addMapping("foam1", new KeyTrigger(keyInput.KEY_1));
+        inputManager.addMapping("foam2", new KeyTrigger(keyInput.KEY_2));
+        inputManager.addMapping("foam3", new KeyTrigger(keyInput.KEY_3));
+
+        //OLD WATER
+         /* SimpleWaterProcessor waterProcessor = new SimpleWaterProcessor(assetManager);
             waterProcessor.setReflectionScene(sceneNodes);
             Vector3f waterLocation = new Vector3f(0,-7,0);
             waterProcessor.setPlane(new Plane(Vector3f.UNIT_Y, waterLocation.dot(Vector3f.UNIT_Y)));
@@ -491,7 +551,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             
             water.setMaterial(waterProcessor.getMaterial());
             rootNode.attachChild(water);
-            //waterProcessor.setRenderSize(128,128);
+            //waterProcessor.setRenderSize(128,128);*/
     }   
 
     public void initMaterials() {
@@ -596,7 +656,8 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             Future action = app.enqueue(new Callable() {
 
                 public Object call() throws Exception {
-                    rootNode.attachChild(newModel);
+                    //rootNode.attachChild(newModel);
+                    sceneNodes.attachChild(newModel);
                     return null;
                 }
             });
