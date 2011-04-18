@@ -85,6 +85,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 import jme3tools.converters.ImageToAwt;
 import mygame.messages.CharCreationMessage;
 import mygame.messages.CharDestructionMessage;
@@ -116,7 +118,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     private long timeOfLastSync=0;
     
     private long currentPlayerID=0;
-
+    private static BladeServer app;
     private BulletAppState bulletAppState;
     private TerrainQuad terrain;
     Material mat_terrain;
@@ -132,7 +134,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     ServerSyncService serverSyncService;
 
     public static void main(String[] args) {
-        BladeServer app = new BladeServer();
+        app = new BladeServer();
         AppSettings appSettings=new AppSettings(true);
         appSettings.setFrameRate(60);
         app.setSettings(appSettings);
@@ -498,9 +500,9 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                 Client client = message.getClient();
                 System.out.println("Received ClientReadyMessage");
 
-                Node model = Character.createCharacter("Models/Female.mesh.xml", "Models/sword.mesh.xml", assetManager, bulletAppState, true, newPlayerID);
-
-                rootNode.attachChild(model);
+                final Node model = Character.createCharacter("Models/Female.mesh.xml", "Models/sword.mesh.xml", assetManager, bulletAppState, true, newPlayerID);
+                
+                //rootNode.attachChild(model);
                 //rootNode.attachChild(geom1);
                 modelMap.put(newPlayerID, model);
                 upperArmAnglesMap.put(newPlayerID, new Vector3f());
@@ -526,7 +528,17 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                 playerSet.add(newPlayerID);
                 clientMap.put(newPlayerID, client);
                 playerIDMap.put(client, newPlayerID);
-
+                
+                Future action = app.enqueue(new Callable() {
+                    
+                    public Object call() throws Exception {
+                        rootNode.attachChild(model);
+                        return null;
+                    }
+                });
+                //to retrieve return value (waits for call to finish, fire&forget otherwise):
+                //action.get();
+                
             } catch (IOException ex) {
                 Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -608,13 +620,13 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     public void clientDisconnected(Client client) {
         System.out.println("client disconnecting is " + client);
-        long playerID = playerIDMap.get(client);
+        final long playerID = playerIDMap.get(client);
         List<Long> players = new LinkedList();
         Node model=modelMap.get(playerID);
         bulletAppState.getPhysicsSpace().remove(model.getChild("sword").getControl(SwordControl.class));
         bulletAppState.getPhysicsSpace().remove(model.getControl(BodyControl.class));
         bulletAppState.getPhysicsSpace().remove(model.getControl(CharacterControl.class));
-        rootNode.detachChild(modelMap.get(playerID));
+        //rootNode.detachChild(modelMap.get(playerID));
         playerIDMap.remove(client);
         clientMap.remove(playerID);
         players.addAll(playerSet);
@@ -628,5 +640,15 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                 Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
+        Future action = app.enqueue(new Callable() {
+
+            public Object call() throws Exception {
+                rootNode.detachChild(modelMap.get(playerID));
+                return null;
+            }
+        });
+        //to retrieve return value (waits for call to finish, fire&forget otherwise):
+        //action.get();
+
     }
 }

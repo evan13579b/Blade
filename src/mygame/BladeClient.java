@@ -94,6 +94,8 @@ import com.jme3.system.AppSettings;
 import com.jme3.util.SkyFactory;
 import de.lessvoid.nifty.Nifty;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 import mygame.messages.CharStatusMessage;
 import mygame.messages.ClientReadyMessage;
 import mygame.ui.HUD;
@@ -432,22 +434,32 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     public void messageReceived(Message message) {
         if (message instanceof CharDestructionMessage){
             CharDestructionMessage destroMessage=(CharDestructionMessage)message;
-            long destroyedPlayerID=destroMessage.playerID;
+            final long destroyedPlayerID=destroMessage.playerID;
             System.out.println("my id is "+playerID+", and destroID is "+destroyedPlayerID);
             playerSet.remove(destroyedPlayerID);
             Node model=modelMap.get(destroyedPlayerID);
             bulletAppState.getPhysicsSpace().remove(model.getChild("sword").getControl(SwordControl.class));
             bulletAppState.getPhysicsSpace().remove(model.getControl(BodyControl.class));
             bulletAppState.getPhysicsSpace().remove(model.getControl(CharacterControl.class));
-            rootNode.detachChild(modelMap.get(destroyedPlayerID));
+            //rootNode.detachChild(modelMap.get(destroyedPlayerID));
             modelMap.remove(destroyedPlayerID);
+            Future action = app.enqueue(new Callable() {
+
+                public Object call() throws Exception {
+                    rootNode.detachChild(modelMap.get(destroyedPlayerID));
+                    return null;
+                }
+            });
+            //to retrieve return value (waits for call to finish, fire&forget otherwise):
+            //action.get();
+
         }
         else if (message instanceof CharCreationMessage) {
             System.out.println("Creating character");
             CharCreationMessage creationMessage = (CharCreationMessage) message;
             long newPlayerID = creationMessage.playerID;
-            Node newModel = Character.createCharacter("Models/Female.mesh.xml", "Models/sword.mesh.xml", assetManager, bulletAppState, true, newPlayerID);
-            rootNode.attachChild(newModel);
+            final Node newModel = Character.createCharacter("Models/Female.mesh.xml", "Models/sword.mesh.xml", assetManager, bulletAppState, true, newPlayerID);
+            //rootNode.attachChild(newModel);
             
             if (debug) {
                 AnimControl control = newModel.getControl(AnimControl.class);
@@ -497,6 +509,16 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             animChannelMap.get(newPlayerID).setAnim("stand");
             charLifeMap.put(newPlayerID, 1f);
 
+            Future action = app.enqueue(new Callable() {
+
+                public Object call() throws Exception {
+                    rootNode.attachChild(newModel);
+                    return null;
+                }
+            });
+            //to retrieve return value (waits for call to finish, fire&forget otherwise):
+            //action.get();
+            
         } else if (message instanceof CharStatusMessage) {
             if (clientSet) {
 
