@@ -154,8 +154,8 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         app = new BladeClient();
         AppSettings appSettings=new AppSettings(true);
         appSettings.setFrameRate(30);
+        app.setPauseOnLostFocus(false);
         app.setSettings(appSettings);
-        
         app.start();
     }
     
@@ -456,12 +456,12 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
                 public Object call() throws Exception {
                     rootNode.detachChild(modelMap.get(destroyedPlayerID));
+                    modelMap.remove(destroyedPlayerID);
                     return null;
                 }
             });
             //to retrieve return value (waits for call to finish, fire&forget otherwise):
             //action.get();
-            modelMap.remove(destroyedPlayerID);
         }
         else if (message instanceof CharCreationMessage) {
             System.out.println("Creating character");

@@ -71,7 +71,6 @@ import com.jme3.network.serializing.Serializer;
 import com.jme3.network.sync.ServerSyncService;
 import com.jme3.scene.Node;
 import com.jme3.system.AppSettings;
-import com.jme3.system.JmeContext;
 import com.jme3.terrain.geomipmap.TerrainQuad;
 import com.jme3.terrain.heightmap.AbstractHeightMap;
 import com.jme3.terrain.heightmap.ImageBasedHeightMap;
@@ -85,8 +84,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import jme3tools.converters.ImageToAwt;
 import mygame.messages.CharCreationMessage;
 import mygame.messages.CharDestructionMessage;
@@ -115,6 +115,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     private final long timeBetweenSyncs=10;
     private final int numPrevStates = 9;
     private final int goBackNumStates = 3;
+
+    private Queue<Callable> actions = new ConcurrentLinkedQueue<Callable>();
     private long timeOfLastSync=0;
     
     private long currentPlayerID=0;
@@ -137,9 +139,10 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         app = new BladeServer();
         AppSettings appSettings=new AppSettings(true);
         appSettings.setFrameRate(60);
+        app.setPauseOnLostFocus(false);
         app.setSettings(appSettings);
-        //app.start();
-        app.start(JmeContext.Type.Headless);
+        app.start();
+        //app.start(JmeContext.Type.Headless);
     }
 
     @Override
@@ -149,7 +152,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         Serializer.registerClass(CharDestructionMessage.class);
         Serializer.registerClass(ClientReadyMessage.class);
         InputMessages.registerInputClasses();
-        
+       
         try {
             server = new Server(BladeMain.port,BladeMain.port);
             server.start();
@@ -296,7 +299,18 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
            
         PhysicsTickListener physTickListener = new PhysicsTickListener() {
             public void prePhysicsTick(PhysicsSpace space, float f) {
-                updateCharacters(timer.getTimePerFrame());    
+                Callable action;
+                
+                while ((action = actions.poll()) != null) {
+                    try {
+                        action.call();
+                    } catch (Exception ex) {
+                        Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }                
+                
+                updateCharacters(timer.getTimePerFrame());
+                rootNode.updateGeometricState();
                 //System.out.println("tpf: " + timer.getTimePerFrame() + " fps: " + timer.getFrameRate());
             }
 
@@ -514,7 +528,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                 charAngleMap.put(newPlayerID, 0f);
                 charTurnVelMap.put(newPlayerID, 0f);
                 charLifeMap.put(newPlayerID, 1f);
-
+                
                 prevStates.put(newPlayerID, new ArrayDeque<Vector3f[]>(numPrevStates));
                 
                 client.send(new CharCreationMessage(newPlayerID, true));
@@ -529,16 +543,13 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                 clientMap.put(newPlayerID, client);
                 playerIDMap.put(client, newPlayerID);
                 
-                Future action = app.enqueue(new Callable() {
-                    
+                actions.add(new Callable() {                    
                     public Object call() throws Exception {
                         rootNode.attachChild(model);
                         return null;
                     }
                 });
-                //to retrieve return value (waits for call to finish, fire&forget otherwise):
-                //action.get();
-                
+                                
             } catch (IOException ex) {
                 Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -639,16 +650,13 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             } catch (IOException ex) {
                 Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
             }
-        }
-        Future action = app.enqueue(new Callable() {
-
+        }        
+        actions.add(new Callable() {
             public Object call() throws Exception {
                 rootNode.detachChild(modelMap.get(playerID));
+                modelMap.remove(playerID);
                 return null;
             }
         });
-        //to retrieve return value (waits for call to finish, fire&forget otherwise):
-        //action.get();
-        modelMap.remove(playerID);
     }
 }
