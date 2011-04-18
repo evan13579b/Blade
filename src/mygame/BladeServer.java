@@ -649,6 +649,6 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         });
         //to retrieve return value (waits for call to finish, fire&forget otherwise):
         //action.get();
-
+        modelMap.remove(playerID);
     }
 }

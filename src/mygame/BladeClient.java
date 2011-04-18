@@ -452,7 +452,6 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             bulletAppState.getPhysicsSpace().remove(model.getControl(BodyControl.class));
             bulletAppState.getPhysicsSpace().remove(model.getControl(CharacterControl.class));
             //rootNode.detachChild(modelMap.get(destroyedPlayerID));
-            modelMap.remove(destroyedPlayerID);
             Future action = app.enqueue(new Callable() {
 
                 public Object call() throws Exception {
@@ -462,7 +461,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             });
             //to retrieve return value (waits for call to finish, fire&forget otherwise):
             //action.get();
-
+            modelMap.remove(destroyedPlayerID);
         }
         else if (message instanceof CharCreationMessage) {
             System.out.println("Creating character");
