@@ -84,12 +84,13 @@ import mygame.messages.CharDestructionMessage;
 import com.jme3.bullet.collision.shapes.BoxCollisionShape;
 import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
 import com.jme3.bullet.util.CollisionShapeFactory;
-import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
+import com.jme3.material.RenderState.BlendMode;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Matrix3f;
 import com.jme3.math.Quaternion;
 import com.jme3.niftygui.NiftyJmeDisplay;
+import com.jme3.renderer.queue.RenderQueue.Bucket;
 import com.jme3.renderer.queue.RenderQueue.ShadowMode;
 import com.jme3.scene.debug.SkeletonDebugger;
 import com.jme3.system.AppSettings;
@@ -535,6 +536,22 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 playerID = newPlayerID;
                 model = newModel;
                 System.out.println("claiming player id " + playerID);
+                
+                /**** Testing transparency of model ****/
+                // Lower is more transparent
+                float alpha = 0.1f;
+
+                Material mat = new Material(assetManager, "Common/MatDefs/Misc/SolidColor.j3md");
+                mat.setColor("m_Color", new ColorRGBA(153, 153, 153, alpha));
+                mat.getAdditionalRenderState().setBlendMode(BlendMode.Alpha);
+                newModel.setMaterial(mat);
+                newModel.setQueueBucket(Bucket.Transparent);
+
+                Node sword = (Node) newModel.getChild("sword");
+                Material mat1 = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
+                sword.setMaterial(mat1);
+
+                /******* End Transparency test *******/
 /*
                 chaseCam = new ChaseCamera(cam, model, inputManager);
                 chaseCam.setSmoothMotion(true);
