@@ -104,7 +104,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import mygame.messages.CharStatusMessage;
 import mygame.messages.ClientReadyMessage;
-import mygame.ui.HUD;
+import mygame.ui.LifeDisplay;
 import mygame.ui.LoginScreen;
 import mygame.util.IOLib;
 
@@ -130,6 +130,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     ConcurrentHashMap<Long, Float> charTurnVelMap = new ConcurrentHashMap();
     ConcurrentHashMap<Long, AnimChannel> animChannelMap = new ConcurrentHashMap();
     ConcurrentHashMap<Long, Float> charLifeMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, LifeDisplay> lifeDisplayMap = new ConcurrentHashMap();
 
     private final boolean debug = false;
     private BulletAppState bulletAppState;
@@ -152,7 +153,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     boolean readyToStart=false;
     boolean started=false;
     Nifty ui;
-    HUD hud;
+    LifeDisplay hud;
 
     Client client;
     boolean clientSet = false;
@@ -162,7 +163,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         app = new BladeClient();
         AppSettings appSettings=new AppSettings(true);
         appSettings.setFrameRate(30);
-        app.setPauseOnLostFocus(false);
+  //      app.setPauseOnLostFocus(false);
         app.setSettings(appSettings);
         app.start();
     }
@@ -240,11 +241,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
             }
             started=true;
-            System.out.println("started");
-            hud=new HUD(this);
-            hud.enableLifeDisplay();
-            app.getGuiNode().attachChild(hud);
-            
+            System.out.println("started");            
         }
 
         if (clientSet) {
@@ -272,54 +269,21 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
             charAngleMap.put(nextPlayerID, CharMovement.extrapolateCharTurn(charAngleMap.get(nextPlayerID), charTurnVelMap.get(nextPlayerID), tpf));
 
-    //        Vector3f alternateExtrap=CharMovement.oldExtrapolateCharMovement(charPositionMap.get(nextPlayerID),charVelocityMap.get(nextPlayerID),
-      //              charAngleMap.get(nextPlayerID),charTurnVelMap.get(nextPlayerID),tpf);
             charPositionMap.put(nextPlayerID, CharMovement.extrapolateCharMovement(charPositionMap.get(nextPlayerID),
                     charVelocityMap.get(nextPlayerID), charAngleMap.get(nextPlayerID),charTurnVelMap.get(nextPlayerID),tpf));
 
             CharMovement.setUpperArmTransform(upperArmAnglesMap.get(nextPlayerID), modelMap.get(nextPlayerID));
             CharMovement.setLowerArmTransform(elbowWristAngleMap.get(nextPlayerID), modelMap.get(nextPlayerID));
-
-        //    Vector3f correctiveVelocity=correctiveVelocityMap.get(nextPlayerID);
-            
             
             Vector3f extrapolatedPosition,currentPosition;
             extrapolatedPosition=charPositionMap.get(nextPlayerID);
             currentPosition=modelMap.get(nextPlayerID).getLocalTranslation();
-     //       float diffLength=FastMath.sqrt(FastMath.sqr(extrapolatedPosition.x-currentPosition.x)+FastMath.sqr(extrapolatedPosition.z-currentPosition.z));
             CharacterControl control=modelMap.get(nextPlayerID).getControl(CharacterControl.class);
             
             Vector3f diffVect=new Vector3f(extrapolatedPosition.x-currentPosition.x,0,extrapolatedPosition.z-currentPosition.z);
-            System.out.println("diffVect:"+diffVect);
             float correctiveConstant=0.2f;
-            float correctiveX=0;
-            float correctiveZ=0;
-            float diffX=extrapolatedPosition.x-currentPosition.x;
-            float diffZ=extrapolatedPosition.z-currentPosition.z;
-            float diffLength=diffVect.length();/*
-            if(diffLength>10){
-                control.setPhysicsLocation(extrapolatedPosition);
-            }
-            else {
-                if(diffX>1)
-                    correctiveX=1.0f/3.0f;
-                else
-                    correctiveX=FastMath.abs(diffX)/3;
-                if(diffZ>1)
-                    correctiveZ=1.0f/3.0f;
-                else
-                    correctiveZ=FastMath.abs(diffZ)/3;
-            }*/
-                
-            Vector3f correctiveVelocity=new Vector3f(diffVect.x*correctiveConstant,0,diffVect.z*correctiveConstant);
-        //    correctiveVelocityMap.put(nextPlayerID, correctiveVelocity);
             
-    //        float oldDiffLength=FastMath.sqrt(FastMath.sqr(alternateExtrap.x-currentPosition.x)+FastMath.sqr(alternateExtrap.z-currentPosition.z));
-      //      System.out.println("new diff is "+diffLength+", old dif is "+oldDiffLength);
-   //         if(diffLength>1.5f){
-    //              control.setPhysicsLocation(extrapolatedPosition);//new Vector3f(extrapolatedPosition.x,currentPosition.y+1,extrapolatedPosition.z));
-   //               System.out.println("warping");
-    //        }
+            Vector3f correctiveVelocity=new Vector3f(diffVect.x*correctiveConstant,0,diffVect.z*correctiveConstant);
 
             float xDir,zDir;
             zDir=FastMath.cos(charAngleMap.get(nextPlayerID));
@@ -340,6 +304,14 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 cam.setLocation(modelMap.get(nextPlayerID).getLocalTranslation().add(new Vector3f(0,4,0)).subtract(viewDirection.mult(8)));
             }
 
+            if (lifeDisplayMap.get(nextPlayerID) != null) {
+                lifeDisplayMap.get(nextPlayerID).setLifeDisplayValue(charLifeMap.get(nextPlayerID));
+                if(playerID!=nextPlayerID){
+                    lifeDisplayMap.get(nextPlayerID).setLocalTranslation(modelMap.get(nextPlayerID).getLocalTranslation());
+                    lifeDisplayMap.get(nextPlayerID).lookAt(modelMap.get(playerID).getLocalTranslation().subtract(viewDirection).mult(1), up);
+               } 
+            }
+            
             Vector3f velocity=left.mult(xVel).add(forward.mult(zVel));
             
             control.setWalkDirection(velocity.add(correctiveVelocity));
@@ -533,9 +505,8 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         else if (message instanceof CharCreationMessage) {
             System.out.println("Creating character");
             CharCreationMessage creationMessage = (CharCreationMessage) message;
-            long newPlayerID = creationMessage.playerID;
+            final long newPlayerID = creationMessage.playerID;
             final Node newModel = Character.createCharacter("Models/Female.mesh.j3o", "Models/sword.mesh.j3o", assetManager, bulletAppState, true, newPlayerID);
-            //rootNode.attachChild(newModel);
             
             if (debug) {
                 AnimControl control = newModel.getControl(AnimControl.class);
@@ -556,20 +527,19 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 skeletonDebug1.setMaterial(mat21);
                 newSword.attachChild(skeletonDebug1);
             }
+
             
+           
             if (creationMessage.controllable) {
                 playerID = newPlayerID;
                 model = newModel;
                 System.out.println("claiming player id " + playerID);
-/*
-                chaseCam = new ChaseCamera(cam, model, inputManager);
-                chaseCam.setSmoothMotion(true);
-                chaseCam.setDefaultVerticalRotation(FastMath.HALF_PI / 4f);
-                chaseCam.setLookAtOffset(new Vector3f(0.0f, 4.0f, 0.0f));
- */
+
                 registerInput();
+                
                 clientSet = true;
             }
+
             modelMap.put(newPlayerID, newModel);
             
             playerSet.add(newPlayerID);
@@ -584,10 +554,24 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             animChannelMap.put(newPlayerID, modelMap.get(newPlayerID).getControl(AnimControl.class).createChannel());
             animChannelMap.get(newPlayerID).setAnim("stand");
             charLifeMap.put(newPlayerID, 1f);
-
+            
+        //    newModel.attachChild(lifeDisplay);
+            final boolean controllable=creationMessage.controllable;
             Future action = app.enqueue(new Callable() {
 
                 public Object call() throws Exception {
+                    LifeDisplay lifeDisplay;
+                    if (controllable) {
+                        lifeDisplay = new LifeDisplay(assetManager.loadFont("Interface/Fonts/Default.fnt"), true);
+                        lifeDisplayMap.put(newPlayerID, lifeDisplay);
+                        lifeDisplay.setLocalTranslation(0,app.getSettings().getHeight(),0);
+                        guiNode.attachChild(lifeDisplay);
+                    }
+                    else{
+                        lifeDisplay = new LifeDisplay(assetManager.loadFont("Interface/Fonts/Default.fnt"), false);
+                        lifeDisplayMap.put(newPlayerID, lifeDisplay);
+                        rootNode.attachChild(lifeDisplay);
+                    }
                     rootNode.attachChild(newModel);
                     return null;
                 }
@@ -622,9 +606,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                     }
                 }
                 
-                if(messagePlayerID==playerID){
-                    hud.setLifeDisplayValue(charStatus.life);
-                }
+                charLifeMap.put(messagePlayerID,charStatus.life);
             }
         }
     }

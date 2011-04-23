@@ -79,7 +79,6 @@ import com.jme3.terrain.heightmap.ImageBasedHeightMap;
 import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.WrapMode;
 import com.jme3.util.SkyFactory;
-import com.jme3.water.SimpleWaterProcessor;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.concurrent.ConcurrentHashMap;
@@ -96,6 +95,7 @@ import mygame.messages.CharDestructionMessage;
 import mygame.messages.CharStatusMessage;
 import mygame.messages.ClientReadyMessage;
 import mygame.messages.HasID;
+import mygame.ui.LifeDisplay;
 
 public class BladeServer extends SimpleApplication implements MessageListener,ConnectionListener{
     ConcurrentHashMap<Long,Node> modelMap=new ConcurrentHashMap();
@@ -145,7 +145,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     public static void main(String[] args) {
         app = new BladeServer();
         AppSettings appSettings=new AppSettings(true);
-        appSettings.setFrameRate(60);
+        appSettings.setFrameRate(30);
         app.setPauseOnLostFocus(false);
         app.setSettings(appSettings);
         //app.start();
@@ -168,10 +168,17 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             e.printStackTrace();
         }
 
+    //    LifeDisplay lifeDisplay=new LifeDisplay(assetManager.loadFont("Interface/Fonts/Default.fnt"),new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md"));
+   //     lifeDisplay.setLifeDisplayValue(1);
+    //    lifeDisplay.scale(100);
+   //     lifeDisplay.setLocalTranslation(100,100,0);
+   //     guiNode.attachChild(lifeDisplay);
+    //    rootNode.attachChild(lifeDisplay);
+        
         InputMessages.addInputMessageListeners(server, this);
         server.addConnectionListener(this);
         server.addMessageListener(this,CharCreationMessage.class,CharDestructionMessage.class,CharStatusMessage.class,ClientReadyMessage.class);
-
+        
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
         
