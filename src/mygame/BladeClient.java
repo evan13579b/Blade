@@ -131,7 +131,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     ConcurrentHashMap<Long, AnimChannel> animChannelMap = new ConcurrentHashMap();
     ConcurrentHashMap<Long, Float> charLifeMap = new ConcurrentHashMap();
 
-    private final boolean debug = true;
+    private final boolean debug = false;
     private BulletAppState bulletAppState;
     private TerrainQuad terrain;
     Material mat_terrain;
@@ -534,7 +534,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             System.out.println("Creating character");
             CharCreationMessage creationMessage = (CharCreationMessage) message;
             long newPlayerID = creationMessage.playerID;
-            final Node newModel = Character.createCharacter("Models/Female.mesh.xml", "Models/sword.mesh.xml", assetManager, bulletAppState, true, newPlayerID);
+            final Node newModel = Character.createCharacter("Models/Female.mesh.j3o", "Models/sword.mesh.j3o", assetManager, bulletAppState, true, newPlayerID);
             //rootNode.attachChild(newModel);
             
             if (debug) {
