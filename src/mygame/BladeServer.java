@@ -61,6 +61,7 @@ import com.jme3.material.Material;
 import com.jme3.math.FastMath;
 import com.jme3.math.Matrix3f;
 import com.jme3.math.Quaternion;
+import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 import com.jme3.network.connection.Client;
 import com.jme3.network.connection.Server;
@@ -87,6 +88,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Vector;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import jme3tools.converters.ImageToAwt;
@@ -100,6 +102,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     ConcurrentHashMap<Long,Node> modelMap=new ConcurrentHashMap();
     ConcurrentHashMap<Long,Vector3f> upperArmAnglesMap=new ConcurrentHashMap();
     ConcurrentHashMap<Long,Vector3f> upperArmVelsMap=new ConcurrentHashMap();
+    ConcurrentHashMap<Long,Vector3f> upperArmDeflectVelsMap=new ConcurrentHashMap();
+    
     ConcurrentHashMap<Long,Float> elbowWristAngleMap=new ConcurrentHashMap();
     ConcurrentHashMap<Long,Float> elbowWristVelMap=new ConcurrentHashMap();
     HashSet<Long> playerSet=new HashSet();
@@ -116,7 +120,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     private final long timeBetweenSyncs=10;
     private final int numPrevStates = 9;
-    private final int goBackNumStates = 1;
+    private final int goBackNumStates = 2;
 
     private Queue<Callable> actions = new ConcurrentLinkedQueue<Callable>();
     private long timeOfLastSync=0;
@@ -193,7 +197,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         
         PhysicsCollisionListener physListener = new PhysicsCollisionListener() {
 
-            public void collision(PhysicsCollisionEvent event) {
+            public void collision(final PhysicsCollisionEvent event) {
 
                 final PhysicsCollisionObject a = event.getObjectA();
                 final PhysicsCollisionObject b = event.getObjectB();
@@ -205,60 +209,114 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     //System.out.println("A: " + a.getOverlappingCount()
                     //        + " B: " + b.getOverlappingCount());
                     
+                    final Vector3f point1 = event.getLocalPointA();
+                    final Vector3f point2 = event.getLocalPointB();
+                    
                     actions.add(new Callable() {
 
                         public Object call() throws Exception {
 
-                            long hurtPlayerID;
-                            if ((a instanceof SwordControl) && (b instanceof BodyControl)) {
-                                hurtPlayerID = ((ControlID) b).getID();
-                                charLifeMap.put(hurtPlayerID, charLifeMap.get(hurtPlayerID) * 0.999f);
-                            } else if ((b instanceof SwordControl) && (a instanceof BodyControl)) {
-                                hurtPlayerID = ((ControlID) a).getID();
-                                charLifeMap.put(hurtPlayerID, charLifeMap.get(hurtPlayerID) * 0.999f);
-                            }
-
                             long playerID1 = Long.valueOf(((ControlID) a).getID());
                             long playerID2 = Long.valueOf(((ControlID) b).getID());
+        
+                            Node modelA = modelMap.get(playerID1);
+                            Node modelB = modelMap.get(playerID2);
+                            
+                            if ((a instanceof SwordControl) && (b instanceof SwordControl)) {
+                                // Handle sword deflection
 
-                            Deque player1Deque = prevStates.get(playerID1);
-                            Deque player2Deque = prevStates.get(playerID2);
+                                //float x1 = upperArmVelsMap.get(playerID1).x;
+                                //float y1 = upperArmVelsMap.get(playerID1).y;                                
 
-                            // go back some number of states
-                            for (int i = 1; i < goBackNumStates; i++) {
-                                player1Deque.pollLast();
-                                player2Deque.pollLast();
+                                //Vector3f localImpactPosA = modelA.worldToLocal(modelA.getChild("sword").localToWorld(point1, null), null);
+                                //Vector3f localImpactPosB = modelB.worldToLocal(modelB.getChild("sword").localToWorld(point2, null), null);
+                                
+                                //System.out.println(impactPosA + "  " + impactPosB);
+                                
+                                Bone upperArmA = modelMap.get(playerID1).getControl(AnimControl.class).getSkeleton().getBone("UpArmR");
+                                Vector3f upperArmAPos = upperArmA.getModelSpacePosition();
+                                
+                                /*********/
+                                
+                                // Get movement vectors
+                                Vector3f v1 = new Vector3f(upperArmVelsMap.get(playerID1).x, upperArmVelsMap.get(playerID1).y, 0);
+                                Vector3f v2 = new Vector3f(upperArmVelsMap.get(playerID2).x, upperArmVelsMap.get(playerID2).y, 0);
+                                
+                                Vector3f n = new Vector3f(1, 0, 0);
+                                
+                                // Find the length of the component of each of the movement
+                                // vectors along n. 
+                                float a1 = v1.dot(n);
+                                float a2 = v2.dot(n);
+
+                                // optimizedP =  2(a1 - a2)
+                                //              -----------
+                                //                m1 + m2
+                                //float optimizedP = (2.0 * (a1 - a2)) / (mass1 + mass2);
+                                float optimizedP = a1 - a2;
+                                
+                                // Calculate v1', the new movement vector of circle1
+                                // v1' = v1 - optimizedP * m2 * n
+                                Vector3f newV1 = v1.subtract(n.mult(optimizedP));
+
+                                // Calculate v1', the new movement vector of circle1
+                                // v2' = v2 + optimizedP * m1 * n
+                                Vector3f newV2 = v2.add(n.mult(optimizedP));
+
+                                // Assign deflect velocities
+                                upperArmDeflectVelsMap.put(playerID1, upperArmDeflectVelsMap.get(playerID1).addLocal(newV1));
+                                upperArmDeflectVelsMap.put(playerID2, upperArmDeflectVelsMap.get(playerID2).addLocal(newV2));
+                                
+                                /*********/
+                                
+                            } else {
+
+                                if ((a instanceof SwordControl) && (b instanceof BodyControl)) {
+                                    charLifeMap.put(playerID2, charLifeMap.get(playerID2) * 0.999f);
+                                } else if ((b instanceof SwordControl) && (a instanceof BodyControl)) {
+                                    charLifeMap.put(playerID1, charLifeMap.get(playerID1) * 0.999f);
+                                }
+
+                                Deque player1Deque = prevStates.get(playerID1);
+                                Deque player2Deque = prevStates.get(playerID2);
+
+                                // go back some number of states
+                                for (int i = 1; i < goBackNumStates; i++) {
+                                    player1Deque.pollLast();
+                                    player2Deque.pollLast();
+                                }
+
+                                Vector3f[] p1State = (Vector3f[]) player1Deque.pollLast();
+                                Vector3f[] p2State = (Vector3f[]) player2Deque.pollLast();
+
+                                // replace the removed states
+
+                                Vector3f[] p1Next = (Vector3f[]) player1Deque.pollLast();
+                                Vector3f[] p2Next = (Vector3f[]) player2Deque.pollLast();
+
+                                for (int i = 0; i < goBackNumStates; i++) {
+                                    player1Deque.offerLast(p1Next);
+                                    player2Deque.offerLast(p2Next);
+                                }
+
+                                // reposition the character as recorded in the previous state
+                                upperArmAnglesMap.put(playerID1, p1State[0]);
+                                upperArmAnglesMap.put(playerID2, p2State[0]);
+
+                                elbowWristAngleMap.put(playerID1, p1State[1].getX());
+                                elbowWristAngleMap.put(playerID2, p2State[1].getX());
+
+                                charAngleMap.put(playerID1, p1State[1].getY());
+                                charAngleMap.put(playerID2, p2State[1].getY());
+
+                                charPositionMap.put(playerID1, p1State[2]);
+                                charPositionMap.put(playerID2, p2State[2]);
+
+                                modelMap.get(playerID1).getControl(CharacterControl.class).setPhysicsLocation(charPositionMap.get(playerID1));
+                                modelMap.get(playerID2).getControl(CharacterControl.class).setPhysicsLocation(charPositionMap.get(playerID2));
+                                //updateCharacters(timer.getTimePerFrame());
+
                             }
-
-                            Vector3f[] p1State = (Vector3f[]) player1Deque.pollLast();
-                            Vector3f[] p2State = (Vector3f[]) player2Deque.pollLast();
-
-                            // replace the removed states
-
-                            Vector3f[] p1Next = (Vector3f[]) player1Deque.pollLast();
-                            Vector3f[] p2Next = (Vector3f[]) player2Deque.pollLast();
-
-                            for (int i = 0; i < goBackNumStates; i++) {
-                                player1Deque.offerLast(p1Next);
-                                player2Deque.offerLast(p2Next);
-                            }
-
-                            // reposition the character as recorded in the previous state
-                            upperArmAnglesMap.put(playerID1, p1State[0]);
-                            upperArmAnglesMap.put(playerID2, p2State[0]);
-
-                            elbowWristAngleMap.put(playerID1, p1State[1].getX());
-                            elbowWristAngleMap.put(playerID2, p2State[1].getX());
-
-                            charAngleMap.put(playerID1, p1State[1].getY());
-                            charAngleMap.put(playerID2, p2State[1].getY());
-
-                            charPositionMap.put(playerID1, p1State[2]);
-                            charPositionMap.put(playerID2, p2State[2]);
-
-                            modelMap.get(playerID1).getControl(CharacterControl.class).setPhysicsLocation(charPositionMap.get(playerID1));
-                            modelMap.get(playerID2).getControl(CharacterControl.class).setPhysicsLocation(charPositionMap.get(playerID2));
-                            //updateCharacters(timer.getTimePerFrame());
                             return null;
                         }
                     });
@@ -350,10 +408,19 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             
             Vector3f[] prevState = new Vector3f[3];
             
+            Vector3f upperArmDeflectVels = upperArmDeflectVelsMap.get(playerID);
+            
             prevState[0] = upperArmAnglesMap.get(playerID);
             upperArmAnglesMap.put(playerID, CharMovement.extrapolateUpperArmAngles(upperArmAngles,
-                    upperArmVelsMap.get(playerID), tpf));
+                    upperArmVelsMap.get(playerID), upperArmDeflectVels, tpf));
 
+            
+            if (upperArmDeflectVels.length() < FastMath.FLT_EPSILON)
+                upperArmDeflectVelsMap.put(playerID, upperArmDeflectVels.mult(0));
+            else
+                upperArmDeflectVelsMap.put(playerID, upperArmDeflectVels.mult(0.7f));
+            
+            
             prevState[1] = new Vector3f(elbowWristAngleMap.get(playerID), 0f, 0f);
             elbowWristAngleMap.put(playerID, CharMovement.extrapolateLowerArmAngles(elbowWristAngleMap.get(playerID),
                     elbowWristVelMap.get(playerID), tpf));
@@ -571,6 +638,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                 modelMap.put(newPlayerID, model);
                 upperArmAnglesMap.put(newPlayerID, new Vector3f());
                 upperArmVelsMap.put(newPlayerID, new Vector3f());
+                upperArmDeflectVelsMap.put(newPlayerID, new Vector3f());
                 elbowWristAngleMap.put(newPlayerID, new Float(CharMovement.Constraints.lRotMin));
                 elbowWristVelMap.put(newPlayerID, new Float(0f));
                 charPositionMap.put(newPlayerID, new Vector3f());
