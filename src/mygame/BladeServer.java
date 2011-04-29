@@ -293,38 +293,14 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
         for(Iterator<Long> playerIterator=playerSet.iterator(); playerIterator.hasNext();){
             long playerID = playerIterator.next();
             Character character=charMap.get(playerID);
-            Vector3f upperArmAngles=character.upperArmAngles;
             Vector3f[] prevState = new Vector3f[3];
             prevState[0]=character.upperArmAngles;
-            character.upperArmAngles=CharMovement.extrapolateUpperArmAngles(upperArmAngles, character.upperArmVels, tpf);
             prevState[1]=new Vector3f(character.elbowWristAngle,0f,0f);
-            character.elbowWristAngle=CharMovement.extrapolateLowerArmAngles(character.elbowWristAngle, character.elbowWristVel, tpf);
             prevState[1].setY(character.charAngle);
-            character.charAngle=CharMovement.extrapolateCharTurn(character.charAngle, character.turnVel, tpf); 
-            CharacterControl control=character.charControl;
-            float xDir,zDir;
-            zDir=FastMath.cos(character.charAngle);
-            xDir=FastMath.sin(character.charAngle);
-            Vector3f viewDirection=new Vector3f(xDir,0,zDir);
-            control.setViewDirection(viewDirection);
-
-            Vector3f forward,up,left;
-            float xVel,zVel;
-            xVel=character.velocity.x;
-            zVel=character.velocity.z;
-            forward=new Vector3f(viewDirection);
-            up=new Vector3f(0,1,0);
-            left=up.cross(forward);
-
-            control.setWalkDirection(left.mult(xVel).add(forward.mult(zVel)));
-            
             prevState[2] = character.position.clone();
-            //charPositionMap.get(playerID).set(modelMap.get(playerID).getControl(CharacterControl.class).getPhysicsLocation()); // getLocalTranslation
-            character.position=character.charControl.getPhysicsLocation();
+            character.update(tpf,true);
             
-            CharMovement.setUpperArmTransform(character.upperArmAngles, character.bodyModel);
-            CharMovement.setLowerArmTransform(character.elbowWristAngle, character.bodyModel);
-
+            
             // Adjust the sword collision shape in accordance with arm movement.
             // first, get rotation and position of hand
             Bone hand = character.bodyModel.getControl(AnimControl.class).getSkeleton().getBone("swordHand");
@@ -553,7 +529,7 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                     });
                     
                 } else if (message instanceof InputMessages.TurnCharLeft) {
-                    
+                    System.out.println("Turn Left");
                     actions.add(new Callable() {
                         public Object call() throws Exception {
                             character.turnVel=1f;
@@ -562,7 +538,7 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                     });
                     
                 } else if (message instanceof InputMessages.TurnCharRight) {
-                    
+                    System.out.println("Turn Right");
                     actions.add(new Callable() {
                         public Object call() throws Exception {
                             character.turnVel=-1f;
@@ -571,7 +547,7 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                     });
                     
                 } else if (message instanceof InputMessages.StopCharTurn) {
-                    
+                    System.out.println("Stop Turn");
                     actions.add(new Callable() {
                         public Object call() throws Exception {
                             character.turnVel=0f;

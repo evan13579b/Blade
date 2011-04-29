@@ -71,6 +71,44 @@ public class Character{
         applyPhysics(bulletAppState);
     }
     
+    public void update(float tpf,boolean serverChar){
+        upperArmAngles=CharMovement.extrapolateUpperArmAngles(upperArmAngles, upperArmVels, tpf);
+        elbowWristAngle=CharMovement.extrapolateLowerArmAngles(elbowWristAngle, elbowWristVel, tpf);
+        charAngle=CharMovement.extrapolateCharTurn(charAngle, turnVel, tpf);
+        CharMovement.setUpperArmTransform(upperArmAngles, bodyModel);
+        CharMovement.setLowerArmTransform(elbowWristAngle, bodyModel);
+        
+        float xDir, zDir;
+        zDir = FastMath.cos(charAngle);
+        xDir = FastMath.sin(charAngle);
+        Vector3f viewDirection = new Vector3f(xDir, 0, zDir);
+        
+        charControl.setViewDirection(viewDirection);
+        Vector3f forward, up, left;
+        float xVel, zVel;
+        xVel = velocity.x;
+        zVel = velocity.z;
+        forward = new Vector3f(viewDirection);
+        up = new Vector3f(0, 1, 0);
+        left = up.cross(forward);
+        
+        Vector3f newVelocity = left.mult(xVel).add(forward.mult(zVel));
+        
+        if (!serverChar) {
+            Vector3f extrapolatedPosition, currentPosition;
+            position = charControl.getPhysicsLocation();
+            currentPosition = bodyModel.getLocalTranslation();
+            extrapolatedPosition = position;
+            Vector3f diffVect = new Vector3f(extrapolatedPosition.x - currentPosition.x, 0, extrapolatedPosition.z - currentPosition.z);
+            float correctiveConstant = 0.2f;
+            Vector3f correctiveVelocity = new Vector3f(diffVect.x * correctiveConstant, 0, diffVect.z * correctiveConstant);
+      
+            newVelocity.addLocal(correctiveVelocity);
+        }
+        
+        charControl.setWalkDirection(newVelocity);
+    }
+    
     private void applyPhysics(BulletAppState bulletAppState){
         CapsuleCollisionShape capsule = new CapsuleCollisionShape(1f, 4.5f);
 

@@ -100,9 +100,9 @@ public class BladeClient extends BladeBase implements MessageListener, RawInputL
     ConcurrentHashMap<Long, AnimChannel> animChannelMap = new ConcurrentHashMap();
     ConcurrentHashMap<Long, Float> charLifeMap = new ConcurrentHashMap();
     ConcurrentHashMap<Long, LifeDisplay> lifeDisplayMap = new ConcurrentHashMap();
+    
 
     private final boolean debug = false;
-    CharacterControl character;
     CompoundCollisionShape collisionShape;
     BoundingVolume ballBound;
     Geometry block;
@@ -188,7 +188,7 @@ public class BladeClient extends BladeBase implements MessageListener, RawInputL
         }
 
         if (clientSet) {
-            characterUpdate(tpf);
+            updateCharacters(tpf);
             if ((System.currentTimeMillis() - timeOfLastMouseMotion) > mouseMovementTimeout && !mouseCurrentlyStopped) {
                 try {
 
@@ -203,54 +203,25 @@ public class BladeClient extends BladeBase implements MessageListener, RawInputL
         }
     }
     
-    public void characterUpdate(float tpf) {
+    public void updateCharacters(float tpf) {
         for (Iterator<Long> playerIterator = playerSet.iterator(); playerIterator.hasNext();) {
             long nextPlayerID = playerIterator.next();
             
             Character character=charMap.get(nextPlayerID);
-            character.upperArmAngles=CharMovement.extrapolateUpperArmAngles(character.upperArmAngles, character.upperArmVels, tpf);
-            
-            CharMovement.setUpperArmTransform(character.upperArmAngles, character.bodyModel);
-            CharMovement.setLowerArmTransform(character.elbowWristAngle, character.bodyModel);
-            
-            Vector3f extrapolatedPosition,currentPosition;
-            extrapolatedPosition=character.position;
-            
-            currentPosition=character.bodyModel.getLocalTranslation();
-            
-            Vector3f diffVect=new Vector3f(extrapolatedPosition.x-currentPosition.x,0,extrapolatedPosition.z-currentPosition.z);
-            float correctiveConstant=0.2f;
-            Vector3f correctiveVelocity=new Vector3f(diffVect.x*correctiveConstant,0,diffVect.z*correctiveConstant);
+            character.update(tpf,false);
 
-            float xDir,zDir;
-            zDir=FastMath.cos(character.charAngle);
-            xDir=FastMath.sin(character.charAngle);
-            Vector3f viewDirection=new Vector3f(xDir,0,zDir);
-            
-            character.charControl.setViewDirection(viewDirection);
-            Vector3f forward,up,left;
-            float xVel,zVel;
-            xVel=character.velocity.x;
-            zVel=character.velocity.z;
-            forward=new Vector3f(viewDirection);
-            up=new Vector3f(0,1,0);
-            left=up.cross(forward);
             if(nextPlayerID==playerID){
-                cam.setDirection(viewDirection);
-                cam.setLocation(character.bodyModel.getLocalTranslation().add(new Vector3f(0,4,0)).subtract(viewDirection.mult(8)));
+                cam.setDirection(character.charControl.getViewDirection());
+                cam.setLocation(character.bodyModel.getLocalTranslation().add(new Vector3f(0,4,0)).subtract(character.charControl.getViewDirection().mult(8)));
             }
 
             if (lifeDisplayMap.get(nextPlayerID) != null) {
                 lifeDisplayMap.get(nextPlayerID).setLifeDisplayValue(charLifeMap.get(nextPlayerID));
                 if(playerID!=nextPlayerID){
                     lifeDisplayMap.get(nextPlayerID).setLocalTranslation(character.bodyModel.getLocalTranslation());
-                    lifeDisplayMap.get(nextPlayerID).lookAt(charMap.get(playerID).bodyModel.getLocalTranslation().subtract(viewDirection).mult(1), up);
+                    lifeDisplayMap.get(nextPlayerID).lookAt(charMap.get(playerID).bodyModel.getLocalTranslation().subtract(character.charControl.getViewDirection()).mult(1), new Vector3f(0,1,0));
                } 
             }
-            
-            Vector3f velocity=left.mult(xVel).add(forward.mult(zVel));
-            
-            character.charControl.setWalkDirection(velocity.add(correctiveVelocity));
 
             // first, get rotation and position of hand
             Bone hand = character.bodyModel.getControl(AnimControl.class).getSkeleton().getBone("swordHand");
@@ -305,7 +276,7 @@ public class BladeClient extends BladeBase implements MessageListener, RawInputL
             bulletAppState.getPhysicsSpace().remove(destroyedModel.getChild("sword").getControl(SwordControl.class));
             bulletAppState.getPhysicsSpace().remove(destroyedModel.getControl(BodyControl.class));
             bulletAppState.getPhysicsSpace().remove(destroyedModel.getControl(CharacterControl.class));
-            //rootNode.detachChild(modelMap.get(destroyedPlayerID));
+
             Future action = app.enqueue(new Callable() {
 
                 public Object call() throws Exception {
