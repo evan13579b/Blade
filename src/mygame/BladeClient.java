@@ -388,13 +388,13 @@ public class BladeClient extends BladeBase implements MessageListener, RawInputL
         } else if (message instanceof SwordSwordCollisionMessage){
             SwordSwordCollisionMessage collisionMessage=(SwordSwordCollisionMessage)message;
             System.out.println("Received sword-sword collision at "+collisionMessage.coordinates);
-            createEffect(collisionMessage.coordinates);
+            createEffect(collisionMessage.coordinates,clankMat);
 
         } else if (message instanceof SwordBodyCollisionMessage) {
             SwordBodyCollisionMessage collisionMessage = (SwordBodyCollisionMessage) message;
             System.out.println("Received sword-body collision" + collisionMessage.coordinates);
             
-            createEffect(collisionMessage.coordinates);
+            createEffect(collisionMessage.coordinates,bloodMat);
         }
     }
 

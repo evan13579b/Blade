@@ -94,9 +94,12 @@ public class Character{
         
         Vector3f newVelocity = left.mult(xVel).add(forward.mult(zVel));
         
-        if (!serverChar) {
-            Vector3f extrapolatedPosition, currentPosition;
+        if(serverChar){
             position = charControl.getPhysicsLocation();
+        }
+        else {
+            Vector3f extrapolatedPosition, currentPosition;
+            
             currentPosition = bodyModel.getLocalTranslation();
             extrapolatedPosition = position;
             Vector3f diffVect = new Vector3f(extrapolatedPosition.x - currentPosition.x, 0, extrapolatedPosition.z - currentPosition.z);

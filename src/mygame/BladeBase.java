@@ -13,6 +13,7 @@ import com.jme3.effect.ParticleEmitter;
 import com.jme3.effect.ParticleMesh;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
+import com.jme3.math.ColorRGBA;
 import com.jme3.math.FastMath;
 import com.jme3.math.Plane;
 import com.jme3.math.Quaternion;
@@ -59,7 +60,8 @@ public class BladeBase extends SimpleApplication{
     Material wall_mat;
     Material stone_mat;
     Material floor_mat;
-    Material explosiveMat;
+    Material bloodMat;
+    Material clankMat;
     
     private Node house;
     
@@ -190,8 +192,11 @@ public class BladeBase extends SimpleApplication{
         tex3.setWrap(WrapMode.Repeat);
         floor_mat.setTexture("ColorMap", tex3);
 
-        explosiveMat = new Material(assetManager, "Common/MatDefs/Misc/Particle.j3md");
-        explosiveMat.setTexture("Texture", assetManager.loadTexture("Effects/Explosion/flash.png"));
+        bloodMat = new Material(assetManager, "Common/MatDefs/Misc/Particle.j3md");
+        bloodMat.setTexture("Texture", assetManager.loadTexture("Effects/Explosion/flash.png"));
+        
+        clankMat = new Material(assetManager, "Common/MatDefs/Misc/Particle.j3md");
+        clankMat.setTexture("Texture", assetManager.loadTexture("Effects/Explosion/flash.png"));
     }
     
     public void initWater() {
@@ -216,16 +221,25 @@ public class BladeBase extends SimpleApplication{
         rootNode.attachChild(water);
     }
     
-    public void createEffect(final Vector3f coords) {
+    public void createEffect(final Vector3f coords,final Material material) {
         final BladeBase app=this;
         Future action = app.enqueue(new Callable() {
 
             public Object call() throws Exception {
                 
                 final ParticleEmitter explosion = new ParticleEmitter("SwordSword", ParticleMesh.Type.Triangle, 30);
-                explosion.setMaterial(explosiveMat);
+                explosion.setMaterial(material);
                 rootNode.attachChild(explosion);
                 explosion.setLocalTranslation(coords);
+                ColorRGBA color;
+                if(material==clankMat){
+                    color=ColorRGBA.Gray;
+                }
+                else{
+                    color=ColorRGBA.Red;
+                }
+                explosion.setStartColor(color);
+                explosion.setEndColor(color);
                 explosion.emitAllParticles();
                 TimerTask task = new TimerTask() { // create a task that will detach the explosion later
 

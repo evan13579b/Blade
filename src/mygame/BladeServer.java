@@ -148,7 +148,7 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
 
                 final PhysicsCollisionObject a = event.getObjectA();
                 final PhysicsCollisionObject b = event.getObjectB();
-                final Vector3f collisionCoordinate = event.getPositionWorldOnA();
+                final Vector3f collisionCoordinates = event.getPositionWorldOnA();
                 if ((a != null && b != null && a instanceof ControlID && b instanceof ControlID
                         && ((ControlID) a).getID() != ((ControlID) b).getID())) {
 
@@ -189,12 +189,14 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                                 long currentTime = System.currentTimeMillis();
 
                                 if (currentTime - timeOfLastCollisionMap.get(effectPlayerID) > 500) {
-                                    createEffect(collisionCoordinate);
+                                    
                                     Message message;
                                     if (swordSword) {
-                                        message = new SwordSwordCollisionMessage(new Vector3f(collisionCoordinate));
+                                        message = new SwordSwordCollisionMessage(new Vector3f(collisionCoordinates));
+                                        createEffect(collisionCoordinates,clankMat);
                                     } else {
-                                        message = new SwordBodyCollisionMessage(new Vector3f(collisionCoordinate));
+                                        message = new SwordBodyCollisionMessage(new Vector3f(collisionCoordinates));
+                                        createEffect(collisionCoordinates,bloodMat);
                                     }
 
                                     for (Iterator<Long> playerIterator = playerSet.iterator(); playerIterator.hasNext();) {
