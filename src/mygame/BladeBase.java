@@ -50,16 +50,7 @@ import mygame.messages.SwordSwordCollisionMessage;
  * @author blah
  */
 public class BladeBase extends SimpleApplication{
-    ConcurrentHashMap<Long, Node> modelMap = new ConcurrentHashMap();
-    ConcurrentHashMap<Long, Vector3f> upperArmAnglesMap = new ConcurrentHashMap();
-    ConcurrentHashMap<Long, Vector3f> upperArmVelsMap = new ConcurrentHashMap();
-    ConcurrentHashMap<Long, Float> elbowWristAngleMap = new ConcurrentHashMap();
-    ConcurrentHashMap<Long, Float> elbowWristVelMap = new ConcurrentHashMap();
     HashSet<Long> playerSet = new HashSet();
-    ConcurrentHashMap<Long, Vector3f> charPositionMap = new ConcurrentHashMap();
-    ConcurrentHashMap<Long, Vector3f> charVelocityMap = new ConcurrentHashMap();
-    ConcurrentHashMap<Long, Float> charAngleMap = new ConcurrentHashMap();
-    ConcurrentHashMap<Long, Float> charTurnVelMap = new ConcurrentHashMap();
     ConcurrentHashMap<Long, Character> charMap = new ConcurrentHashMap();
     
     Material mat_terrain;

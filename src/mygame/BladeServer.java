@@ -645,7 +645,7 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
         actions.add(new Callable() {
             public Object call() throws Exception {
                 rootNode.detachChild(charMap.get(playerID).bodyModel);
-                modelMap.remove(playerID);
+                charMap.remove(playerID);
                 return null;
             }
         });
