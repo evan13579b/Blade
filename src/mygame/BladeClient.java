@@ -84,7 +84,8 @@ import mygame.messages.CharDestructionMessage;
 import com.jme3.bullet.collision.shapes.BoxCollisionShape;
 import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
 import com.jme3.bullet.util.CollisionShapeFactory;
-import com.jme3.light.AmbientLight;
+import com.jme3.effect.ParticleEmitter;
+import com.jme3.effect.ParticleMesh;
 import com.jme3.light.DirectionalLight;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Matrix3f;
@@ -104,6 +105,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import mygame.messages.CharStatusMessage;
 import mygame.messages.ClientReadyMessage;
+import mygame.messages.SwordBodyCollisionMessage;
+import mygame.messages.SwordSwordCollisionMessage;
 import mygame.ui.LifeDisplay;
 import mygame.ui.LoginScreen;
 import mygame.util.IOLib;
@@ -189,6 +192,8 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         Serializer.registerClass(CharCreationMessage.class);
         Serializer.registerClass(CharDestructionMessage.class);
         Serializer.registerClass(ClientReadyMessage.class);
+        Serializer.registerClass(SwordSwordCollisionMessage.class);
+        Serializer.registerClass(SwordBodyCollisionMessage.class);
         InputMessages.registerInputClasses();
         Map<String,String> ipAddressMap=IOLib.getIpAddressMap();
 
@@ -233,7 +238,8 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             }
             client.addConnectionListener(this);
             InputMessages.addInputMessageListeners(client, this);
-            client.addMessageListener(this, CharCreationMessage.class, CharDestructionMessage.class, CharStatusMessage.class,ClientReadyMessage.class);
+            client.addMessageListener(this, SwordSwordCollisionMessage.class,SwordBodyCollisionMessage.class,CharCreationMessage.class, CharDestructionMessage.class, CharStatusMessage.class,ClientReadyMessage.class);
+           
             try {
                 client.send(new ClientReadyMessage());
                 System.err.println("Sent ClientReadyMessage");
@@ -608,6 +614,43 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 
                 charLifeMap.put(messagePlayerID,charStatus.life);
             }
+        } else if (message instanceof SwordSwordCollisionMessage){
+            SwordSwordCollisionMessage collisionMessage=(SwordSwordCollisionMessage)message;
+            System.out.println("Received sword-sword collision at "+collisionMessage.coordinates);
+            System.out.println("main player is at "+modelMap.get(playerID).getLocalTranslation());
+            final Vector3f coords=new Vector3f(collisionMessage.coordinates);
+            Future action = app.enqueue(new Callable() {
+                public Object call() throws Exception {
+                    Material explosiveMat=new Material(assetManager,"Common/MatDefs/Misc/Particle.j3md");
+                    explosiveMat.setTexture("Texture", assetManager.loadTexture("Effects/Explosion/flash.png"));
+                    ParticleEmitter explosion = new ParticleEmitter("SwordSword", ParticleMesh.Type.Triangle, 30);
+                    explosion.setMaterial(explosiveMat);
+                    rootNode.attachChild(explosion);
+                    explosion.setLocalTranslation(coords);
+                    explosion.emitAllParticles();
+                    return null;
+                }
+            });
+
+        } else if (message instanceof SwordBodyCollisionMessage) {
+            SwordBodyCollisionMessage collisionMessage = (SwordBodyCollisionMessage) message;
+            System.out.println("Received sword-body collision" + collisionMessage.coordinates);
+            System.out.println("main player is at " + modelMap.get(playerID).getLocalTranslation());
+            final Vector3f coords=new Vector3f(collisionMessage.coordinates);
+            Future action = app.enqueue(new Callable() {
+
+                public Object call() throws Exception {
+                    Material explosiveMat=new Material(assetManager,"Common/MatDefs/Misc/Particle.j3md");
+                    explosiveMat.setTexture("Texture", assetManager.loadTexture("Effects/Explosion/flash.png"));
+                    ParticleEmitter explosion = new ParticleEmitter("SwordSword", ParticleMesh.Type.Triangle, 30);
+                    explosion.setMaterial(explosiveMat);
+                    rootNode.attachChild(explosion);
+                    explosion.setLocalTranslation(coords);
+                    explosion.emitAllParticles();
+                    return null;
+                }
+            });
+
         }
     }
 

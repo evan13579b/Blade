@@ -95,7 +95,8 @@ import mygame.messages.CharDestructionMessage;
 import mygame.messages.CharStatusMessage;
 import mygame.messages.ClientReadyMessage;
 import mygame.messages.HasID;
-import mygame.ui.LifeDisplay;
+import mygame.messages.SwordBodyCollisionMessage;
+import mygame.messages.SwordSwordCollisionMessage;
 
 public class BladeServer extends SimpleApplication implements MessageListener,ConnectionListener{
     ConcurrentHashMap<Long,Node> modelMap=new ConcurrentHashMap();
@@ -114,6 +115,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     ConcurrentHashMap<Long, Deque<Vector3f[]>> prevStates = new ConcurrentHashMap();
    
     ConcurrentHashMap<Long, Float> charLifeMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, Long> timeOfLastCollisionMap = new ConcurrentHashMap();
 
     private final long timeBetweenSyncs=10;
     private final int numPrevStates = 9;
@@ -158,6 +160,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         Serializer.registerClass(CharCreationMessage.class);
         Serializer.registerClass(CharDestructionMessage.class);
         Serializer.registerClass(ClientReadyMessage.class);
+        Serializer.registerClass(SwordSwordCollisionMessage.class);
+        Serializer.registerClass(SwordBodyCollisionMessage.class);
         InputMessages.registerInputClasses();
        
         try {
@@ -177,7 +181,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         
         InputMessages.addInputMessageListeners(server, this);
         server.addConnectionListener(this);
-        server.addMessageListener(this,CharCreationMessage.class,CharDestructionMessage.class,CharStatusMessage.class,ClientReadyMessage.class);
+        server.addMessageListener(this,SwordSwordCollisionMessage.class,SwordBodyCollisionMessage.class,CharCreationMessage.class,CharDestructionMessage.class,CharStatusMessage.class,ClientReadyMessage.class);
         
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
@@ -204,6 +208,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
                 final PhysicsCollisionObject a = event.getObjectA();
                 final PhysicsCollisionObject b = event.getObjectB();
+                final Vector3f localCoordA=event.getLocalPointA();
                 
                 if ((a != null && b != null && a instanceof ControlID && b instanceof ControlID
                         && ((ControlID)a).getID() != ((ControlID)b).getID())) {
@@ -223,6 +228,45 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                             } else if ((b instanceof SwordControl) && (a instanceof BodyControl)) {
                                 hurtPlayerID = ((ControlID) a).getID();
                                 charLifeMap.put(hurtPlayerID, charLifeMap.get(hurtPlayerID) * 0.999f);
+                            }
+                            
+                            // we limit the amount of collision messages per second to two
+                            // and we do this based on the id of the lowest ID whose sword collided.
+                            // this is to make sure that we don't get two rapid collisions
+                            // when both swords collided with each
+                            long effectPlayerID=-1;
+                            boolean swordSword=false;
+                            if ((a instanceof SwordControl)){
+                                effectPlayerID=((ControlID)a).getID();
+                                if(b instanceof SwordControl){
+                                    swordSword=true;
+                                    if(effectPlayerID>((ControlID)b).getID())
+                                        effectPlayerID=((ControlID)b).getID();
+                                }
+                            }
+                            else if((b instanceof SwordControl)) {
+                                effectPlayerID=((ControlID)b).getID();
+                            }
+                            
+                            if (effectPlayerID != -1) {
+                                Client client = clientMap.get(effectPlayerID);
+                                long currentTime = System.currentTimeMillis();
+                               
+                                Vector3f collisionCoordinate=localCoordA.add(modelMap.get(((ControlID)a).getID()).getLocalTranslation());
+                                if (currentTime - timeOfLastCollisionMap.get(effectPlayerID) > 500) {
+                                    Message message;
+                                    if (swordSword) {
+                                        message=new SwordSwordCollisionMessage(new Vector3f(collisionCoordinate));
+                                    } else {
+                                        message=new SwordBodyCollisionMessage(new Vector3f(collisionCoordinate));
+                                    }
+
+                                    for (Iterator<Long> playerIterator = playerSet.iterator(); playerIterator.hasNext();) {
+                                        long destPlayerID = playerIterator.next();
+                                        clientMap.get(destPlayerID).send(message);
+                                    }
+                                    timeOfLastCollisionMap.put(effectPlayerID, currentTime);
+                                }
                             }
 
                             long playerID1 = Long.valueOf(((ControlID) a).getID());
@@ -602,6 +646,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                 playerSet.add(newPlayerID);
                 clientMap.put(newPlayerID, client);
                 playerIDMap.put(client, newPlayerID);
+                timeOfLastCollisionMap.put(newPlayerID, 0L);
                 
                 actions.add(new Callable() {                    
                     public Object call() throws Exception {
