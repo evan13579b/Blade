@@ -26,7 +26,8 @@ import com.jme3.scene.Node;
  * @author blah
  */
 public class Character{
-    Node model;
+    Node bodyModel;
+    Node swordModel;
     
     Vector3f upperArmAngles;
     Vector3f upperArmVels;
@@ -40,16 +41,16 @@ public class Character{
     
     public Character(){
         AssetManager assetManager=new DesktopAssetManager();
-        model=(Node)assetManager.loadModel("Models/Female.mesh.j3o");
-        model.scale(1.0f, 1.0f, 1.0f);
-        model.rotate(0.0f, FastMath.HALF_PI, 0.0f);
-        model.setLocalTranslation(0.0f, 20.0f, 0.0f);
+        bodyModel=(Node)assetManager.loadModel("Models/Female.mesh.j3o");
+        bodyModel.scale(1.0f, 1.0f, 1.0f);
+        bodyModel.rotate(0.0f, FastMath.HALF_PI, 0.0f);
+        bodyModel.setLocalTranslation(0.0f, 20.0f, 0.0f);
         
-        Node sword=(Node)assetManager.loadModel("Models/sword.mesh.j3o");
-        sword.scale(1.0f, 1.0f, 1.0f);
-        sword.setName("sword");
+        swordModel=(Node)assetManager.loadModel("Models/sword.mesh.j3o");
+        swordModel.scale(1.0f, 1.0f, 1.0f);
+        swordModel.setName("sword");
         
-        model.attachChild(sword);
+        bodyModel.attachChild(swordModel);
         
         upperArmAngles=new Vector3f();
         upperArmVels=new Vector3f();
@@ -59,6 +60,48 @@ public class Character{
         turnVel=0f;
         elbowWristAngle=CharMovement.Constraints.lRotMin;
         elbowWristVel=0f;
+    }
+    
+    public void applyPhysics(BulletAppState bulletAppState,Long playerID){
+        CapsuleCollisionShape capsule = new CapsuleCollisionShape(1f, 4.5f);
+
+        // create collision shape for sword
+        Bone hand = bodyModel.getControl(AnimControl.class).getSkeleton().getBone("swordHand");
+        Matrix3f rotation = hand.getModelSpaceRotation().toRotationMatrix();
+        Vector3f position = hand.getModelSpacePosition();
+
+        swordModel.setLocalRotation(rotation);
+        swordModel.setLocalTranslation(position);
+
+
+        Vector3f shiftPosition = rotation.mult(new Vector3f(0f, 0f, 2.5f));
+        CompoundCollisionShape cShape = new CompoundCollisionShape();
+        Vector3f boxSize = new Vector3f(.1f, .1f, 2.25f);
+        cShape.addChildShape(new BoxCollisionShape(boxSize), position, rotation);
+        CollisionShapeFactory.shiftCompoundShapeContents(cShape, shiftPosition);
+
+        // create control for sword
+        SwordControl sword = new SwordControl(cShape, playerID);
+        sword.setCollisionGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
+        sword.removeCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_01);
+        sword.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
+
+        // create control for body
+        BodyControl body = new BodyControl(capsule, playerID);
+        body.setCollisionGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
+        body.removeCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_01);
+        body.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
+
+        // create control for character
+        CharacterControl charControl = new CharacterControl(capsule, 0.01f);
+
+        swordModel.addControl(sword);
+        bodyModel.addControl(body);
+        bodyModel.addControl(charControl);
+
+        bulletAppState.getPhysicsSpace().add(sword);
+        bulletAppState.getPhysicsSpace().add(body);
+        bulletAppState.getPhysicsSpace().add(charControl);
     }
     
     static public Node createCharacter(String bodyAssetPath,String swordAssetPath,AssetManager assetManager,BulletAppState bulletAppState,boolean applyPhysics, long playerID){
