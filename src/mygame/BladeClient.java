@@ -355,25 +355,13 @@ public class BladeClient extends BladeBase implements MessageListener, RawInputL
                 
                 clientSet = true;
             }
-
-   //         modelMap.put(newPlayerID, newModel);
             
             playerSet.add(newPlayerID);
-   //         upperArmAnglesMap.put(newPlayerID, new Vector3f());
-   //         upperArmVelsMap.put(newPlayerID, new Vector3f());
-   //         elbowWristAngleMap.put(newPlayerID, new Float(CharMovement.Constraints.lRotMin));
-   //         elbowWristVelMap.put(newPlayerID, new Float(0f));
-   //         charPositionMap.put(newPlayerID, new Vector3f());
-   //         charVelocityMap.put(newPlayerID, new Vector3f());
-   //         charAngleMap.put(newPlayerID, 0f);
-   //         charTurnVelMap.put(newPlayerID, 0f);
             animChannelMap.put(newPlayerID, character.bodyModel.getControl(AnimControl.class).createChannel());
             animChannelMap.get(newPlayerID).setAnim("stand");
             charLifeMap.put(newPlayerID, 1f);
             charMap.put(newPlayerID, character); 
-    //        System.out.println("character placed");
             
-        //    newModel.attachChild(lifeDisplay);
             final boolean controllable=creationMessage.controllable;
             Future action = app.enqueue(new Callable() {
 

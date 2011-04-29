@@ -231,21 +231,23 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                             }
 
                             // reposition the character as recorded in the previous state
-                            upperArmAnglesMap.put(playerID1, p1State[0]);
-                            upperArmAnglesMap.put(playerID2, p2State[0]);
+                            Character character1=charMap.get(playerID1);
+                            Character character2=charMap.get(playerID2);
+                            character1.upperArmAngles=p1State[0];
+                            character2.upperArmAngles=p2State[0];
+                            
+                            character1.elbowWristAngle=p1State[1].getX();
+                            character2.elbowWristAngle=p2State[1].getX();
+                            
+                            character1.charAngle=p1State[1].getY();
+                            character2.charAngle=p2State[1].getY();
+                            
+                            character1.position=p1State[2];
+                            character2.position=p2State[2];
+                            
+                            character1.charControl.setPhysicsLocation(character1.position); 
+                            character2.charControl.setPhysicsLocation(character2.position); 
 
-                            elbowWristAngleMap.put(playerID1, p1State[1].getX());
-                            elbowWristAngleMap.put(playerID2, p2State[1].getX());
-
-                            charAngleMap.put(playerID1, p1State[1].getY());
-                            charAngleMap.put(playerID2, p2State[1].getY());
-
-                            charPositionMap.put(playerID1, p1State[2]);
-                            charPositionMap.put(playerID2, p2State[2]);
-
-                            modelMap.get(playerID1).getControl(CharacterControl.class).setPhysicsLocation(charPositionMap.get(playerID1));
-                            modelMap.get(playerID2).getControl(CharacterControl.class).setPhysicsLocation(charPositionMap.get(playerID2));
-                            //updateCharacters(timer.getTimePerFrame());
                             return null;
                         }
                     });
@@ -275,7 +277,6 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
             }
         };
         
-        //bulletAppState.getPhysicsSpace().setAccuracy((float)(1.0/120.0));
         System.out.println("Accuracy: " + bulletAppState.getPhysicsSpace().getAccuracy());
         
         this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().addCollisionListener(physListener);
@@ -291,53 +292,47 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
     public void updateCharacters(float tpf) {
         for(Iterator<Long> playerIterator=playerSet.iterator(); playerIterator.hasNext();){
             long playerID = playerIterator.next();
-            Vector3f upperArmAngles = upperArmAnglesMap.get(playerID);
-            
+            Character character=charMap.get(playerID);
+            Vector3f upperArmAngles=character.upperArmAngles;
             Vector3f[] prevState = new Vector3f[3];
-            
-            prevState[0] = upperArmAnglesMap.get(playerID);
-            upperArmAnglesMap.put(playerID, CharMovement.extrapolateUpperArmAngles(upperArmAngles,
-                    upperArmVelsMap.get(playerID), tpf));
-
-            prevState[1] = new Vector3f(elbowWristAngleMap.get(playerID), 0f, 0f);
-            elbowWristAngleMap.put(playerID, CharMovement.extrapolateLowerArmAngles(elbowWristAngleMap.get(playerID),
-                    elbowWristVelMap.get(playerID), tpf));
-
-            prevState[1].setY(charAngleMap.get(playerID));
-            charAngleMap.put(playerID, CharMovement.extrapolateCharTurn(charAngleMap.get(playerID),
-                    charTurnVelMap.get(playerID), tpf));
-
-            CharacterControl control=modelMap.get(playerID).getControl(CharacterControl.class);
+            prevState[0]=character.upperArmAngles;
+            character.upperArmAngles=CharMovement.extrapolateUpperArmAngles(upperArmAngles, character.upperArmVels, tpf);
+            prevState[1]=new Vector3f(character.elbowWristAngle,0f,0f);
+            character.elbowWristAngle=CharMovement.extrapolateLowerArmAngles(character.elbowWristAngle, character.elbowWristVel, tpf);
+            prevState[1].setY(character.charAngle);
+            character.charAngle=CharMovement.extrapolateCharTurn(character.charAngle, character.turnVel, tpf); 
+            CharacterControl control=character.charControl;
             float xDir,zDir;
-            zDir=FastMath.cos(charAngleMap.get(playerID));
-            xDir=FastMath.sin(charAngleMap.get(playerID));
+            zDir=FastMath.cos(character.charAngle);
+            xDir=FastMath.sin(character.charAngle);
             Vector3f viewDirection=new Vector3f(xDir,0,zDir);
             control.setViewDirection(viewDirection);
 
             Vector3f forward,up,left;
             float xVel,zVel;
-            xVel=charVelocityMap.get(playerID).x;
-            zVel=charVelocityMap.get(playerID).z;
+            xVel=character.velocity.x;
+            zVel=character.velocity.z;
             forward=new Vector3f(viewDirection);
             up=new Vector3f(0,1,0);
             left=up.cross(forward);
 
             control.setWalkDirection(left.mult(xVel).add(forward.mult(zVel)));
             
-            prevState[2] = charPositionMap.get(playerID).clone();
-            charPositionMap.get(playerID).set(modelMap.get(playerID).getControl(CharacterControl.class).getPhysicsLocation()); // getLocalTranslation
+            prevState[2] = character.position.clone();
+            //charPositionMap.get(playerID).set(modelMap.get(playerID).getControl(CharacterControl.class).getPhysicsLocation()); // getLocalTranslation
+            character.position=character.charControl.getPhysicsLocation();
             
-            CharMovement.setUpperArmTransform(upperArmAnglesMap.get(playerID), modelMap.get(playerID));
-            CharMovement.setLowerArmTransform(elbowWristAngleMap.get(playerID), modelMap.get(playerID));
+            CharMovement.setUpperArmTransform(character.upperArmAngles, character.bodyModel);
+            CharMovement.setLowerArmTransform(character.elbowWristAngle, character.bodyModel);
 
             // Adjust the sword collision shape in accordance with arm movement.
             // first, get rotation and position of hand
-            Bone hand = modelMap.get(playerID).getControl(AnimControl.class).getSkeleton().getBone("swordHand");
+            Bone hand = character.bodyModel.getControl(AnimControl.class).getSkeleton().getBone("swordHand");
             Matrix3f rotation = hand.getModelSpaceRotation().toRotationMatrix();
             Vector3f position = hand.getModelSpacePosition();
 
             // set the position of the sword to the position of the hand
-            Node swordNode = (Node) modelMap.get(playerID).getChild("sword");
+            Node swordNode = character.swordModel;
             Bone swordBone = swordNode.getControl(AnimControl.class).getSkeleton().getBone("swordBone");
             swordNode.setLocalRotation(rotation);
             swordNode.setLocalTranslation(position);
@@ -357,7 +352,7 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
             CollisionShapeFactory.shiftCompoundShapeContents(cShape, shiftPosition);
 
             // remove GhostControl from PhysicsSpace, apply change, put in PhysicsSpace
-            SwordControl sword = modelMap.get(playerID).getChild("sword").getControl(SwordControl.class);
+            SwordControl sword = character.swordControl;
             bulletAppState.getPhysicsSpace().remove(sword);
             sword.setCollisionShape(cShape);
             bulletAppState.getPhysicsSpace().add(sword);
@@ -376,14 +371,15 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
             timeOfLastSync = currentTime;
             List<Long> playerList=new LinkedList();
             playerList.addAll(playerSet);
+            
             for (Long sourcePlayerID:playerList) {
+                Character character=charMap.get(sourcePlayerID);
+                CharStatusMessage message=new CharStatusMessage(character.upperArmAngles,character.upperArmVels,
+                        character.position,character.velocity,character.elbowWristAngle,character.elbowWristVel,
+                        character.charAngle,character.turnVel,sourcePlayerID,charLifeMap.get(sourcePlayerID));
                 for (Long destPlayerID:playerList) {
                     try {
-                        clientMap.get(destPlayerID).send(new CharStatusMessage(upperArmAnglesMap.get(sourcePlayerID), 
-                                upperArmVelsMap.get(sourcePlayerID),charPositionMap.get(sourcePlayerID),
-                                charVelocityMap.get(sourcePlayerID),elbowWristAngleMap.get(sourcePlayerID),
-                                elbowWristVelMap.get(sourcePlayerID),charAngleMap.get(sourcePlayerID),
-                                charTurnVelMap.get(sourcePlayerID),sourcePlayerID,charLifeMap.get(sourcePlayerID)));
+                        clientMap.get(destPlayerID).send(message);
                     } catch (IOException ex) {
                         Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
                     } catch (NullPointerException ex){
@@ -406,18 +402,10 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                 long newPlayerID = currentPlayerID++;
                 Client client = message.getClient();
                 System.out.println("Received ClientReadyMessage");
+                Character character=new Character(newPlayerID,bulletAppState,assetManager);
+                charMap.put(newPlayerID, character);
+                final Node model = character.bodyModel;//Character.createCharacter("Models/Female.mesh.j3o", "Models/sword.mesh.j3o", assetManager, bulletAppState, true, newPlayerID);
 
-                final Node model = Character.createCharacter("Models/Female.mesh.j3o", "Models/sword.mesh.j3o", assetManager, bulletAppState, true, newPlayerID);
-                
-                modelMap.put(newPlayerID, model);
-                upperArmAnglesMap.put(newPlayerID, new Vector3f());
-                upperArmVelsMap.put(newPlayerID, new Vector3f());
-                elbowWristAngleMap.put(newPlayerID, new Float(CharMovement.Constraints.lRotMin));
-                elbowWristVelMap.put(newPlayerID, new Float(0f));
-                charPositionMap.put(newPlayerID, new Vector3f());
-                charVelocityMap.put(newPlayerID, new Vector3f());
-                charAngleMap.put(newPlayerID, 0f);
-                charTurnVelMap.put(newPlayerID, 0f);
                 charLifeMap.put(newPlayerID, 1f);
                 
                 prevStates.put(newPlayerID, new ArrayDeque<Vector3f[]>(numPrevStates));
@@ -450,11 +438,13 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
             final long playerID=hasID.getID();
             
             if (playerSet.contains(playerID)) {
+                final Character character=charMap.get(playerID);
+                
                 if (message instanceof InputMessages.RotateUArmCC) {
                     System.out.println("rotateCC");
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            upperArmVelsMap.get(playerID).z = -1;
+                            character.upperArmVels.z = -1;
                             return null;
                         }
                     });
@@ -462,7 +452,7 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                     System.out.println("rotateC");
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            upperArmVelsMap.get(playerID).z = 1;
+                            character.upperArmVels.z = 1;
                             return null;
                         }
                     });
@@ -470,7 +460,7 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                     System.out.println("rotateStop");
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            upperArmVelsMap.get(playerID).z = 0;
+                            character.upperArmVels.z = 0;
                             return null;
                         }
                     });
@@ -478,8 +468,8 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                     final InputMessages.MouseMovement mouseMovement = (InputMessages.MouseMovement) message;
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            upperArmVelsMap.get(playerID).x = FastMath.cos(mouseMovement.angle);
-                            upperArmVelsMap.get(playerID).y = FastMath.sin(mouseMovement.angle);
+                            character.upperArmVels.x = FastMath.cos(mouseMovement.angle);
+                            character.upperArmVels.y = FastMath.sin(mouseMovement.angle);
                             return null;
                         }
                     });
@@ -487,7 +477,7 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                     
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            upperArmVelsMap.get(playerID).x = upperArmVelsMap.get(playerID).y = 0;
+                            character.upperArmVels.x = character.upperArmVels.y = 0;
                             return null;
                         }
                     });
@@ -497,7 +487,7 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                     
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            elbowWristVelMap.put(playerID, 1f);
+                            character.elbowWristVel=1f;
                             return null;
                         }
                     });
@@ -507,7 +497,7 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                     
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            elbowWristVelMap.put(playerID, -1f);
+                            character.elbowWristVel=-1f;
                             return null;
                         }
                     });
@@ -517,7 +507,7 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                     
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            elbowWristVelMap.put(playerID, 0f);
+                            character.elbowWristVel=0f;
                             return null;
                         }
                     });
@@ -527,7 +517,7 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                     
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            charVelocityMap.get(playerID).z = -CharMovement.charBackwordSpeed;
+                            character.velocity.z = -CharMovement.charBackwordSpeed;
                             return null;
                         }
                     });
@@ -537,7 +527,7 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                     
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            charVelocityMap.get(playerID).z = CharMovement.charForwardSpeed;
+                            character.velocity.z = CharMovement.charForwardSpeed;
                             return null;
                         }
                     });
@@ -547,7 +537,7 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                     
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            charVelocityMap.get(playerID).x = CharMovement.charStrafeSpeed;
+                            character.velocity.x = CharMovement.charStrafeSpeed;
                             return null;
                         }
                     });
@@ -557,7 +547,7 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                     
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            charVelocityMap.get(playerID).x = -CharMovement.charStrafeSpeed;
+                            character.velocity.x = -CharMovement.charStrafeSpeed;
                             return null;
                         }
                     });
@@ -566,7 +556,7 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                     
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            charTurnVelMap.put(playerID, 1f);
+                            character.turnVel=1f;
                             return null;
                         }
                     });
@@ -575,7 +565,7 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                     
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            charTurnVelMap.put(playerID, -1f);
+                            character.turnVel=-1f;
                             return null;
                         }
                     });
@@ -584,7 +574,7 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                     
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            charTurnVelMap.put(playerID, 0f);
+                            character.turnVel=0f;
                             return null;
                         }
                     });
@@ -593,7 +583,7 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                     
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            charVelocityMap.get(playerID).z = 0;
+                            character.velocity.z = 0;
                             return null;
                         }
                     });
@@ -603,7 +593,7 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                     
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            charVelocityMap.get(playerID).x = 0;
+                            character.velocity.x = 0;
                             return null;
                         }
                     });
@@ -616,8 +606,6 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
     }
 
     public void messageSent(Message message) {
-  //      System.out.println("Sending message to "+message.getClient());
-  //      System.out.println("Sending message "+message.getClass());
     }
 
     public void objectReceived(Object object) {
@@ -636,11 +624,11 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
         System.out.println("client disconnecting is " + client);
         final long playerID = playerIDMap.get(client);
         List<Long> players = new LinkedList();
-        Node model=modelMap.get(playerID);
+        Node model=charMap.get(playerID).bodyModel;
         bulletAppState.getPhysicsSpace().remove(model.getChild("sword").getControl(SwordControl.class));
         bulletAppState.getPhysicsSpace().remove(model.getControl(BodyControl.class));
         bulletAppState.getPhysicsSpace().remove(model.getControl(CharacterControl.class));
-        //rootNode.detachChild(modelMap.get(playerID));
+
         playerIDMap.remove(client);
         clientMap.remove(playerID);
         players.addAll(playerSet);
@@ -656,7 +644,7 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
         }        
         actions.add(new Callable() {
             public Object call() throws Exception {
-                rootNode.detachChild(modelMap.get(playerID));
+                rootNode.detachChild(charMap.get(playerID).bodyModel);
                 modelMap.remove(playerID);
                 return null;
             }
