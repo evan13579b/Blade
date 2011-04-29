@@ -119,7 +119,7 @@ import mygame.util.IOLib;
  */
 
 
-public class BladeClient extends SimpleApplication implements MessageListener, RawInputListener, ConnectionListener, AnimEventListener {
+public class BladeClient extends BladeBase implements MessageListener, RawInputListener, ConnectionListener, AnimEventListener {
 
     private ChaseCamera chaseCam;
     private Node model;
@@ -138,17 +138,6 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     ConcurrentHashMap<Long, LifeDisplay> lifeDisplayMap = new ConcurrentHashMap();
 
     private final boolean debug = false;
-    private BulletAppState bulletAppState;
-    private TerrainQuad terrain;
-    Material mat_terrain;
-    Material lighting;
-    Material wall_mat;
-    Material stone_mat;
-    Material floor_mat;
-    private RigidBodyControl terrain_phy;
-    private RigidBodyControl basic_phy;
-    private RigidBodyControl body_phy;
-    private Node House;
     CharacterControl character;
     CompoundCollisionShape collisionShape;
     BoundingVolume ballBound;
@@ -190,13 +179,8 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     
     @Override
     public void simpleInitApp() {
-        Serializer.registerClass(CharStatusMessage.class);
-        Serializer.registerClass(CharCreationMessage.class);
-        Serializer.registerClass(CharDestructionMessage.class);
-        Serializer.registerClass(ClientReadyMessage.class);
-        Serializer.registerClass(SwordSwordCollisionMessage.class);
-        Serializer.registerClass(SwordBodyCollisionMessage.class);
-        InputMessages.registerInputClasses();
+        super.simpleInitApp();
+        
         Map<String,String> ipAddressMap=IOLib.getIpAddressMap();
 
         NiftyJmeDisplay niftyDisplay = new NiftyJmeDisplay(assetManager,inputManager,audioRenderer,guiViewPort);
@@ -205,22 +189,9 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         
         guiViewPort.addProcessor(niftyDisplay);
         flyCam.setDragToRotate(true);
-        //app.setDisplayStatView(false);
+        app.setDisplayStatView(false);
         
         flyCam.setMoveSpeed(50);
-        bulletAppState = new BulletAppState();
-        stateManager.attach(bulletAppState);
-        rootNode.attachChild(SkyFactory.createSky(assetManager, "Textures/Skysphere.jpg", true));
-        initMaterials();
-        initTerrain();
-        initWater();
-        DirectionalLight sun = new DirectionalLight();
-        sun.setDirection(new Vector3f(-0.1f, -0.7f, -1.0f));
-        rootNode.addLight(sun);
-
-        DirectionalLight sun2 = new DirectionalLight();
-        sun2.setDirection(new Vector3f(0.1f, 0.7f, 1.0f));
-        rootNode.addLight(sun2);
 
         flyCam.setEnabled(false);
         
@@ -248,6 +219,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             } catch (IOException ex) {
                 Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
             }
+            app.setDisplayStatView(true);
             started=true;
             System.out.println("started");            
         }
@@ -365,128 +337,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         inputManager.setCursorVisible(false);
     }
 
-    public void initTerrain() {
-
-
-        mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/TerrainLighting.j3md");
-        //house_mat = new Material(assetManager,"Common/MatDefs/Water/SimpleWater.j3md");
-        mat_terrain.setBoolean("useTriPlanarMapping", false);
-        mat_terrain.setBoolean("WardIso", true);
-        mat_terrain.setTexture("AlphaMap", assetManager.loadTexture("Textures/alpha1.1.png"));
-        
-        Texture grass = assetManager.loadTexture("Textures/grass.jpg");
-        grass.setWrap(WrapMode.Repeat);
-        mat_terrain.setTexture("m_DiffuseMap", grass);
-        mat_terrain.setFloat("m_DiffuseMap_0_scale", 64f);
-
-        Texture dirt = assetManager.loadTexture("Textures/TiZeta_SmlssWood1.jpg");
-        dirt.setWrap(WrapMode.Repeat);
-        mat_terrain.setTexture("m_DiffuseMap_1", dirt);
-        mat_terrain.setFloat("m_DiffuseMap_1_scale", 16f);
-
-        Texture rock = assetManager.loadTexture("Textures/TiZeta_cem1.jpg");
-        rock.setWrap(WrapMode.Repeat);
-        mat_terrain.setTexture("m_DiffuseMap_2", rock);
-        mat_terrain.setFloat("m_DiffuseMap_2_scale", 128f);
-
-        Texture normalMap0 = assetManager.loadTexture("Textures/grass_normal.png");
-        normalMap0.setWrap(WrapMode.Repeat);
-        Texture normalMap1 = assetManager.loadTexture("Textures/dirt_normal.png");
-        normalMap1.setWrap(WrapMode.Repeat);
-        Texture normalMap2 = assetManager.loadTexture("Textures/road_normal.png");
-        normalMap2.setWrap(WrapMode.Repeat);
-        mat_terrain.setTexture("NormalMap", normalMap0);
-        mat_terrain.setTexture("NormalMap_1", normalMap2);
-        mat_terrain.setTexture("NormalMap_2", normalMap2);
-        lighting = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
-        lighting.setTexture("DiffuseMap", grass);
-        lighting.setTexture("NormalMap", normalMap1);
-        lighting.setBoolean("WardIso", true);
-
-        AbstractHeightMap heightmap = null;
-        Texture heightMapImage = assetManager.loadTexture("Textures/flatland.png");
-        heightmap = new ImageBasedHeightMap(
-                ImageToAwt.convert(heightMapImage.getImage(), false, true, 0));
-        heightmap.load();
-        terrain = new TerrainQuad("my terrain", 65, 1025, heightmap.getHeightMap());
-        terrain.setMaterial(mat_terrain);
-
-        terrain.setLocalTranslation(0, -100, 0);
-        terrain.setLocalScale(2f, 2f, 2f);
-        
-        rootNode.attachChild(terrain);
-
-        terrain_phy = new RigidBodyControl(0.0f);
-        terrain_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
-        terrain_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_03);
-        terrain.addControl(terrain_phy);
-        bulletAppState.getPhysicsSpace().add(terrain_phy);
-        
-        House = (Node)assetManager.loadModel("Models/Cube.mesh.j3o");
-        House.setLocalTranslation(0.0f, 3.0f, 70.0f);
-        House.setShadowMode(ShadowMode.CastAndReceive);
-        House.setLocalScale(13f);
-        House.setMaterial(wall_mat); 
-        //Does not work atm house_mat.setTexture("m_Tex1", rock);
-        //House.setMaterial(house_mat);
-        House.setMaterial(wall_mat);
-        rootNode.attachChild(House);
-        RigidBodyControl house_phy = new RigidBodyControl(0.0f);
-        house_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
-        house_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_03);
-        House.addControl(house_phy);
-        bulletAppState.getPhysicsSpace().add(house_phy);
-        
-         DirectionalLight light = new DirectionalLight();
-        light.setDirection((new Vector3f(-0.5f,-1f, -0.5f)).normalize());
-        rootNode.addLight(light);
-        
-        
-    }
     
-    public void initWater(){
-          SimpleWaterProcessor waterProcessor = new SimpleWaterProcessor(assetManager);
-            waterProcessor.setReflectionScene(rootNode);
-            Vector3f waterLocation = new Vector3f(0,-10,0);
-            waterProcessor.setPlane(new Plane(Vector3f.UNIT_Y, waterLocation.dot(Vector3f.UNIT_Y)));
-            viewPort.addProcessor(waterProcessor);
-            
-            waterProcessor.setWaterDepth(40);
-            waterProcessor.setDistortionScale(0.05f);
-            waterProcessor.setWaveSpeed(0.06f);
-            
-            Quad quad = new Quad(1400,1400);
-            quad.scaleTextureCoordinates(new Vector2f(6f,6f));
-            
-            Geometry water = new Geometry("water",quad);
-            water.setLocalRotation(new Quaternion().fromAngleAxis(-FastMath.HALF_PI, Vector3f.UNIT_X));
-            water.setLocalTranslation(-200, -7, 250);
-            water.setShadowMode(ShadowMode.Receive);
-            water.setMaterial(waterProcessor.getMaterial());
-            rootNode.attachChild(water);
-    }   
-
-    public void initMaterials() {
-        wall_mat = new Material(assetManager, "Common/MatDefs/Misc/SimpleTextured.j3md");
-        TextureKey key = new TextureKey("Textures/road.jpg");
-        key.setGenerateMips(true);
-        Texture tex = assetManager.loadTexture(key);
-        wall_mat.setTexture("ColorMap", tex);
-
-        stone_mat = new Material(assetManager, "Common/MatDefs/Misc/SimpleTextured.j3md");
-        TextureKey key2 = new TextureKey("Textures/road.jpg");
-        key2.setGenerateMips(true);
-
-        Texture tex2 = assetManager.loadTexture(key2);
-        stone_mat.setTexture("ColorMap", tex2);
-
-        floor_mat = new Material(assetManager, "Common/MatDefs/Misc/SimpleTextured.j3md");
-        TextureKey key3 = new TextureKey("Textures/grass.jpg");
-        key3.setGenerateMips(true);
-        Texture tex3 = assetManager.loadTexture(key3);
-        tex3.setWrap(WrapMode.Repeat);
-        floor_mat.setTexture("ColorMap", tex3);
-    }
 
     public void messageReceived(Message message) {
         if (message instanceof CharDestructionMessage){

@@ -98,7 +98,7 @@ import mygame.messages.HasID;
 import mygame.messages.SwordBodyCollisionMessage;
 import mygame.messages.SwordSwordCollisionMessage;
 
-public class BladeServer extends SimpleApplication implements MessageListener,ConnectionListener{
+public class BladeServer extends BladeBase implements MessageListener,ConnectionListener{
     ConcurrentHashMap<Long,Node> modelMap=new ConcurrentHashMap();
     ConcurrentHashMap<Long,Vector3f> upperArmAnglesMap=new ConcurrentHashMap();
     ConcurrentHashMap<Long,Vector3f> upperArmVelsMap=new ConcurrentHashMap();
@@ -126,18 +126,6 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     
     private long currentPlayerID=0;
     private static BladeServer app;
-    private Node House;
-    private BulletAppState bulletAppState;
-    private TerrainQuad terrain;
-    Material mat_terrain;
-    Material lighting;
-
-    Material house_mat;
-    Material wall_mat;
-    Material stone_mat;
-    Material floor_mat;
-    private RigidBodyControl terrain_phy;
-    private RigidBodyControl basic_phy;
     private boolean updateNow;
     float airTime = 0;
 
@@ -156,13 +144,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     @Override
     public void simpleInitApp() {
-        Serializer.registerClass(CharStatusMessage.class);
-        Serializer.registerClass(CharCreationMessage.class);
-        Serializer.registerClass(CharDestructionMessage.class);
-        Serializer.registerClass(ClientReadyMessage.class);
-        Serializer.registerClass(SwordSwordCollisionMessage.class);
-        Serializer.registerClass(SwordBodyCollisionMessage.class);
-        InputMessages.registerInputClasses();
+        super.simpleInitApp();
+        
        
         try {
             server = new Server(BladeMain.port,BladeMain.port);
@@ -172,32 +155,14 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             e.printStackTrace();
         }
 
-    //    LifeDisplay lifeDisplay=new LifeDisplay(assetManager.loadFont("Interface/Fonts/Default.fnt"),new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md"));
-   //     lifeDisplay.setLifeDisplayValue(1);
-    //    lifeDisplay.scale(100);
-   //     lifeDisplay.setLocalTranslation(100,100,0);
-   //     guiNode.attachChild(lifeDisplay);
-    //    rootNode.attachChild(lifeDisplay);
-        
         InputMessages.addInputMessageListeners(server, this);
         server.addConnectionListener(this);
         server.addMessageListener(this,SwordSwordCollisionMessage.class,SwordBodyCollisionMessage.class,CharCreationMessage.class,CharDestructionMessage.class,CharStatusMessage.class,ClientReadyMessage.class);
         
         flyCam.setMoveSpeed(50);
-        bulletAppState = new BulletAppState();
-        
-        stateManager.attach(bulletAppState);
-        rootNode.attachChild(SkyFactory.createSky(
-        assetManager, "Textures/Skysphere.jpg", true));
-        initMaterials();
-        initTerrain();
-        DirectionalLight sun = new DirectionalLight();
-        sun.setDirection(new Vector3f(-0.1f, -0.7f, -1.0f));
-        rootNode.addLight(sun);
 
-        DirectionalLight sun2 = new DirectionalLight();
-        sun2.setDirection(new Vector3f(0.1f, 0.7f, 1.0f));
-        rootNode.addLight(sun2);
+        
+
 
         flyCam.setEnabled(true);
         this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
@@ -208,16 +173,12 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
                 final PhysicsCollisionObject a = event.getObjectA();
                 final PhysicsCollisionObject b = event.getObjectB();
-                final Vector3f localCoordA=event.getLocalPointA();
-                final Vector3f localCoordB=event.getLocalPointB();
-                final Vector3f collisionCoordinate=event.getPositionWorldOnA();
+                final Vector3f collisionCoordinate = event.getPositionWorldOnA();
                 if ((a != null && b != null && a instanceof ControlID && b instanceof ControlID
-                        && ((ControlID)a).getID() != ((ControlID)b).getID())) {
-                    
+                        && ((ControlID) a).getID() != ((ControlID) b).getID())) {
+
                     System.out.println("Collision!");
-                    //System.out.println("A: " + a.getOverlappingCount()
-                    //        + " B: " + b.getOverlappingCount());
-                    
+
                     actions.add(new Callable() {
 
                         public Object call() throws Exception {
@@ -230,47 +191,35 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                                 hurtPlayerID = ((ControlID) a).getID();
                                 charLifeMap.put(hurtPlayerID, charLifeMap.get(hurtPlayerID) * 0.999f);
                             }
-                            
+
                             // we limit the amount of collision messages per second to two
                             // and we do this based on the id of the lowest ID whose sword collided.
                             // this is to make sure that we don't get two rapid collisions
                             // when both swords collided with each
-                            long effectPlayerID=-1;
-                            boolean swordSword=false;
-                            if ((a instanceof SwordControl)){
-                                effectPlayerID=((ControlID)a).getID();
-                                if(b instanceof SwordControl){
-                                    swordSword=true;
-                                    if(effectPlayerID>((ControlID)b).getID())
-                                        effectPlayerID=((ControlID)b).getID();
+                            long effectPlayerID = -1;
+                            boolean swordSword = false;
+                            if ((a instanceof SwordControl)) {
+                                effectPlayerID = ((ControlID) a).getID();
+                                if (b instanceof SwordControl) {
+                                    swordSword = true;
+                                    if (effectPlayerID > ((ControlID) b).getID()) {
+                                        effectPlayerID = ((ControlID) b).getID();
+                                    }
                                 }
+                            } else if ((b instanceof SwordControl)) {
+                                effectPlayerID = ((ControlID) b).getID();
                             }
-                            else if((b instanceof SwordControl)) {
-                                effectPlayerID=((ControlID)b).getID();
-                            }
-                            
+
                             if (effectPlayerID != -1) {
-                                Client client = clientMap.get(effectPlayerID);
                                 long currentTime = System.currentTimeMillis();
-                               
-                              //  Vector3f collisionCoordinate;
-                                Node model;
-                                if(effectPlayerID==((ControlID)a).getID()){
-                                    model=modelMap.get(((ControlID)a).getID());
-                                    
-                                   // collisionCoordinate=localCoordA.add(model.getLocalTranslation().add(model.getChild("sword").getLocalTranslation()));
-                                }
-                                else{
-                                    model=modelMap.get(((ControlID)b).getID());
-                                   // collisionCoordinate=localCoordB.add(model.getLocalTranslation().add(model.getChild("sword").getLocalTranslation()));
-                                }
-                                
+
+
                                 if (currentTime - timeOfLastCollisionMap.get(effectPlayerID) > 500) {
                                     Message message;
                                     if (swordSword) {
-                                        message=new SwordSwordCollisionMessage(new Vector3f(collisionCoordinate));
+                                        message = new SwordSwordCollisionMessage(new Vector3f(collisionCoordinate));
                                     } else {
-                                        message=new SwordBodyCollisionMessage(new Vector3f(collisionCoordinate));
+                                        message = new SwordBodyCollisionMessage(new Vector3f(collisionCoordinate));
                                     }
 
                                     for (Iterator<Long> playerIterator = playerSet.iterator(); playerIterator.hasNext();) {
@@ -325,48 +274,6 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                             return null;
                         }
                     });
-                    //System.out.println("A1: " + a.getOverlappingCount()
-                    //        + " B1: " + b.getOverlappingCount());
-                    /* zeroing out velocities
-                    // rotateStop
-                    upperArmVelsMap.get(playerID1).z = 0;
-                    upperArmVelsMap.get(playerID2).z = 0;
-
-                    // stopMouseMovement
-                    upperArmVelsMap.get(playerID1).x = upperArmVelsMap.get(playerID1).y = 0;
-                    upperArmVelsMap.get(playerID2).x = upperArmVelsMap.get(playerID2).y = 0;
-
-                    // stop arm
-                    elbowWristVelMap.put(playerID1, 0f);
-                    elbowWristVelMap.put(playerID2, 0f);
-
-                    // stop char turn
-                    charTurnVelMap.put(playerID1, 0f);
-                    charTurnVelMap.put(playerID2, 0f);
-
-                    // stop forward move
-                    charVelocityMap.get(playerID1).z = 0;
-                    charVelocityMap.get(playerID2).z = 0;
-
-                    // stop left right move
-                    charVelocityMap.get(playerID1).x = 0;
-                    charVelocityMap.get(playerID2).x = 0;
-                     * 
-                     */
-                    
-                    /*
-                    upperArmVelsMap.put(playerID1, upperArmVelsMap.get(playerID1).mult(-1.0f));
-                    upperArmVelsMap.put(playerID2, upperArmVelsMap.get(playerID2).mult(-1.0f));
-                    elbowWristVelMap.put(playerID1, elbowWristVelMap.get(playerID1)*-1.0f);
-                    elbowWristVelMap.put(playerID2, elbowWristVelMap.get(playerID2)*-1.0f);
-                    charVelocityMap.put(playerID1, charVelocityMap.get(playerID1).mult(-1.0f));
-                    charVelocityMap.put(playerID2, charVelocityMap.get(playerID2).mult(-1.0f));
-                    charTurnVelMap.put(playerID1, charTurnVelMap.get(playerID1)*-1.0f);
-                    charTurnVelMap.put(playerID2, charTurnVelMap.get(playerID2)*-1.0f);
-                     * 
-                     * 
-                     */
-                    //updateNow = true;
                 }
             }
         };
@@ -514,112 +421,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         }
     }
 
-    public void initTerrain() {
-
-        mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/TerrainLighting.j3md");
-        //house_mat = new Material(assetManager,"Common/MatDefs/Water/SimpleWater.j3md");
-        mat_terrain.setBoolean("useTriPlanarMapping", false);
-        mat_terrain.setBoolean("WardIso", true);
-        mat_terrain.setTexture("AlphaMap", assetManager.loadTexture("Textures/alpha1.1.png"));
-        
-        Texture grass = assetManager.loadTexture("Textures/grass.jpg");
-        grass.setWrap(WrapMode.Repeat);
-        mat_terrain.setTexture("m_DiffuseMap", grass);
-        mat_terrain.setFloat("m_DiffuseMap_0_scale", 64f);
-
-        Texture dirt = assetManager.loadTexture("Textures/TiZeta_SmlssWood1.jpg");
-        dirt.setWrap(WrapMode.Repeat);
-        mat_terrain.setTexture("m_DiffuseMap_1", dirt);
-        mat_terrain.setFloat("m_DiffuseMap_1_scale", 16f);
-
-        Texture rock = assetManager.loadTexture("Textures/TiZeta_cem1.jpg");
-        rock.setWrap(WrapMode.Repeat);
-        mat_terrain.setTexture("m_DiffuseMap_2", rock);
-        mat_terrain.setFloat("m_DiffuseMap_2_scale", 128f);
-
-        Texture normalMap0 = assetManager.loadTexture("Textures/grass_normal.png");
-        normalMap0.setWrap(WrapMode.Repeat);
-        Texture normalMap1 = assetManager.loadTexture("Textures/dirt_normal.png");
-        normalMap1.setWrap(WrapMode.Repeat);
-        Texture normalMap2 = assetManager.loadTexture("Textures/road_normal.png");
-        normalMap2.setWrap(WrapMode.Repeat);
-        mat_terrain.setTexture("NormalMap", normalMap0);
-        mat_terrain.setTexture("NormalMap_1", normalMap2);
-        mat_terrain.setTexture("NormalMap_2", normalMap2);
-        lighting = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
-        lighting.setTexture("DiffuseMap", grass);
-        lighting.setTexture("NormalMap", normalMap1);
-        lighting.setBoolean("WardIso", true);
-
-        AbstractHeightMap heightmap = null;
-        Texture heightMapImage = assetManager.loadTexture("Textures/flatland.png");
-        heightmap = new ImageBasedHeightMap(
-                ImageToAwt.convert(heightMapImage.getImage(), false, true, 0));
-        heightmap.load();
-        terrain = new TerrainQuad("my terrain", 65, 1025, heightmap.getHeightMap());
-        terrain.setMaterial(mat_terrain);
-
-        terrain.setLocalTranslation(0, -100, 0);
-        terrain.setLocalScale(2f, 2f, 2f);
-        
-        rootNode.attachChild(terrain);
-
-        terrain_phy = new RigidBodyControl(0.0f);
-        terrain_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
-        terrain_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_03);
-        terrain.addControl(terrain_phy);
-        bulletAppState.getPhysicsSpace().add(terrain_phy);
-        
-        House = (Node)assetManager.loadModel("Models/Cube.mesh.j3o");
-        House.setLocalTranslation(0.0f, 3.0f, 70.0f);
-        House.setShadowMode(ShadowMode.CastAndReceive);
-        House.setLocalScale(13f);
-        House.setMaterial(wall_mat); 
-        
-        //Does not work atm house_mat.setTexture("m_Tex1", rock);
-        //House.setMaterial(house_mat);
-        rootNode.attachChild(House);
-        RigidBodyControl house_phy = new RigidBodyControl(0.0f);
-        house_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
-        house_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_03);
-        House.addControl(house_phy);
-        bulletAppState.getPhysicsSpace().add(house_phy);
-        
-         DirectionalLight light = new DirectionalLight();
-        light.setDirection((new Vector3f(-0.5f,-1f, -0.5f)).normalize());
-        rootNode.addLight(light);
-
-        /*AmbientLight ambLight = new AmbientLight();
-        ambLight.setColor(new ColorRGBA(0.5f, 0.5f, 0.8f, 0.2f));
-        rootNode.addLight(ambLight);*/
-         
-    }
-
-    
-         
-    
-    public void initMaterials() {
-        wall_mat = new Material(assetManager, "Common/MatDefs/Misc/SimpleTextured.j3md");
-        TextureKey key = new TextureKey("Textures/road.jpg");
-        key.setGenerateMips(true);
-        Texture tex = assetManager.loadTexture(key);
-        wall_mat.setTexture("ColorMap", tex);
-
-        stone_mat = new Material(assetManager, "Common/MatDefs/Misc/SimpleTextured.j3md");
-        TextureKey key2 = new TextureKey("Textures/road.jpg");
-        key2.setGenerateMips(true);
-
-        Texture tex2 = assetManager.loadTexture(key2);
-        stone_mat.setTexture("ColorMap", tex2);
-        
-        floor_mat = new Material(assetManager, "Common/MatDefs/Misc/SimpleTextured.j3md");
-        TextureKey key3 = new TextureKey("Textures/grass.jpg");
-        key3.setGenerateMips(true);
-        Texture tex3 = assetManager.loadTexture(key3);
-        tex3.setWrap(WrapMode.Repeat);
-        floor_mat.setTexture("ColorMap", tex3);
-        
-    }
+  
 
     public void messageReceived(Message message) {
         
