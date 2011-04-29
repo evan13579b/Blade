@@ -101,6 +101,8 @@ import com.jme3.util.SkyFactory;
 import com.jme3.water.SimpleWaterProcessor;
 import de.lessvoid.nifty.Nifty;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import mygame.messages.CharStatusMessage;
@@ -618,42 +620,48 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             SwordSwordCollisionMessage collisionMessage=(SwordSwordCollisionMessage)message;
             System.out.println("Received sword-sword collision at "+collisionMessage.coordinates);
             System.out.println("main player is at "+modelMap.get(playerID).getLocalTranslation());
-            final Vector3f coords=new Vector3f(collisionMessage.coordinates);
-            Future action = app.enqueue(new Callable() {
-                public Object call() throws Exception {
-                    Material explosiveMat=new Material(assetManager,"Common/MatDefs/Misc/Particle.j3md");
-                    explosiveMat.setTexture("Texture", assetManager.loadTexture("Effects/Explosion/flash.png"));
-                    ParticleEmitter explosion = new ParticleEmitter("SwordSword", ParticleMesh.Type.Triangle, 30);
-                    explosion.setMaterial(explosiveMat);
-                    rootNode.attachChild(explosion);
-                    explosion.setLocalTranslation(coords);
-                    explosion.emitAllParticles();
-                    return null;
-                }
-            });
+            createEffect(collisionMessage.coordinates);
 
         } else if (message instanceof SwordBodyCollisionMessage) {
             SwordBodyCollisionMessage collisionMessage = (SwordBodyCollisionMessage) message;
             System.out.println("Received sword-body collision" + collisionMessage.coordinates);
             System.out.println("main player is at " + modelMap.get(playerID).getLocalTranslation());
-            final Vector3f coords=new Vector3f(collisionMessage.coordinates);
-            Future action = app.enqueue(new Callable() {
-
-                public Object call() throws Exception {
-                    Material explosiveMat=new Material(assetManager,"Common/MatDefs/Misc/Particle.j3md");
-                    explosiveMat.setTexture("Texture", assetManager.loadTexture("Effects/Explosion/flash.png"));
-                    ParticleEmitter explosion = new ParticleEmitter("SwordSword", ParticleMesh.Type.Triangle, 30);
-                    explosion.setMaterial(explosiveMat);
-                    rootNode.attachChild(explosion);
-                    explosion.setLocalTranslation(coords);
-                    explosion.emitAllParticles();
-                    return null;
-                }
-            });
-
+            
+            createEffect(collisionMessage.coordinates);
         }
     }
 
+    public void createEffect(final Vector3f coords) {
+        Future action = app.enqueue(new Callable() {
+
+            public Object call() throws Exception {
+                final Material explosiveMat = new Material(assetManager, "Common/MatDefs/Misc/Particle.j3md");
+                explosiveMat.setTexture("Texture", assetManager.loadTexture("Effects/Explosion/flash.png"));
+                final ParticleEmitter explosion = new ParticleEmitter("SwordSword", ParticleMesh.Type.Triangle, 30);
+                explosion.setMaterial(explosiveMat);
+                rootNode.attachChild(explosion);
+                explosion.setLocalTranslation(coords);
+                explosion.emitAllParticles();
+                TimerTask task = new TimerTask() {
+
+                    public void run() {
+                        Future action = app.enqueue(new Callable() {
+
+                            public Object call() throws Exception {
+                                rootNode.detachChild(explosion);
+                                return null;
+                            }
+                        });
+
+                    }
+                };
+                Timer timer = new Timer();
+                timer.schedule(task, 1000l);
+                return null;
+            }
+        });
+    }
+    
     public void messageSent(Message message) {
     //    System.out.println(message.getClass());
     }

@@ -209,7 +209,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                 final PhysicsCollisionObject a = event.getObjectA();
                 final PhysicsCollisionObject b = event.getObjectB();
                 final Vector3f localCoordA=event.getLocalPointA();
-                
+                final Vector3f localCoordB=event.getLocalPointB();
+                final Vector3f collisionCoordinate=event.getPositionWorldOnA();
                 if ((a != null && b != null && a instanceof ControlID && b instanceof ControlID
                         && ((ControlID)a).getID() != ((ControlID)b).getID())) {
                     
@@ -252,7 +253,18 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                                 Client client = clientMap.get(effectPlayerID);
                                 long currentTime = System.currentTimeMillis();
                                
-                                Vector3f collisionCoordinate=localCoordA.add(modelMap.get(((ControlID)a).getID()).getLocalTranslation());
+                              //  Vector3f collisionCoordinate;
+                                Node model;
+                                if(effectPlayerID==((ControlID)a).getID()){
+                                    model=modelMap.get(((ControlID)a).getID());
+                                    
+                                   // collisionCoordinate=localCoordA.add(model.getLocalTranslation().add(model.getChild("sword").getLocalTranslation()));
+                                }
+                                else{
+                                    model=modelMap.get(((ControlID)b).getID());
+                                   // collisionCoordinate=localCoordB.add(model.getLocalTranslation().add(model.getChild("sword").getLocalTranslation()));
+                                }
+                                
                                 if (currentTime - timeOfLastCollisionMap.get(effectPlayerID) > 500) {
                                     Message message;
                                     if (swordSword) {
