@@ -29,6 +29,10 @@ public class Character{
     Node bodyModel;
     Node swordModel;
     
+    SwordControl swordControl;
+    BodyControl bodyControl;
+    CharacterControl charControl;
+    
     Vector3f upperArmAngles;
     Vector3f upperArmVels;
     Vector3f position;
@@ -39,8 +43,11 @@ public class Character{
     float elbowWristAngle;
     float elbowWristVel;
     
-    public Character(){
-        AssetManager assetManager=new DesktopAssetManager();
+    Long playerID;
+    
+    public Character(Long playerID,BulletAppState bulletAppState, AssetManager assetManager){
+        this.playerID=playerID;
+        
         bodyModel=(Node)assetManager.loadModel("Models/Female.mesh.j3o");
         bodyModel.scale(1.0f, 1.0f, 1.0f);
         bodyModel.rotate(0.0f, FastMath.HALF_PI, 0.0f);
@@ -60,9 +67,11 @@ public class Character{
         turnVel=0f;
         elbowWristAngle=CharMovement.Constraints.lRotMin;
         elbowWristVel=0f;
+        
+        applyPhysics(bulletAppState);
     }
     
-    public void applyPhysics(BulletAppState bulletAppState,Long playerID){
+    private void applyPhysics(BulletAppState bulletAppState){
         CapsuleCollisionShape capsule = new CapsuleCollisionShape(1f, 4.5f);
 
         // create collision shape for sword
@@ -81,26 +90,26 @@ public class Character{
         CollisionShapeFactory.shiftCompoundShapeContents(cShape, shiftPosition);
 
         // create control for sword
-        SwordControl sword = new SwordControl(cShape, playerID);
-        sword.setCollisionGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
-        sword.removeCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_01);
-        sword.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
+        swordControl = new SwordControl(cShape, playerID);
+        swordControl.setCollisionGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
+        swordControl.removeCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_01);
+        swordControl.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
 
         // create control for body
-        BodyControl body = new BodyControl(capsule, playerID);
-        body.setCollisionGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
-        body.removeCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_01);
-        body.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
+        bodyControl = new BodyControl(capsule, playerID);
+        bodyControl.setCollisionGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
+        bodyControl.removeCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_01);
+        bodyControl.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
 
         // create control for character
-        CharacterControl charControl = new CharacterControl(capsule, 0.01f);
+        charControl = new CharacterControl(capsule, 0.01f);
 
-        swordModel.addControl(sword);
-        bodyModel.addControl(body);
+        swordModel.addControl(swordControl);
+        bodyModel.addControl(bodyControl);
         bodyModel.addControl(charControl);
 
-        bulletAppState.getPhysicsSpace().add(sword);
-        bulletAppState.getPhysicsSpace().add(body);
+        bulletAppState.getPhysicsSpace().add(swordControl);
+        bulletAppState.getPhysicsSpace().add(bodyControl);
         bulletAppState.getPhysicsSpace().add(charControl);
     }
     

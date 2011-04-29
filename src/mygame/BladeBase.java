@@ -60,6 +60,7 @@ public class BladeBase extends SimpleApplication{
     ConcurrentHashMap<Long, Vector3f> charVelocityMap = new ConcurrentHashMap();
     ConcurrentHashMap<Long, Float> charAngleMap = new ConcurrentHashMap();
     ConcurrentHashMap<Long, Float> charTurnVelMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, Character> charMap = new ConcurrentHashMap();
     
     Material mat_terrain;
     Material lighting;
