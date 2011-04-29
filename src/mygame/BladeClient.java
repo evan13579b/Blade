@@ -120,19 +120,8 @@ import mygame.util.IOLib;
 
 
 public class BladeClient extends BladeBase implements MessageListener, RawInputListener, ConnectionListener, AnimEventListener {
-
-    private ChaseCamera chaseCam;
     private Node model;
-    ConcurrentHashMap<Long, Node> modelMap = new ConcurrentHashMap();
-    ConcurrentHashMap<Long, Vector3f> upperArmAnglesMap = new ConcurrentHashMap();
-    ConcurrentHashMap<Long, Vector3f> upperArmVelsMap = new ConcurrentHashMap();
-    ConcurrentHashMap<Long, Float> elbowWristAngleMap = new ConcurrentHashMap();
-    ConcurrentHashMap<Long, Float> elbowWristVelMap = new ConcurrentHashMap();
-    HashSet<Long> playerSet = new HashSet();
-    ConcurrentHashMap<Long, Vector3f> charPositionMap = new ConcurrentHashMap();
-    ConcurrentHashMap<Long, Vector3f> charVelocityMap = new ConcurrentHashMap();
-    ConcurrentHashMap<Long, Float> charAngleMap = new ConcurrentHashMap();
-    ConcurrentHashMap<Long, Float> charTurnVelMap = new ConcurrentHashMap();
+
     ConcurrentHashMap<Long, AnimChannel> animChannelMap = new ConcurrentHashMap();
     ConcurrentHashMap<Long, Float> charLifeMap = new ConcurrentHashMap();
     ConcurrentHashMap<Long, LifeDisplay> lifeDisplayMap = new ConcurrentHashMap();
@@ -147,7 +136,6 @@ public class BladeClient extends BladeBase implements MessageListener, RawInputL
     boolean readyToStart=false;
     boolean started=false;
     Nifty ui;
-    LifeDisplay hud;
 
     Client client;
     boolean clientSet = false;
@@ -481,13 +469,12 @@ public class BladeClient extends BladeBase implements MessageListener, RawInputL
             createEffect(collisionMessage.coordinates);
         }
     }
-
+/*
     public void createEffect(final Vector3f coords) {
         Future action = app.enqueue(new Callable() {
 
             public Object call() throws Exception {
-                final Material explosiveMat = new Material(assetManager, "Common/MatDefs/Misc/Particle.j3md");
-                explosiveMat.setTexture("Texture", assetManager.loadTexture("Effects/Explosion/flash.png"));
+                
                 final ParticleEmitter explosion = new ParticleEmitter("SwordSword", ParticleMesh.Type.Triangle, 30);
                 explosion.setMaterial(explosiveMat);
                 rootNode.attachChild(explosion);
@@ -512,7 +499,7 @@ public class BladeClient extends BladeBase implements MessageListener, RawInputL
             }
         });
     }
-    
+    */
     public void messageSent(Message message) {
     //    System.out.println(message.getClass());
     }

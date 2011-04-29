@@ -9,6 +9,8 @@ import com.jme3.asset.TextureKey;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.collision.PhysicsCollisionObject;
 import com.jme3.bullet.control.RigidBodyControl;
+import com.jme3.effect.ParticleEmitter;
+import com.jme3.effect.ParticleMesh;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.FastMath;
@@ -28,6 +30,12 @@ import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.WrapMode;
 import com.jme3.util.SkyFactory;
 import com.jme3.water.SimpleWaterProcessor;
+import java.util.HashSet;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
 import jme3tools.converters.ImageToAwt;
 import mygame.messages.CharCreationMessage;
 import mygame.messages.CharDestructionMessage;
@@ -42,12 +50,24 @@ import mygame.messages.SwordSwordCollisionMessage;
  * @author blah
  */
 public class BladeBase extends SimpleApplication{
+    ConcurrentHashMap<Long, Node> modelMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, Vector3f> upperArmAnglesMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, Vector3f> upperArmVelsMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, Float> elbowWristAngleMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, Float> elbowWristVelMap = new ConcurrentHashMap();
+    HashSet<Long> playerSet = new HashSet();
+    ConcurrentHashMap<Long, Vector3f> charPositionMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, Vector3f> charVelocityMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, Float> charAngleMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, Float> charTurnVelMap = new ConcurrentHashMap();
+    
     Material mat_terrain;
     Material lighting;
     Material house_mat;
     Material wall_mat;
     Material stone_mat;
     Material floor_mat;
+    Material explosiveMat;
     
     private Node house;
     
@@ -178,6 +198,8 @@ public class BladeBase extends SimpleApplication{
         tex3.setWrap(WrapMode.Repeat);
         floor_mat.setTexture("ColorMap", tex3);
 
+        explosiveMat = new Material(assetManager, "Common/MatDefs/Misc/Particle.j3md");
+        explosiveMat.setTexture("Texture", assetManager.loadTexture("Effects/Explosion/flash.png"));
     }
     
     public void initWater() {
@@ -200,5 +222,36 @@ public class BladeBase extends SimpleApplication{
         water.setShadowMode(ShadowMode.Receive);
         water.setMaterial(waterProcessor.getMaterial());
         rootNode.attachChild(water);
+    }
+    
+    public void createEffect(final Vector3f coords) {
+        final BladeBase app=this;
+        Future action = app.enqueue(new Callable() {
+
+            public Object call() throws Exception {
+                
+                final ParticleEmitter explosion = new ParticleEmitter("SwordSword", ParticleMesh.Type.Triangle, 30);
+                explosion.setMaterial(explosiveMat);
+                rootNode.attachChild(explosion);
+                explosion.setLocalTranslation(coords);
+                explosion.emitAllParticles();
+                TimerTask task = new TimerTask() {
+
+                    public void run() {
+                        Future action = app.enqueue(new Callable() {
+
+                            public Object call() throws Exception {
+                                rootNode.detachChild(explosion);
+                                return null;
+                            }
+                        });
+
+                    }
+                };
+                Timer timer = new Timer();
+                timer.schedule(task, 1000l);
+                return null;
+            }
+        });
     }
 }
