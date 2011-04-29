@@ -310,7 +310,7 @@ public class BladeClient extends BladeBase implements MessageListener, RawInputL
 
                 public Object call() throws Exception {
                     rootNode.detachChild(destroyedModel);
-                    modelMap.remove(destroyedPlayerID);
+                    charMap.remove(destroyedPlayerID);
                     return null;
                 }
             });
