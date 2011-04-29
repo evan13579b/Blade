@@ -235,7 +235,7 @@ public class BladeBase extends SimpleApplication{
                 rootNode.attachChild(explosion);
                 explosion.setLocalTranslation(coords);
                 explosion.emitAllParticles();
-                TimerTask task = new TimerTask() {
+                TimerTask task = new TimerTask() { // create a task that will detach the explosion later
 
                     public void run() {
                         Future action = app.enqueue(new Callable() {
@@ -249,7 +249,7 @@ public class BladeBase extends SimpleApplication{
                     }
                 };
                 Timer timer = new Timer();
-                timer.schedule(task, 1000l);
+                timer.schedule(task, 1000L);
                 return null;
             }
         });

@@ -8,13 +8,13 @@ package mygame;
 import com.jme3.animation.AnimControl;
 import com.jme3.animation.Bone;
 import com.jme3.asset.AssetManager;
+import com.jme3.asset.DesktopAssetManager;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.collision.PhysicsCollisionObject;
 import com.jme3.bullet.collision.shapes.BoxCollisionShape;
 import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
 import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
 import com.jme3.bullet.control.CharacterControl;
-import com.jme3.bullet.control.GhostControl;
 import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.math.FastMath;
 import com.jme3.math.Matrix3f;
@@ -26,6 +26,41 @@ import com.jme3.scene.Node;
  * @author blah
  */
 public class Character{
+    Node model;
+    
+    Vector3f upperArmAngles;
+    Vector3f upperArmVels;
+    Vector3f position;
+    Vector3f velocity;
+    
+    float charAngle;
+    float turnVel;
+    float elbowWristAngle;
+    float elbowWristVel;
+    
+    public Character(){
+        AssetManager assetManager=new DesktopAssetManager();
+        model=(Node)assetManager.loadModel("Models/Female.mesh.j3o");
+        model.scale(1.0f, 1.0f, 1.0f);
+        model.rotate(0.0f, FastMath.HALF_PI, 0.0f);
+        model.setLocalTranslation(0.0f, 20.0f, 0.0f);
+        
+        Node sword=(Node)assetManager.loadModel("Models/sword.mesh.j3o");
+        sword.scale(1.0f, 1.0f, 1.0f);
+        sword.setName("sword");
+        
+        model.attachChild(sword);
+        
+        upperArmAngles=new Vector3f();
+        upperArmVels=new Vector3f();
+        position=new Vector3f();
+        velocity=new Vector3f();
+        charAngle=0f;
+        turnVel=0f;
+        elbowWristAngle=CharMovement.Constraints.lRotMin;
+        elbowWristVel=0f;
+    }
+    
     static public Node createCharacter(String bodyAssetPath,String swordAssetPath,AssetManager assetManager,BulletAppState bulletAppState,boolean applyPhysics, long playerID){
         
         Node bodyModel=(Node)assetManager.loadModel(bodyAssetPath);
@@ -41,18 +76,6 @@ public class Character{
         
         if (applyPhysics) {
             CapsuleCollisionShape capsule = new CapsuleCollisionShape(1f, 4.5f);
-
-            /*
-            Mesh mesh = findMesh(model);
-            CollisionShape gimpact = new GImpactCollisionShape(mesh);
-            RigidBodyControl rigidControl = new RigidBodyControl(gimpact, 0.01f);
-            rigidControl.setCollisionGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
-            rigidControl.removeCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_01);
-            rigidControl.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
-            rigidControl.setKinematic(true);
-            model.addControl(rigidControl);
-             */
-            //bulletAppState.getPhysicsSpace().add(rigidControl);
             
             // create collision shape for sword
             Bone hand = bodyModel.getControl(AnimControl.class).getSkeleton().getBone("swordHand");
@@ -61,9 +84,7 @@ public class Character{
             
             swordModel.setLocalRotation(rotation);
             swordModel.setLocalTranslation(position);
-            
-            //swordModel.getControl(AnimControl.class).getSkeleton().getBone("swordBone").getModelSpacePosition();
-            //swordModel.setLocalTranslation(position);
+          
             
             Vector3f shiftPosition = rotation.mult(new Vector3f(0f, 0f, 2.5f));
             CompoundCollisionShape cShape = new CompoundCollisionShape();

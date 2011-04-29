@@ -188,7 +188,6 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                             if (effectPlayerID != -1) {
                                 long currentTime = System.currentTimeMillis();
 
-
                                 if (currentTime - timeOfLastCollisionMap.get(effectPlayerID) > 500) {
                                     createEffect(collisionCoordinate);
                                     Message message;
@@ -410,8 +409,6 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
 
                 final Node model = Character.createCharacter("Models/Female.mesh.j3o", "Models/sword.mesh.j3o", assetManager, bulletAppState, true, newPlayerID);
                 
-                //rootNode.attachChild(model);
-                //rootNode.attachChild(geom1);
                 modelMap.put(newPlayerID, model);
                 upperArmAnglesMap.put(newPlayerID, new Vector3f());
                 upperArmVelsMap.put(newPlayerID, new Vector3f());
