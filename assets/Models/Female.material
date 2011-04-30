@@ -7,8 +7,15 @@ material Material.001
 		{
 			ambient 0.500000 0.500000 0.500000 1.000000
 			diffuse 0.640000 0.640000 0.640000 1.000000
-			specular 0.500000 0.500000 0.500000 1.000000 12.500000
+			specular 0.261297 0.261297 0.261297 1.000000 12.500000
 			emissive 0.000000 0.000000 0.000000 1.000000
+			texture_unit
+			{
+				texture braTexture.jpg
+				tex_address_mode wrap
+				filtering trilinear
+				colour_op alpha_blend
+			}
 		}
 	}
 }
@@ -23,6 +30,13 @@ material Material.003
 			diffuse 0.640000 0.640000 0.640000 1.000000
 			specular 0.500000 0.500000 0.500000 1.000000 12.500000
 			emissive 0.000000 0.000000 0.000000 1.000000
+			texture_unit
+			{
+				texture shortsTexture.jpg
+				tex_address_mode wrap
+				filtering trilinear
+				colour_op alpha_blend
+			}
 		}
 	}
 }
@@ -35,12 +49,19 @@ material Material.002
 		{
 			ambient 0.500000 0.500000 0.500000 1.000000
 			diffuse 0.640000 0.640000 0.640000 1.000000
-			specular 0.500000 0.500000 0.500000 1.000000 12.500000
+			specular 0.231459 0.231459 0.231459 1.000000 12.500000
 			emissive 0.000000 0.000000 0.000000 1.000000
+			texture_unit
+			{
+				texture skirtTexture.jpg
+				tex_address_mode wrap
+				filtering trilinear
+				colour_op alpha_blend
+			}
 		}
 	}
 }
-material Material.005
+material Material.012
 {
 	receive_shadows on
 	technique
@@ -51,10 +72,45 @@ material Material.005
 			diffuse 0.640000 0.640000 0.640000 1.000000
 			specular 0.500000 0.500000 0.500000 1.000000 12.500000
 			emissive 0.000000 0.000000 0.000000 1.000000
+			texture_unit
+			{
+				texture hair2-a.jpg
+				tex_address_mode wrap
+				filtering trilinear
+				colour_op alpha_blend
+			}
 		}
 	}
 }
-material Material.004
+material Material.013
+{
+	receive_shadows on
+	technique
+	{
+		pass
+		{
+			ambient 0.500000 0.500000 0.500000 1.000000
+			diffuse 0.583944 0.362737 0.021724 1.000000
+			specular 0.500000 0.500000 0.500000 1.000000 12.500000
+			emissive 0.000000 0.000000 0.000000 1.000000
+		}
+	}
+}
+material Material.007
+{
+	receive_shadows on
+	technique
+	{
+		pass
+		{
+			ambient 0.500000 0.500000 0.500000 1.000000
+			diffuse 0.435149 0.190597 0.031604 1.000000
+			specular 0.500000 0.500000 0.500000 1.000000 12.500000
+			emissive 0.000000 0.000000 0.000000 1.000000
+		}
+	}
+}
+material Material.011
 {
 	receive_shadows on
 	technique
@@ -65,6 +121,139 @@ material Material.004
 			diffuse 0.640000 0.640000 0.640000 1.000000
 			specular 0.500000 0.500000 0.500000 1.000000 12.500000
 			emissive 0.000000 0.000000 0.000000 1.000000
+			texture_unit
+			{
+				texture hair2-d.jpg
+				tex_address_mode wrap
+				filtering trilinear
+				colour_op alpha_blend
+			}
+		}
+	}
+}
+material Material.009
+{
+	receive_shadows on
+	technique
+	{
+		pass
+		{
+			ambient 0.500000 0.500000 0.500000 1.000000
+			diffuse 0.640000 0.640000 0.640000 1.000000
+			specular 0.112107 0.112107 0.112107 1.000000 12.500000
+			emissive 0.308017 0.308017 0.308017 1.000000
+			texture_unit
+			{
+				texture necklaceTexture.jpg
+				tex_address_mode wrap
+				filtering trilinear
+				colour_op alpha_blend
+			}
+		}
+	}
+}
+material Material.008
+{
+	receive_shadows on
+	technique
+	{
+		pass
+		{
+			ambient 0.500000 0.500000 0.500000 1.000000
+			diffuse 0.640000 0.640000 0.640000 1.000000
+			specular 1.000000 1.000000 1.000000 1.000000 12.500000
+			emissive 0.000000 0.000000 0.000000 1.000000
+			texture_unit
+			{
+				texture eyesTexture.jpg
+				tex_address_mode wrap
+				filtering trilinear
+				colour_op alpha_blend
+			}
+		}
+	}
+}
+material Material.006
+{
+	receive_shadows on
+	technique
+	{
+		pass
+		{
+			ambient 0.507674 0.507674 0.507674 1.000000
+			diffuse 0.640000 0.640000 0.640000 1.000000
+			specular 1.000000 1.000000 1.000000 1.000000 23.000000
+			emissive 0.118468 0.118468 0.118468 1.000000
+			texture_unit
+			{
+				texture armorTexture.jpg
+				tex_address_mode wrap
+				filtering trilinear
+				colour_op alpha_blend
+			}
+		}
+	}
+}
+material Grey
+{
+	receive_shadows on
+	technique
+	{
+		pass
+		{
+			ambient 0.320973 0.320973 0.320973 1.000000
+			diffuse 0.640000 0.640000 0.640000 1.000000
+			specular 0.022593 0.022593 0.022593 1.000000 12.500000
+			emissive 0.000000 0.000000 0.000000 1.000000
+			texture_unit
+			{
+				texture skinTexture.jpg
+				tex_address_mode wrap
+				filtering trilinear
+				colour_op alpha_blend
+			}
+		}
+	}
+}
+material Grey.001
+{
+	receive_shadows on
+	technique
+	{
+		pass
+		{
+			ambient 0.500000 0.500000 0.500000 1.000000
+			diffuse 0.640000 0.640000 0.640000 1.000000
+			specular 0.141945 0.141945 0.141945 1.000000 12.500000
+			emissive 0.000000 0.000000 0.000000 1.000000
+			texture_unit
+			{
+				texture armletTexture.jpg
+				tex_address_mode wrap
+				filtering trilinear
+				colour_op alpha_blend
+			}
+		}
+	}
+}
+material Grey.002
+{
+	receive_shadows on
+	technique
+	{
+		pass
+		{
+			ambient 0.500000 0.500000 0.500000 1.000000
+			diffuse 0.640000 0.640000 0.640000 1.000000
+			specular 0.500000 0.500000 0.500000 1.000000 12.500000
+			emissive 0.000000 0.000000 0.000000 1.000000
+			texture_unit
+			{
+				texture mouthTexture.jpg
+				tex_address_mode wrap
+				filtering trilinear
+				colour_op alpha_blend
+			}
 		}
 	}
 }
@@ -79,10 +268,17 @@ material Material.010
 			diffuse 0.640000 0.640000 0.640000 1.000000
 			specular 0.500000 0.500000 0.500000 1.000000 12.500000
 			emissive 0.000000 0.000000 0.000000 1.000000
+			texture_unit
+			{
+				texture hair2-b.jpg
+				tex_address_mode wrap
+				filtering trilinear
+				colour_op alpha_blend
+			}
 		}
 	}
 }
-material Material.006
+material Material.005
 {
 	receive_shadows on
 	technique
@@ -91,12 +287,19 @@ material Material.006
 		{
 			ambient 0.500000 0.500000 0.500000 1.000000
 			diffuse 0.640000 0.640000 0.640000 1.000000
-			specular 0.500000 0.500000 0.500000 1.000000 12.500000
+			specular 0.072269 0.072269 0.072269 1.000000 12.500000
 			emissive 0.000000 0.000000 0.000000 1.000000
+			texture_unit
+			{
+				texture shoesTexture.jpg
+				tex_address_mode wrap
+				filtering trilinear
+				colour_op alpha_blend
+			}
 		}
 	}
 }
-material Material.009
+material Material.004
 {
 	receive_shadows on
 	technique
@@ -105,50 +308,15 @@ material Material.009
 		{
 			ambient 0.500000 0.500000 0.500000 1.000000
 			diffuse 0.640000 0.640000 0.640000 1.000000
-			specular 0.500000 0.500000 0.500000 1.000000 12.500000
+			specular 0.141945 0.141945 0.141945 1.000000 12.500000
 			emissive 0.000000 0.000000 0.000000 1.000000
-		}
-	}
-}
-material Material.008
-{
-	receive_shadows on
-	technique
-	{
-		pass
-		{
-			ambient 0.500000 0.500000 0.500000 1.000000
-			diffuse 0.640000 0.640000 0.640000 1.000000
-			specular 0.500000 0.500000 0.500000 1.000000 12.500000
-			emissive 0.000000 0.000000 0.000000 1.000000
-		}
-	}
-}
-material Grey
-{
-	receive_shadows on
-	technique
-	{
-		pass
-		{
-			ambient 0.500000 0.500000 0.500000 1.000000
-			diffuse 0.640000 0.640000 0.640000 1.000000
-			specular 0.500000 0.500000 0.500000 1.000000 12.500000
-			emissive 0.000000 0.000000 0.000000 1.000000
-		}
-	}
-}
-material Material.007
-{
-	receive_shadows on
-	technique
-	{
-		pass
-		{
-			ambient 0.500000 0.500000 0.500000 1.000000
-			diffuse 0.640000 0.640000 0.640000 1.000000
-			specular 0.500000 0.500000 0.500000 1.000000 12.500000
-			emissive 0.000000 0.000000 0.000000 1.000000
+			texture_unit
+			{
+				texture beltChestTexture.jpg
+				tex_address_mode wrap
+				filtering trilinear
+				colour_op alpha_blend
+			}
 		}
 	}
 }

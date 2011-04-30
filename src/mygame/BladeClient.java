@@ -585,15 +585,36 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 charTurnVelMap.put(messagePlayerID, charStatus.charTurnVel);
                 charLifeMap.put(messagePlayerID, charStatus.life);
                 if (animChannelMap.get(messagePlayerID) != null) {
-                    if (charVelocityMap.get(messagePlayerID).equals(new Vector3f(0, 0, 0))) {
-                        if (animChannelMap.get(messagePlayerID).getAnimationName().equals("walk")) {
-                            animChannelMap.get(messagePlayerID).setAnim("stand");
-                        }
-                    } else {
-                        if (animChannelMap.get(messagePlayerID).getAnimationName().equals("stand")) {
+                    if (charVelocityMap.get(playerID).z < 0 ){
+                        System.out.println("back");
+                        if (!(animChannelMap.get(messagePlayerID).getAnimationName().equals("backWalk"))) 
+                            animChannelMap.get(messagePlayerID).setAnim("backWalk");
+                    }else if(charVelocityMap.get(playerID).z > 0){
+                        System.out.println("forward");
+                        if (!(animChannelMap.get(messagePlayerID).getAnimationName().equals("walk"))) 
                             animChannelMap.get(messagePlayerID).setAnim("walk");
-                        }
-                    }
+                    }else if(charVelocityMap.get(playerID).x < 0){
+                        System.out.println("right");
+                        if (!(animChannelMap.get(messagePlayerID).getAnimationName().equals("sideR"))) 
+                            animChannelMap.get(messagePlayerID).setAnim("sideR");
+                    }else if(charVelocityMap.get(playerID).x > 0){
+                        System.out.println("left");
+                        if (!(animChannelMap.get(messagePlayerID).getAnimationName().equals("sideL"))) 
+                            animChannelMap.get(messagePlayerID).setAnim("sideL");
+                    }else if(charTurnVelMap.get(playerID) < 0){
+                        System.out.println("rotateR");
+                        if (!(animChannelMap.get(messagePlayerID).getAnimationName().equals("rotateR"))) 
+                            animChannelMap.get(messagePlayerID).setAnim("rotateR");
+                    }else if(charTurnVelMap.get(playerID) > 0){
+                        System.out.println("rotateL");
+                        if (!(animChannelMap.get(messagePlayerID).getAnimationName().equals("rotateL"))) 
+                            animChannelMap.get(messagePlayerID).setAnim("rotateL");
+                    }else{
+                        System.out.println("stand");
+                        if (!(animChannelMap.get(messagePlayerID).getAnimationName().equals("stand"))) 
+                            animChannelMap.get(messagePlayerID).setAnim("stand");
+                    } //animation
+
                 }
                 
                 if(messagePlayerID==playerID){
