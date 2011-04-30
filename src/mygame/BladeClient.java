@@ -585,27 +585,27 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 charTurnVelMap.put(messagePlayerID, charStatus.charTurnVel);
                 charLifeMap.put(messagePlayerID, charStatus.life);
                 if (animChannelMap.get(messagePlayerID) != null) {
-                    if (charVelocityMap.get(playerID).z < 0 ){
+                    if (charVelocityMap.get(messagePlayerID).z < 0 ){
                         System.out.println("back");
                         if (!(animChannelMap.get(messagePlayerID).getAnimationName().equals("backWalk"))) 
                             animChannelMap.get(messagePlayerID).setAnim("backWalk");
-                    }else if(charVelocityMap.get(playerID).z > 0){
+                    }else if(charVelocityMap.get(messagePlayerID).z > 0){
                         System.out.println("forward");
                         if (!(animChannelMap.get(messagePlayerID).getAnimationName().equals("walk"))) 
                             animChannelMap.get(messagePlayerID).setAnim("walk");
-                    }else if(charVelocityMap.get(playerID).x < 0){
+                    }else if(charVelocityMap.get(messagePlayerID).x < 0){
                         System.out.println("right");
                         if (!(animChannelMap.get(messagePlayerID).getAnimationName().equals("sideR"))) 
                             animChannelMap.get(messagePlayerID).setAnim("sideR");
-                    }else if(charVelocityMap.get(playerID).x > 0){
+                    }else if(charVelocityMap.get(messagePlayerID).x > 0){
                         System.out.println("left");
                         if (!(animChannelMap.get(messagePlayerID).getAnimationName().equals("sideL"))) 
                             animChannelMap.get(messagePlayerID).setAnim("sideL");
-                    }else if(charTurnVelMap.get(playerID) < 0){
+                    }else if(charTurnVelMap.get(messagePlayerID) < 0){
                         System.out.println("rotateR");
                         if (!(animChannelMap.get(messagePlayerID).getAnimationName().equals("rotateR"))) 
                             animChannelMap.get(messagePlayerID).setAnim("rotateR");
-                    }else if(charTurnVelMap.get(playerID) > 0){
+                    }else if(charTurnVelMap.get(messagePlayerID) > 0){
                         System.out.println("rotateL");
                         if (!(animChannelMap.get(messagePlayerID).getAnimationName().equals("rotateL"))) 
                             animChannelMap.get(messagePlayerID).setAnim("rotateL");

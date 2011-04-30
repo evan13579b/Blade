@@ -116,7 +116,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     private final long timeBetweenSyncs=10;
     private final int numPrevStates = 9;
-    private final int goBackNumStates = 1;
+    private final int goBackNumStates = 2;
 
     private Queue<Callable> actions = new ConcurrentLinkedQueue<Callable>();
     private long timeOfLastSync=0;
