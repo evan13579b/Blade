@@ -230,9 +230,9 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         sun.setDirection(lightDir);
         sun.setColor(ColorRGBA.White.clone().multLocal(1.7f));
         sceneNodes.addLight(sun);
-        music = new AudioNode( assetManager, "Sound/music1.wav", true);
-        music.setLooping(true);
-        music.setVolume(1);
+       // music = new AudioNode( assetManager, "Sound/music1.wav", true);
+       // music.setLooping(true);
+       // music.setVolume(1);
         
         DirectionalLight sun2 = new DirectionalLight();
         sun2.setDirection(Vector3f.UNIT_Y.mult(-1));
@@ -248,7 +248,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         if (debug) {
             bulletAppState.getPhysicsSpace().enableDebug(this.getAssetManager());
         }
-        music.setStatus(AudioNode.Status.Playing);
+        //music.setStatus(AudioNode.Status.Playing);
     }
     private boolean mouseCurrentlyStopped = true;
  
