@@ -83,6 +83,7 @@ import de.lessvoid.nifty.Nifty;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
+import javax.swing.JOptionPane;
 import mygame.messages.CharStatusMessage;
 import mygame.messages.ClientReadyMessage;
 import mygame.messages.SwordBodyCollisionMessage;
@@ -150,13 +151,10 @@ public class BladeClient extends BladeBase implements MessageListener, RawInputL
     @Override
     public void simpleInitApp() {
         super.simpleInitApp();
-        
         Map<String,String> ipAddressMap=IOLib.getIpAddressMap();
-
         NiftyJmeDisplay niftyDisplay = new NiftyJmeDisplay(assetManager,inputManager,audioRenderer,guiViewPort);
         ui=niftyDisplay.getNifty();
         ui.fromXml("Interface/UI.xml","start",new LoginScreen(ipAddressMap,client,BladeMain.port,this));
-        
         guiViewPort.addProcessor(niftyDisplay);
         flyCam.setDragToRotate(true);
         app.setDisplayStatView(false);
@@ -168,7 +166,6 @@ public class BladeClient extends BladeBase implements MessageListener, RawInputL
         sun.setDirection(lightDir);
         sun.setColor(ColorRGBA.White.clone().multLocal(1.7f));
         sceneNodes.addLight(sun);
-        
         flyCam.setEnabled(false);
         
         if (debug) {
