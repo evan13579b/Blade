@@ -88,11 +88,13 @@ import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.light.DirectionalLight;
+import com.jme3.material.RenderState.BlendMode;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Matrix3f;
 import com.jme3.math.Quaternion;
 import com.jme3.niftygui.NiftyJmeDisplay;
 import com.jme3.post.FilterPostProcessor;
+import com.jme3.renderer.queue.RenderQueue.Bucket;
 import com.jme3.renderer.queue.RenderQueue.ShadowMode;
 import com.jme3.scene.debug.SkeletonDebugger;
 import com.jme3.system.AppSettings;
@@ -132,7 +134,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     ConcurrentHashMap<Long, AnimChannel> animChannelMap = new ConcurrentHashMap();
     ConcurrentHashMap<Long, Float> charLifeMap = new ConcurrentHashMap();
 
-    private final boolean debug = true;
+    private final boolean debug = false;
     private BulletAppState bulletAppState;
     private TerrainQuad terrain;
     Material mat_terrain;
@@ -299,7 +301,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     public void characterUpdate(float tpf) {
         for (Iterator<Long> playerIterator = playerSet.iterator(); playerIterator.hasNext();) {
             long nextPlayerID = playerIterator.next();
-            upperArmAnglesMap.put(nextPlayerID, CharMovement.extrapolateUpperArmAngles(upperArmAnglesMap.get(nextPlayerID), upperArmVelsMap.get(nextPlayerID), tpf));
+            upperArmAnglesMap.put(nextPlayerID, CharMovement.extrapolateUpperArmAngles(upperArmAnglesMap.get(nextPlayerID), upperArmVelsMap.get(nextPlayerID), Vector3f.ZERO, tpf));
             
             elbowWristAngleMap.put(nextPlayerID, CharMovement.extrapolateLowerArmAngles(elbowWristAngleMap.get(nextPlayerID), elbowWristVelMap.get(nextPlayerID), tpf));
 
@@ -323,7 +325,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             CharacterControl control=modelMap.get(nextPlayerID).getControl(CharacterControl.class);
             
             Vector3f diffVect=new Vector3f(extrapolatedPosition.x-currentPosition.x,0,extrapolatedPosition.z-currentPosition.z);
-            System.out.println("diffVect:"+diffVect);
+   //         System.out.println("diffVect:"+diffVect);
             float correctiveConstant=0.2f;
             float correctiveX=0;
             float correctiveZ=0;
@@ -626,7 +628,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             System.out.println("Creating character");
             CharCreationMessage creationMessage = (CharCreationMessage) message;
             long newPlayerID = creationMessage.playerID;
-            final Node newModel = Character.createCharacter("Models/Female.mesh.xml", "Models/sword.mesh.xml", assetManager, bulletAppState, true, newPlayerID);
+            final Node newModel = Character.createCharacter("Models/Female.mesh.j3o", "Models/sword.mesh.j3o", assetManager, bulletAppState, true, newPlayerID);
             //rootNode.attachChild(newModel);
             
             if (debug) {
@@ -653,6 +655,22 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 playerID = newPlayerID;
                 model = newModel;
                 System.out.println("claiming player id " + playerID);
+                
+                /**** Testing transparency of model ****/
+                // Lower is more transparent
+                float alpha = 0.1f;
+
+                Material mat = new Material(assetManager, "Common/MatDefs/Misc/SolidColor.j3md");
+                mat.setColor("m_Color", new ColorRGBA(153, 153, 153, alpha));
+                mat.getAdditionalRenderState().setBlendMode(BlendMode.Alpha);
+                newModel.setMaterial(mat);
+                newModel.setQueueBucket(Bucket.Transparent);
+
+                Node sword = (Node) newModel.getChild("sword");
+                Material mat1 = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
+                sword.setMaterial(mat1);
+
+                /******* End Transparency test *******/
 /*
                 chaseCam = new ChaseCamera(cam, model, inputManager);
                 chaseCam.setSmoothMotion(true);
@@ -704,15 +722,36 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 charTurnVelMap.put(messagePlayerID, charStatus.charTurnVel);
                 charLifeMap.put(messagePlayerID, charStatus.life);
                 if (animChannelMap.get(messagePlayerID) != null) {
-                    if (charVelocityMap.get(messagePlayerID).equals(new Vector3f(0, 0, 0))) {
-                        if (animChannelMap.get(messagePlayerID).getAnimationName().equals("walk")) {
-                            animChannelMap.get(messagePlayerID).setAnim("stand");
-                        }
-                    } else {
-                        if (animChannelMap.get(messagePlayerID).getAnimationName().equals("stand")) {
+                    if (charVelocityMap.get(messagePlayerID).z < 0 ){
+           //             System.out.println("back");
+                        if (!(animChannelMap.get(messagePlayerID).getAnimationName().equals("backWalk"))) 
+                            animChannelMap.get(messagePlayerID).setAnim("backWalk");
+                    }else if(charVelocityMap.get(messagePlayerID).z > 0){
+           //             System.out.println("forward");
+                        if (!(animChannelMap.get(messagePlayerID).getAnimationName().equals("walk"))) 
                             animChannelMap.get(messagePlayerID).setAnim("walk");
-                        }
-                    }
+                    }else if(charVelocityMap.get(messagePlayerID).x < 0){
+            //            System.out.println("right");
+                        if (!(animChannelMap.get(messagePlayerID).getAnimationName().equals("sideR"))) 
+                            animChannelMap.get(messagePlayerID).setAnim("sideR");
+                    }else if(charVelocityMap.get(messagePlayerID).x > 0){
+            //            System.out.println("left");
+                        if (!(animChannelMap.get(messagePlayerID).getAnimationName().equals("sideL"))) 
+                            animChannelMap.get(messagePlayerID).setAnim("sideL");
+                    }else if(charTurnVelMap.get(messagePlayerID) < 0){
+            //            System.out.println("rotateR");
+                        if (!(animChannelMap.get(messagePlayerID).getAnimationName().equals("rotateR"))) 
+                            animChannelMap.get(messagePlayerID).setAnim("rotateR");
+                    }else if(charTurnVelMap.get(messagePlayerID) > 0){
+            //            System.out.println("rotateL");
+                        if (!(animChannelMap.get(messagePlayerID).getAnimationName().equals("rotateL"))) 
+                            animChannelMap.get(messagePlayerID).setAnim("rotateL");
+                    }else{
+             //           System.out.println("stand");
+                        if (!(animChannelMap.get(messagePlayerID).getAnimationName().equals("stand"))) 
+                            animChannelMap.get(messagePlayerID).setAnim("stand");
+                    } //animation
+
                 }
                 
                 if(messagePlayerID==playerID){

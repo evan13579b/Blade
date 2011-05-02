@@ -1,14 +1,42 @@
-material Material
+material Grey.004
 {
 	receive_shadows on
 	technique
 	{
 		pass
 		{
-			ambient 0.500000 0.500000 0.500000 1.000000
+			ambient 0.708865 0.708865 0.708865 1.000000
 			diffuse 0.640000 0.640000 0.640000 1.000000
-			specular 0.500000 0.500000 0.500000 1.000000 12.500000
+			specular 1.000000 1.000000 1.000000 1.000000 12.500000
+			emissive 0.308017 0.308017 0.308017 1.000000
+			texture_unit
+			{
+				texture bladeTexture.jpg
+				tex_address_mode wrap
+				filtering trilinear
+				colour_op alpha_blend
+			}
+		}
+	}
+}
+material Grey.003
+{
+	receive_shadows on
+	technique
+	{
+		pass
+		{
+			ambient 0.171783 0.171783 0.171783 1.000000
+			diffuse 0.640000 0.640000 0.640000 1.000000
+			specular 0.000000 0.000000 0.000000 1.000000 12.500000
 			emissive 0.000000 0.000000 0.000000 1.000000
+			texture_unit
+			{
+				texture handleTexture.jpg
+				tex_address_mode wrap
+				filtering trilinear
+				colour_op alpha_blend
+			}
 		}
 	}
 }

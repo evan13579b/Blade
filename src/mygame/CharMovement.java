@@ -82,16 +82,16 @@ public class CharMovement {
         lowerArm.setUserTransforms(Vector3f.ZERO, createLowerArmTransform(elbowWristRotation), Vector3f.UNIT_XYZ);
     }
 
-    static public Vector3f extrapolateUpperArmAngles(Vector3f upperArmAngles, Vector3f upperArmVel, float tpf) {
+    static public Vector3f extrapolateUpperArmAngles(Vector3f upperArmAngles, Vector3f upperArmVel, Vector3f upperArmDeflectVel, float tpf) {
         Vector3f newUpperArmAngles = new Vector3f(upperArmAngles);
-        newUpperArmAngles.x += (FastMath.HALF_PI / 2f) * tpf * upperArmSpeed * upperArmVel.x;
+        newUpperArmAngles.x += (FastMath.HALF_PI / 2f) * tpf * upperArmSpeed * (upperArmVel.x + upperArmDeflectVel.x);
         if (newUpperArmAngles.x < Constraints.uXRotMin) {
             newUpperArmAngles.x = Constraints.uXRotMin;
         }
         if (newUpperArmAngles.x > Constraints.uXRotMax) {
             newUpperArmAngles.x = Constraints.uXRotMax;
         }
-        newUpperArmAngles.y += (FastMath.HALF_PI / 2f) * tpf * upperArmSpeed * upperArmVel.y;
+        newUpperArmAngles.y += (FastMath.HALF_PI / 2f) * tpf * upperArmSpeed * (upperArmVel.y + upperArmDeflectVel.y);
         if (newUpperArmAngles.y < Constraints.uYRotMin) {
             newUpperArmAngles.y = Constraints.uYRotMin;
         }
