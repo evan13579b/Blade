@@ -148,22 +148,28 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
         
         flyCam.setMoveSpeed(50);
 
-        
-
-
         flyCam.setEnabled(true);
         this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
         
+        // This listener will handle collision events
         PhysicsCollisionListener physListener = new PhysicsCollisionListener() {
-
+            
+            /*
+             * Handler for collisions. Collisions are handled by reverting back
+             * a given number of states to a point at which there was no collision.
+             * Deflections are handled using conservation of momentum, with
+             * swords assumed to have a mass of 1.0 unit each.
+             */
             public void collision(final PhysicsCollisionEvent event) {
 
                 final PhysicsCollisionObject a = event.getObjectA();
                 final PhysicsCollisionObject b = event.getObjectB();
                 final Vector3f collisionCoordinates = event.getPositionWorldOnA();
+                
+                // Check if the collision objects are body and/or sword controls
                 if ((a != null && b != null && a instanceof ControlID && b instanceof ControlID
                         && ((ControlID) a).getID() != ((ControlID) b).getID())) {
-
+                    
                     System.out.println("Collision!");
 
                     final long playerID1 = Long.valueOf(((ControlID) a).getID());
@@ -182,21 +188,27 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                     
                             if ((a instanceof SwordControl) && (b instanceof SwordControl)
                                     && (curTime - prevTimeSwordHit) > 100) {
+                                
                                 // Handle sword deflection
 
-                                /*********/
+                                // Grab the respective local coordinates of the hands of both players
                                 Vector3f localHandPosA1 = characterA.bodyModel.getControl(AnimControl.class).getSkeleton().getBone("swordHand").getModelSpacePosition();
                                 Vector3f localHandPosB1 = characterB.bodyModel.getControl(AnimControl.class).getSkeleton().getBone("swordHand").getModelSpacePosition();
 
+                                // Convert coordinates to world coordinates
                                 Vector3f worldHandPosA1 = characterA.bodyModel.localToWorld(localHandPosA1, null);
                                 Vector3f worldHandPosB1 = characterB.bodyModel.localToWorld(localHandPosB1, null);
 
+                                // Construct rotation matrices about the y-axis for both hands, given
+                                // angular x-velocities, to determine the positions of the hands after 
+                                // applying angular velocity for 1 second.
                                 Matrix4f rotA2 = new Matrix4f();
                                 rotA2.fromAngleNormalAxis(characterA.upperArmVels.x, Vector3f.UNIT_Y);
 
                                 Matrix4f rotB2 = new Matrix4f();
                                 rotB2.fromAngleNormalAxis(characterB.upperArmVels.x, Vector3f.UNIT_Y);
 
+                                // Apply matrices to find resultant positions
                                 Vector3f localHandPosA2 = rotA2.mult(modelA.worldToLocal(worldHandPosA1, null));
                                 Vector3f localHandPosB2 = rotB2.mult(modelB.worldToLocal(worldHandPosB1, null));
 
@@ -215,25 +227,28 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                                 //float sign1 = FastMath.sign(upperArmVelsMap.get(playerID1).x);
                                 //float sign2 = FastMath.sign(upperArmVelsMap.get(playerID2).x);
 
-                                //if (sign1 == sign2) {
-                                //} else {
-                                //}
-
                                 // across body:  -x   away from body:  +x
-                                // checking x direction of playerID2 from playerID1 reference
+                                
+                                // Convert player2's hand coordinates into the local coordinates of player1
                                 Vector3f locAHandPosB1 = modelA.worldToLocal(worldHandPosB1, null);
                                 Vector3f locAHandPosB2 = modelA.worldToLocal(worldHandPosB2, null);
                                 System.out.println("locAHandPosB1: " + locAHandPosB1);
                                 System.out.println("locAHandPosB2: " + locAHandPosB2);
+                                
+                                // Determine the direction of movement for player2's hand in
+                                // player1's local coordinates
                                 float locADirB = FastMath.sign(locAHandPosB2.x - locAHandPosB1.x);
 
                                 System.out.println("***X direction of player2: " + locADirB);
 
-                                // checking x direction of playerID1 from playerID2 reference
+                                // Convert player1's hand coordinates into the local coordinates of player2
                                 Vector3f locBHandPosA1 = modelB.worldToLocal(worldHandPosA1, null);
                                 Vector3f locBHandPosA2 = modelB.worldToLocal(worldHandPosA2, null);
                                 System.out.println("locBHandPosA1: " + locBHandPosA1);
                                 System.out.println("locBHandPosA2: " + locBHandPosA2);
+                                
+                                // Determine the direction of movement for player1's hand in
+                                // player2's local coordinates                                
                                 float locBDirA = FastMath.sign(locBHandPosA2.x - locBHandPosA1.x);
 
                                 System.out.println("***X direction of player1: " + locBDirA);
@@ -242,18 +257,22 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                                 //float dy = handPos1.y - handPos2.y;
                                 //float dx = locImpPosA.x - locImpPosB.x;
                                 //float dy = locImpPosA.y - locImpPosB.y;
+                                
+                                // find collision angle from player1's frame of reference
                                 float dx1 = FastMath.abs(characterB.upperArmVels.x) * locADirB - characterA.upperArmVels.x;
                                 float dy1 = characterB.upperArmVels.y - characterA.upperArmVels.y;
-
+                                float collisionisionAngleA = FastMath.atan2(dy1, dx1);
+                                
+                                // find collision angle from player2's frame of reference
                                 float dx2 = characterB.upperArmVels.x - FastMath.abs(characterA.upperArmVels.x) * locBDirA;
                                 float dy2 = characterB.upperArmVels.y - characterA.upperArmVels.y;
-
-                                float collisionisionAngleA = FastMath.atan2(dy1, dx1);
                                 float collisionisionAngleB = FastMath.atan2(dy2, dx2);
-
+                                
+                                // angles of movement
                                 float direction1 = FastMath.atan2(characterA.upperArmVels.y, characterA.upperArmVels.x);
                                 float direction2 = FastMath.atan2(characterB.upperArmVels.y, characterB.upperArmVels.x);
 
+                                // calculate velocity components in axis along direction of movement
                                 float newX1Vel = characterA.upperArmVels.length() * FastMath.cos(direction1 - collisionisionAngleA);
                                 float newY1Vel = characterA.upperArmVels.length() * FastMath.sin(direction1 - collisionisionAngleA);
                                 float newX2Vel = characterB.upperArmVels.length() * FastMath.cos(direction2 - collisionisionAngleB);
@@ -262,28 +281,27 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                                 //float final_xspeed_2 = ((ball.mass + ball.mass) * new_xspeed_1 + (ball2.mass - ball.mass) * new_xspeed_2) / (ball.mass + ball2.mass);
                                 //float final_yspeed_1 = new_yspeed_1;
                                 //float final_yspeed_2 = new_yspeed_2 * FastMath.sign(final_yspeed_1);
-                                float x1Vel = FastMath.cos(collisionisionAngleA) * /*FastMath.abs(newX2Vel) * locADirB*/ newX2Vel + FastMath.cos(collisionisionAngleA + FastMath.PI / 2) * newY1Vel;
-                                float y1Vel = FastMath.sin(collisionisionAngleA) * /*FastMath.abs(newX2Vel) * locADirB*/ newX2Vel + FastMath.sin(collisionisionAngleA + FastMath.PI / 2) * newY1Vel;
-                                float x2Vel = FastMath.cos(collisionisionAngleB) * /*FastMath.abs(newX1Vel) * locBDirA*/ newX1Vel + FastMath.cos(collisionisionAngleB + FastMath.PI / 2) * newY2Vel;
-                                float y2Vel = FastMath.sin(collisionisionAngleB) * /*FastMath.abs(newX1Vel) * locBDirA*/ newX1Vel + FastMath.sin(collisionisionAngleB + FastMath.PI / 2) * newY2Vel;
+                                
+                                // Calculate velocities in standard axis
+                                float x1Vel = FastMath.cos(collisionisionAngleA) * newX2Vel + FastMath.cos(collisionisionAngleA + FastMath.PI / 2) * newY1Vel;
+                                float y1Vel = FastMath.sin(collisionisionAngleA) * newX2Vel + FastMath.sin(collisionisionAngleA + FastMath.PI / 2) * newY1Vel;
+                                float x2Vel = FastMath.cos(collisionisionAngleB) * newX1Vel + FastMath.cos(collisionisionAngleB + FastMath.PI / 2) * newY2Vel;
+                                float y2Vel = FastMath.sin(collisionisionAngleB) * newX1Vel + FastMath.sin(collisionisionAngleB + FastMath.PI / 2) * newY2Vel;
 
                                 System.out.println("id: " + playerID1 + " x1Vel: " + x1Vel + " y1Vel: " + y1Vel);
-
                                 System.out.println("id: " + playerID2 + " x2Vel: " + x2Vel + " Y2Vel: " + y2Vel);
-
-                                //upperArmVelsMap.put(playerID1, new Vector3f(x1Vel, y1Vel, 0f));
-                                //upperArmVelsMap.put(playerID2, new Vector3f(x2Vel, y2Vel, 0f));
-
+                                
                                 //upperArmDeflectVelsMap.put(playerID1, upperArmDeflectVelsMap.get(playerID1).addLocal(x1Vel, y1Vel, 0f));
+                                
+                                // Assign calculated deflect velocities
                                 characterA.upperArmDeflectVels=new Vector3f(x1Vel, y1Vel, 0f);
                                 characterB.upperArmDeflectVels=new Vector3f(x2Vel, y2Vel, 0f);
 
-                                /*********/
                                 prevTimeSwordHit = curTime;
                             }
 
 
-
+                            // Check for sword-body collision and deduct life points
                             if ((a instanceof SwordControl) && (b instanceof BodyControl)) {
                                 charLifeMap.put(playerID2, charLifeMap.get(playerID2) * 0.999f);
                             } else if ((b instanceof SwordControl) && (a instanceof BodyControl)) {
@@ -330,9 +348,7 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                                 }
                             }
 
-                            long playerID1 = Long.valueOf(((ControlID) a).getID());
-                            long playerID2 = Long.valueOf(((ControlID) b).getID());
-
+                            // get deques of previous position states
                             Deque player1Deque = prevStates.get(playerID1);
                             Deque player2Deque = prevStates.get(playerID2);
 
@@ -345,11 +361,10 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                             Vector3f[] p1State = (Vector3f[]) player1Deque.pollLast();
                             Vector3f[] p2State = (Vector3f[]) player2Deque.pollLast();
 
-                            // replace the removed states
-
                             Vector3f[] p1Next = (Vector3f[]) player1Deque.pollLast();
                             Vector3f[] p2Next = (Vector3f[]) player2Deque.pollLast();
 
+                            // replace the removed states
                             for (int i = 0; i < goBackNumStates; i++) {
                                 player1Deque.offerLast(p1Next);
                                 player2Deque.offerLast(p2Next);
@@ -373,19 +388,22 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                             character1.charControl.setPhysicsLocation(character1.position); 
                             character2.charControl.setPhysicsLocation(character2.position); 
 
-                            
-
                             return null;
                         }
                     });
                 }
             }
         };
-           
+
+        // This listener provides methods which perform actions either before
+        // or after a physics tick
         PhysicsTickListener physTickListener = new PhysicsTickListener() {
+                        
+            // Executes all Callable actions before updating character states
             public void prePhysicsTick(PhysicsSpace space, float f) {
                 Callable action;
                 
+                // perform all queued actions
                 while ((action = actions.poll()) != null) {
                     try {
                         action.call();
@@ -395,10 +413,10 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                 }                
                 
                 updateCharacters(timer.getTimePerFrame());
-                rootNode.updateGeometricState();
-                //System.out.println("tpf: " + timer.getTimePerFrame() + " fps: " + timer.getFrameRate());
+                rootNode.updateGeometricState();                
             }
 
+            // Updates clients following a physics tick
             public void physicsTick(PhysicsSpace space, float f) {
                 updateClients();
             }
@@ -525,10 +543,7 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
         }
     }
 
-  
-
     public void messageReceived(Message message) {
-        
 
         if (message instanceof ClientReadyMessage) {
             try {
