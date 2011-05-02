@@ -184,14 +184,14 @@ public class BladeBase extends SimpleApplication{
             xDiff = 0;
             yDiff = yDiff - 25;
         }
-        house = (Node)assetManager.loadModel("Models/Cube.mesh.j3o");
-        house.setLocalTranslation(0.0f, 3.0f, 70.0f);
+        house = (Node)assetManager.loadModel("Models/Cube.mesh_1.j3o");
+        house.setLocalTranslation(0.0f, 15.0f, 70.0f);
         house.setShadowMode(ShadowMode.CastAndReceive);
         house.setLocalScale(13f);
-        house.setMaterial(wall_mat); 
+        //house.setMaterial(wall_mat); 
         //Does not work atm house_mat.setTexture("m_Tex1", rock);
         //House.setMaterial(house_mat);
-        house.setMaterial(wall_mat);
+        //house.setMaterial(wall_mat);
         //rootNode.attachChild(House);
         sceneNodes.attachChild(house);
         RigidBodyControl house_phy = new RigidBodyControl(0.0f);
