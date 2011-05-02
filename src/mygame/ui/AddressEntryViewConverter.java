@@ -10,7 +10,8 @@ import de.lessvoid.nifty.elements.render.TextRenderer;
 import java.util.Map.Entry;
 
 /**
- *
+ * 
+ * 
  * @author blah
  */
 public class AddressEntryViewConverter implements ListBoxViewConverter{

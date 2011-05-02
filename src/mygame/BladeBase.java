@@ -6,6 +6,7 @@ package mygame;
 
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
+import com.jme3.audio.AudioNode;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.collision.PhysicsCollisionObject;
 import com.jme3.bullet.control.RigidBodyControl;
@@ -45,7 +46,11 @@ import mygame.messages.SwordBodyCollisionMessage;
 import mygame.messages.SwordSwordCollisionMessage;
 
 /**
- *
+ * Base class for BladeClient and BladeServer.
+ * 
+ * Has all the initialization functions and many of the fields needed by the 
+ * server and client.
+ * 
  * @author blah
  */
 public class BladeBase extends SimpleApplication{
@@ -90,7 +95,12 @@ public class BladeBase extends SimpleApplication{
         
         sceneNodes = new Node("Scene");
         rootNode.attachChild(sceneNodes);
+        //AudioNode music = new AudioNode(assetManager, "Sound/music.wav", true);
+        //music.setPositional(false);
+        //music.setDirectional(false);
+        //music.setLooping(true);
         
+        //music.setStatus(AudioNode.Status.Playing);
         bulletAppState=new BulletAppState();
         stateManager.attach(bulletAppState);
         initMaterials();
@@ -104,11 +114,18 @@ public class BladeBase extends SimpleApplication{
         DirectionalLight sun2 = new DirectionalLight();
         sun2.setDirection(new Vector3f(0.1f, 0.7f, 1.0f));
         rootNode.addLight(sun2);
-        
+        //music.setMaxDistance(1000f);
         rootNode.attachChild(SkyFactory.createSky(assetManager, "Textures/Skysphere.jpg", true));
     }
     
     public void initTerrain() {
+        /*
+         * initTerrain() - - Sets up the normal maps and materials that will be
+         * applied to the generated hieghtmap
+         * 
+         * Also creates the trees and house and gives them physics controls
+         * 
+         */
         mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/TerrainLighting.j3md");
         //house_mat = new Material(assetManager,"Common/MatDefs/Water/SimpleWater.j3md");
         mat_terrain.setBoolean("useTriPlanarMapping", false);
@@ -185,7 +202,7 @@ public class BladeBase extends SimpleApplication{
             yDiff = yDiff - 25;
         }
         house = (Node)assetManager.loadModel("Models/Cube.mesh_1.j3o");
-        house.setLocalTranslation(0.0f, 12.0f, 70.0f);
+        house.setLocalTranslation(0.0f, 12.5f, 70.0f);
         house.setShadowMode(ShadowMode.CastAndReceive);
         house.setLocalScale(13f);
         //house.setMaterial(wall_mat); 
@@ -202,6 +219,9 @@ public class BladeBase extends SimpleApplication{
     }
 
     public void initMaterials() {
+        /*
+         * All materials that will be used by meshes in the environment
+         */
         wall_mat = new Material(assetManager, "Common/MatDefs/Misc/SimpleTextured.j3md");
         TextureKey key = new TextureKey("Textures/road.jpg");
         key.setGenerateMips(true);
@@ -230,6 +250,10 @@ public class BladeBase extends SimpleApplication{
     }
     
     public void initWater() {
+        /*
+         *  Initialize water processor and set up a listenter to change the type
+         * of foam presented at coast.
+         */
         fpp = new FilterPostProcessor(assetManager);
         water = new WaterFilter(rootNode, lightDir);
         water.setWaveScale(0.003f);

@@ -22,7 +22,9 @@ import com.jme3.math.Vector3f;
 import com.jme3.scene.Node;
 
 /**
- *
+ * Our character class. Has the capacity to update itself by extrapolating based on the given float ellapsed time.
+ * It uses many helper functions from CharMovement to assist in the updating of values.
+ * 
  * @author blah
  */
 public class Character{

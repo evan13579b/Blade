@@ -12,7 +12,9 @@ import com.jme3.math.Vector3f;
 import com.jme3.scene.Node;
 
 /**
- *
+ * Helper class for Character. This contains the functions and constants that define
+ * the movement of a character.
+ * 
  * @author blah
  */
 public class CharMovement {
@@ -54,7 +56,6 @@ public class CharMovement {
     static Quaternion createLowerArmTransform(Float elbowWristRotation) {
         Quaternion rotation = new Quaternion();
         rotation.fromAngles(0, 0, elbowWristRotation);
-        //       System.out.println(rotation);
         return rotation;
     }
     static private Quaternion wristRotInit = (new Quaternion()).fromAngleAxis(3 * FastMath.QUARTER_PI / 4, new Vector3f(-1, 0, 0));
@@ -62,7 +63,6 @@ public class CharMovement {
     static Quaternion createWristTransform(Float elbowWristRotation) {
         Quaternion rotation = new Quaternion();
         rotation.fromAngles(elbowWristRotation, 0, 0);
-        //       System.out.println(rotation);
         return rotation.mult(wristRotInit);
     }
 
@@ -77,11 +77,18 @@ public class CharMovement {
         Bone hand = model.getControl(AnimControl.class).getSkeleton().getBone("HandR");
         lowerArm.setUserControl(true);
         hand.setUserControl(true);
-        //   System.out.println(Vector3f.UNIT_XYZ);
         hand.setUserTransforms(Vector3f.ZERO, createWristTransform(elbowWristRotation), Vector3f.UNIT_XYZ);
         lowerArm.setUserTransforms(Vector3f.ZERO, createLowerArmTransform(elbowWristRotation), Vector3f.UNIT_XYZ);
     }
 
+    /**
+     * 
+     * @param upperArmAngles
+     * @param upperArmVel
+     * @param upperArmDeflectVel
+     * @param tpf
+     * @return 
+     */
     static public Vector3f extrapolateUpperArmAngles(Vector3f upperArmAngles, Vector3f upperArmVel, Vector3f upperArmDeflectVel, float tpf) {
         Vector3f newUpperArmAngles = new Vector3f(upperArmAngles);
         newUpperArmAngles.x += (FastMath.HALF_PI / 2f) * tpf * upperArmSpeed * (upperArmVel.x + upperArmDeflectVel.x);
@@ -109,6 +116,7 @@ public class CharMovement {
         return newUpperArmAngles;
     }
 
+    
     static public float extrapolateLowerArmAngles(Float elbowWristAngle, Float elbowWristVel, Float tpf) {
         float newElbowWristAngle = elbowWristAngle + (FastMath.HALF_PI / 2f) * tpf * lowerArmSpeed * elbowWristVel;
         if (newElbowWristAngle < Constraints.lRotMin) {
@@ -132,11 +140,6 @@ public class CharMovement {
         zDir = FastMath.cos(charAngle);
         xDir = FastMath.sin(charAngle);
         Vector3f viewDirection = new Vector3f(xDir, 0, zDir);
-
-        //      Vector3f walkDirection=new Vector3f(
-
-
-        //        System.out.println("tpf is "+tpf);
         Vector3f forward, up, left;
         float xVel, zVel;
         xVel = charVelocity.x;
@@ -147,14 +150,13 @@ public class CharMovement {
         Vector3f vectorDiff = (left.mult(xVel).add(forward.mult(zVel)).mult(charForwardSpeed * tpf));
         float pathLength = vectorDiff.length();
         float angleDiff = extrapolateCharTurn(0, charTurnVel, tpf);
-  //      System.out.println("left is "+left);
+        
         if (angleDiff != 0) {
             float radius = pathLength / angleDiff;
             Vector3f centerDelta = left.mult(radius);
             Vector3f decenterDelta = (new Quaternion()).fromAngleAxis(angleDiff, up).mult(centerDelta);
             Vector3f newPosition = charPosition.add(centerDelta).add(decenterDelta);
-        //    System.out.println("start position:" + charPosition + ",angle:" + angleDiff + ",pathLength:" + pathLength + ",radius:" + radius + ",centerDelta:" + centerDelta + ",decenterDelta:" + decenterDelta + ",newPosition:" + newPosition);
-   //         System.out.println("newPosition:"+newPosition+",oldEstimate:"+charPosition.add(vectorDiff));
+ 
             return newPosition;
         }
         else
