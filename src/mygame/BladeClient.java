@@ -225,6 +225,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         initMaterials();
         initTerrain();
         initWater();
+        
         DirectionalLight sun = new DirectionalLight();
         sun.setDirection(lightDir);
         sun.setColor(ColorRGBA.White.clone().multLocal(1.7f));
