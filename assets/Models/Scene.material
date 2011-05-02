@@ -1,22 +1,21 @@
-material Brick/SOLID
+material Tree
 {
+	receive_shadows on
 	technique
 	{
 		pass
 		{
-			diffuse 0.769279 0.110000 0.122623
-			specular 0.500000 0.500000 0.500000 12.500000
-		}
-	}
-}
-material GreenPaint/SOLID
-{
-	technique
-	{
-		pass
-		{
-			diffuse 0.182951 0.828328 0.000000
-			specular 0.500000 0.500000 0.500000 12.500000
+			ambient 0.400000 0.400000 0.400000 1.000000
+			diffuse 0.640000 0.640000 0.640000 1.000000
+			specular 0.500000 0.500000 0.500000 1.000000 12.500000
+			emissive 0.000000 0.000000 0.000000 1.000000
+			texture_unit
+			{
+				texture image.tga
+				tex_address_mode wrap
+				filtering trilinear
+				colour_op alpha_blend
+			}
 		}
 	}
 }

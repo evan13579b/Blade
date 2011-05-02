@@ -43,6 +43,7 @@ import com.jme3.animation.Bone;
 import mygame.messages.InputMessages;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
+import com.jme3.audio.AudioNode;
 import com.jme3.bounding.BoundingVolume;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.collision.PhysicsCollisionObject;
@@ -86,22 +87,17 @@ import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
 import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
-import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Matrix3f;
-import com.jme3.math.Plane;
 import com.jme3.math.Quaternion;
-import com.jme3.math.Vector2f;
 import com.jme3.niftygui.NiftyJmeDisplay;
 import com.jme3.post.FilterPostProcessor;
 import com.jme3.renderer.queue.RenderQueue.ShadowMode;
 import com.jme3.scene.debug.SkeletonDebugger;
-import com.jme3.scene.shape.Quad;
 import com.jme3.system.AppSettings;
 import com.jme3.texture.Texture2D;
 import com.jme3.util.SkyFactory;
-import com.jme3.water.SimpleWaterProcessor;
 import com.jme3.water.WaterFilter;
 import de.lessvoid.nifty.Nifty;
 import java.util.Map;
@@ -157,6 +153,8 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     private RigidBodyControl basic_phy;
     private RigidBodyControl body_phy;
     private Node House;
+    private Node Tree;
+    private AudioNode music;
     private Node sceneNodes;
     CharacterControl character;
     CompoundCollisionShape collisionShape;
@@ -215,7 +213,9 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         //app.setDisplayStatView(false);
         sceneNodes = new Node("Scene");
         rootNode.attachChild(sceneNodes);
-
+        
+        
+        
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
         stateManager.attach(bulletAppState);
@@ -227,7 +227,10 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         sun.setDirection(lightDir);
         sun.setColor(ColorRGBA.White.clone().multLocal(1.7f));
         sceneNodes.addLight(sun);
-
+        music = new AudioNode( assetManager, "Sound/music1.wav", true);
+        music.setLooping(true);
+        music.setVolume(1);
+        
         DirectionalLight sun2 = new DirectionalLight();
         sun2.setDirection(Vector3f.UNIT_Y.mult(-1));
         sun2.setColor(ColorRGBA.White.clone().multLocal(0.3f));
@@ -242,13 +245,13 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         if (debug) {
             bulletAppState.getPhysicsSpace().enableDebug(this.getAssetManager());
         }
-
+        music.setStatus(AudioNode.Status.Playing);
     }
     private boolean mouseCurrentlyStopped = true;
  
     @Override
     public void simpleUpdate(float tpf) {
-        
+        //music.setStatus(AudioNode.Status.Playing);
         super.simpleUpdate(tpf);
         time += tpf;
         waterHeight = (float) Math.cos(((time * 0.6f) % FastMath.TWO_PI)) * 1.5f;
@@ -417,7 +420,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
     public void initTerrain() {
 
-
+        
         mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/TerrainLighting.j3md");
         //house_mat = new Material(assetManager,"Common/MatDefs/Water/SimpleWater.j3md");
         mat_terrain.setBoolean("useTriPlanarMapping", false);
@@ -472,6 +475,27 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         terrain.addControl(terrain_phy);
         bulletAppState.getPhysicsSpace().add(terrain_phy);
         
+        /*for(int i = 0; i < 9; i++){
+            Tree[i] = (Node) assetManager.loadModel("Models/Tree.mesh.j3o");
+        }*/
+        int xDiff = 0;
+        int yDiff = 0;
+        for(int i = 0 ; i < 9; i++){
+            for(int j = 0; j < 9; j++){
+            Tree = (Node) assetManager.loadModel("Models/Tree.mesh.j3o");
+            Tree.setLocalTranslation(-80.0f + xDiff, 10.0f, 35.0f+yDiff);
+            sceneNodes.attachChild(Tree);
+            RigidBodyControl tree_phy = new RigidBodyControl(0.0f);
+            tree_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
+            tree_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_03);
+            Tree.addControl(tree_phy);
+            bulletAppState.getPhysicsSpace().add(tree_phy);
+            xDiff = xDiff - 25;
+            
+            }
+            xDiff = 0;
+            yDiff = yDiff - 25;
+        }
         House = (Node)assetManager.loadModel("Models/Cube.mesh.j3o");
         House.setLocalTranslation(0.0f, 3.0f, 70.0f);
         House.setShadowMode(ShadowMode.CastAndReceive);
@@ -488,10 +512,10 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         House.addControl(house_phy);
         bulletAppState.getPhysicsSpace().add(house_phy);
         
-         DirectionalLight light = new DirectionalLight();
+       /*  DirectionalLight light = new DirectionalLight();
         light.setDirection((new Vector3f(4.9f,1.3f, -5.9f)).normalize());
         rootNode.addLight(light);
-        
+        */
         /*AmbientLight ambLight = new AmbientLight();
         ambLight.setColor(new ColorRGBA(0.5f, 0.5f, 0.8f, 0.2f));
         sceneNodes.addLight(ambLight);*/
