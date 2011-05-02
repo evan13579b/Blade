@@ -54,7 +54,6 @@ public class CharMovement {
     static Quaternion createLowerArmTransform(Float elbowWristRotation) {
         Quaternion rotation = new Quaternion();
         rotation.fromAngles(0, 0, elbowWristRotation);
-        //       System.out.println(rotation);
         return rotation;
     }
     static private Quaternion wristRotInit = (new Quaternion()).fromAngleAxis(3 * FastMath.QUARTER_PI / 4, new Vector3f(-1, 0, 0));
@@ -62,7 +61,6 @@ public class CharMovement {
     static Quaternion createWristTransform(Float elbowWristRotation) {
         Quaternion rotation = new Quaternion();
         rotation.fromAngles(elbowWristRotation, 0, 0);
-        //       System.out.println(rotation);
         return rotation.mult(wristRotInit);
     }
 
@@ -77,7 +75,6 @@ public class CharMovement {
         Bone hand = model.getControl(AnimControl.class).getSkeleton().getBone("HandR");
         lowerArm.setUserControl(true);
         hand.setUserControl(true);
-        //   System.out.println(Vector3f.UNIT_XYZ);
         hand.setUserTransforms(Vector3f.ZERO, createWristTransform(elbowWristRotation), Vector3f.UNIT_XYZ);
         lowerArm.setUserTransforms(Vector3f.ZERO, createLowerArmTransform(elbowWristRotation), Vector3f.UNIT_XYZ);
     }
@@ -132,11 +129,6 @@ public class CharMovement {
         zDir = FastMath.cos(charAngle);
         xDir = FastMath.sin(charAngle);
         Vector3f viewDirection = new Vector3f(xDir, 0, zDir);
-
-        //      Vector3f walkDirection=new Vector3f(
-
-
-        //        System.out.println("tpf is "+tpf);
         Vector3f forward, up, left;
         float xVel, zVel;
         xVel = charVelocity.x;
@@ -147,14 +139,13 @@ public class CharMovement {
         Vector3f vectorDiff = (left.mult(xVel).add(forward.mult(zVel)).mult(charForwardSpeed * tpf));
         float pathLength = vectorDiff.length();
         float angleDiff = extrapolateCharTurn(0, charTurnVel, tpf);
-  //      System.out.println("left is "+left);
+        
         if (angleDiff != 0) {
             float radius = pathLength / angleDiff;
             Vector3f centerDelta = left.mult(radius);
             Vector3f decenterDelta = (new Quaternion()).fromAngleAxis(angleDiff, up).mult(centerDelta);
             Vector3f newPosition = charPosition.add(centerDelta).add(decenterDelta);
-        //    System.out.println("start position:" + charPosition + ",angle:" + angleDiff + ",pathLength:" + pathLength + ",radius:" + radius + ",centerDelta:" + centerDelta + ",decenterDelta:" + decenterDelta + ",newPosition:" + newPosition);
-   //         System.out.println("newPosition:"+newPosition+",oldEstimate:"+charPosition.add(vectorDiff));
+ 
             return newPosition;
         }
         else

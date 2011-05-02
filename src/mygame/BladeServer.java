@@ -147,17 +147,12 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
         server.addMessageListener(this,SwordSwordCollisionMessage.class,SwordBodyCollisionMessage.class,CharCreationMessage.class,CharDestructionMessage.class,CharStatusMessage.class,ClientReadyMessage.class);
         
         flyCam.setMoveSpeed(50);
-
-        
-
-
         flyCam.setEnabled(true);
         this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
         
         PhysicsCollisionListener physListener = new PhysicsCollisionListener() {
 
             public void collision(final PhysicsCollisionEvent event) {
-
                 final PhysicsCollisionObject a = event.getObjectA();
                 final PhysicsCollisionObject b = event.getObjectB();
                 final Vector3f collisionCoordinates = event.getPositionWorldOnA();
@@ -203,21 +198,11 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                                 Vector3f worldHandPosA2 = characterA.bodyModel.localToWorld(localHandPosA2, null);
                                 Vector3f worldHandPosB2 = characterB.bodyModel.localToWorld(localHandPosB2, null);
 
-                                //Vector3f locImpPosA = modelA.worldToLocal(modelA.getChild("sword").localToWorld(point1, null), null);
-                                //Vector3f locImpPosB = modelA.worldToLocal(modelB.getChild("sword").localToWorld(point2, null), null);
-
                                 System.out.println("Initial v1: " + characterA.upperArmVels.x + ", " + characterA.upperArmVels.y);
                                 System.out.println("Initial v2: " + characterB.upperArmVels.x + ", " + characterB.upperArmVels.y);
 
                                 System.out.println("HandA1: " + localHandPosA1 + " HandA2: " + localHandPosA2);
                                 System.out.println("HandB1: " + localHandPosB1 + " HandB2: " + localHandPosB2);
-
-                                //float sign1 = FastMath.sign(upperArmVelsMap.get(playerID1).x);
-                                //float sign2 = FastMath.sign(upperArmVelsMap.get(playerID2).x);
-
-                                //if (sign1 == sign2) {
-                                //} else {
-                                //}
 
                                 // across body:  -x   away from body:  +x
                                 // checking x direction of playerID2 from playerID1 reference
@@ -238,10 +223,6 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
 
                                 System.out.println("***X direction of player1: " + locBDirA);
 
-                                //float dx = handPos1.x - handPos2.x;
-                                //float dy = handPos1.y - handPos2.y;
-                                //float dx = locImpPosA.x - locImpPosB.x;
-                                //float dy = locImpPosA.y - locImpPosB.y;
                                 float dx1 = FastMath.abs(characterB.upperArmVels.x) * locADirB - characterA.upperArmVels.x;
                                 float dy1 = characterB.upperArmVels.y - characterA.upperArmVels.y;
 
@@ -258,10 +239,7 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                                 float newY1Vel = characterA.upperArmVels.length() * FastMath.sin(direction1 - collisionisionAngleA);
                                 float newX2Vel = characterB.upperArmVels.length() * FastMath.cos(direction2 - collisionisionAngleB);
                                 float newY2Vel = characterB.upperArmVels.length() * FastMath.sin(direction2 - collisionisionAngleB);
-                                //float final_xspeed_1 = ((ball.mass - ball2.mass) * new_xspeed_1 + (ball2.mass + ball2.mass) * new_xspeed_2) / (ball.mass + ball2.mass);
-                                //float final_xspeed_2 = ((ball.mass + ball.mass) * new_xspeed_1 + (ball2.mass - ball.mass) * new_xspeed_2) / (ball.mass + ball2.mass);
-                                //float final_yspeed_1 = new_yspeed_1;
-                                //float final_yspeed_2 = new_yspeed_2 * FastMath.sign(final_yspeed_1);
+
                                 float x1Vel = FastMath.cos(collisionisionAngleA) * /*FastMath.abs(newX2Vel) * locADirB*/ newX2Vel + FastMath.cos(collisionisionAngleA + FastMath.PI / 2) * newY1Vel;
                                 float y1Vel = FastMath.sin(collisionisionAngleA) * /*FastMath.abs(newX2Vel) * locADirB*/ newX2Vel + FastMath.sin(collisionisionAngleA + FastMath.PI / 2) * newY1Vel;
                                 float x2Vel = FastMath.cos(collisionisionAngleB) * /*FastMath.abs(newX1Vel) * locBDirA*/ newX1Vel + FastMath.cos(collisionisionAngleB + FastMath.PI / 2) * newY2Vel;
@@ -271,10 +249,6 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
 
                                 System.out.println("id: " + playerID2 + " x2Vel: " + x2Vel + " Y2Vel: " + y2Vel);
 
-                                //upperArmVelsMap.put(playerID1, new Vector3f(x1Vel, y1Vel, 0f));
-                                //upperArmVelsMap.put(playerID2, new Vector3f(x2Vel, y2Vel, 0f));
-
-                                //upperArmDeflectVelsMap.put(playerID1, upperArmDeflectVelsMap.get(playerID1).addLocal(x1Vel, y1Vel, 0f));
                                 characterA.upperArmDeflectVels=new Vector3f(x1Vel, y1Vel, 0f);
                                 characterB.upperArmDeflectVels=new Vector3f(x2Vel, y2Vel, 0f);
 
