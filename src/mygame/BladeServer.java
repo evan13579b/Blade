@@ -60,8 +60,8 @@ import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.FastMath;
 import com.jme3.math.Matrix3f;
+import com.jme3.math.Matrix4f;
 import com.jme3.math.Quaternion;
-import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 import com.jme3.network.connection.Client;
 import com.jme3.network.connection.Server;
@@ -88,7 +88,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import java.util.Vector;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import jme3tools.converters.ImageToAwt;
@@ -124,7 +123,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     private Queue<Callable> actions = new ConcurrentLinkedQueue<Callable>();
     private long timeOfLastSync=0;
-    
+    private long prevTimeSwordHit=0;
     private long currentPlayerID=0;
     private static BladeServer app;
     private Node House;
@@ -163,6 +162,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         Serializer.registerClass(ClientReadyMessage.class);
         InputMessages.registerInputClasses();
        
+        Logger.getLogger("").setLevel(Level.SEVERE);
+        
         try {
             server = new Server(BladeMain.port,BladeMain.port);
             server.start();
@@ -211,157 +212,222 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     
                     final Vector3f point1 = event.getLocalPointA();
                     final Vector3f point2 = event.getLocalPointB();
+
+                    final long playerID1 = Long.valueOf(((ControlID) a).getID());
+                    final long playerID2 = Long.valueOf(((ControlID) b).getID());
+
+                    Node modelA = modelMap.get(playerID1);
+                    Node modelB = modelMap.get(playerID2);
+
+                    long curTime = System.currentTimeMillis();
+                    
+                    if ((a instanceof SwordControl) && (b instanceof SwordControl)
+                            && (curTime - prevTimeSwordHit) > 100) {
+                        // Handle sword deflection
+
+                        //float x1 = upperArmVelsMap.get(playerID1).x;
+                        //float y1 = upperArmVelsMap.get(playerID1).y;                                
+
+                        //Vector3f localImpactPosA = modelA.worldToLocal(modelA.getChild("sword").localToWorld(point1, null), null);
+                        //Vector3f localImpactPosB = modelB.worldToLocal(modelB.getChild("sword").localToWorld(point2, null), null);
+
+                        //System.out.println(impactPosA + "  " + impactPosB);
+
+                        //Bone upperArmA = modelMap.get(playerID1).getControl(AnimControl.class).getSkeleton().getBone("UpArmR");
+                        //Vector3f upperArmAPos = upperArmA.getModelSpacePosition();
+
+                        /*********
+                        
+                        // Get movement vectors
+                        Vector3f v1 = new Vector3f(upperArmVelsMap.get(playerID1).x, upperArmVelsMap.get(playerID1).y, 0);
+                        Vector3f v2 = new Vector3f(upperArmVelsMap.get(playerID2).x, upperArmVelsMap.get(playerID2).y, 0);
+                        
+                        System.out.println("Initial v1: " + v1 + " Initial v2: " + v2);
+                        
+                        Vector3f n = new Vector3f(1, 1, 0);
+                        
+                        // Find the length of the component of each of the movement
+                        // vectors along n. 
+                        float a1 = v1.dot(n);
+                        float a2 = v2.dot(n);
+                        
+                        System.out.println("a1: " + a1 + " a2: " + a2);
+                        
+                        //float optimizedP = (2.0 * (a1 - a2)) / (mass1 + mass2);
+                        // Assuming both masses are 1.0
+                        float optimizedP = a1 - a2;
+                        System.out.println("optimizedP: " + optimizedP);
+                        
+                        // Calculate v1', the new movement vector
+                        // v1' = v1 - optimizedP * m2 * n
+                        
+                        Vector3f newV1 = v1.subtract(n.mult(optimizedP));
+                        
+                        // Calculate v1', the new movement vector
+                        // v2' = v2 + optimizedP * m1 * n
+                        Vector3f newV2 = v2.add(n.mult(optimizedP));
+                        
+                        System.out.println("newV1: " + newV1 + " newV2: " + newV2);
+                        // Assign deflect velocities
+                        upperArmDeflectVelsMap.put(playerID1, upperArmDeflectVelsMap.get(playerID1).addLocal(newV1));
+                        upperArmDeflectVelsMap.put(playerID2, upperArmDeflectVelsMap.get(playerID2).addLocal(newV2));
+                        
+                         *********/
+                        /*********/
+                        Vector3f localHandPosA1 = modelMap.get(playerID1).getControl(AnimControl.class).getSkeleton().getBone("swordHand").getModelSpacePosition();
+                        Vector3f localHandPosB1 = modelMap.get(playerID2).getControl(AnimControl.class).getSkeleton().getBone("swordHand").getModelSpacePosition();
+
+                        Vector3f worldHandPosA1 = modelMap.get(playerID1).localToWorld(localHandPosA1, null);
+                        Vector3f worldHandPosB1 = modelMap.get(playerID2).localToWorld(localHandPosB1, null);
+                        
+                        Matrix4f rotA2 = new Matrix4f();
+                        rotA2.fromAngleNormalAxis(upperArmVelsMap.get(playerID1).x, Vector3f.UNIT_Y);
+                        
+                        Matrix4f rotB2 = new Matrix4f();
+                        rotB2.fromAngleNormalAxis(upperArmVelsMap.get(playerID2).x, Vector3f.UNIT_Y);
+                        
+                        Vector3f localHandPosA2 = rotA2.mult(modelA.worldToLocal(worldHandPosA1, null));
+                        Vector3f localHandPosB2 = rotB2.mult(modelB.worldToLocal(worldHandPosB1, null));
+
+                        Vector3f worldHandPosA2 = modelMap.get(playerID1).localToWorld(localHandPosA2, null);
+                        Vector3f worldHandPosB2 = modelMap.get(playerID2).localToWorld(localHandPosB2, null);
+
+                        //Vector3f locImpPosA = modelA.worldToLocal(modelA.getChild("sword").localToWorld(point1, null), null);
+                        //Vector3f locImpPosB = modelA.worldToLocal(modelB.getChild("sword").localToWorld(point2, null), null);
+
+                        System.out.println("Initial v1: " + upperArmVelsMap.get(playerID1).x + ", " + upperArmVelsMap.get(playerID1).y);
+                        System.out.println("Initial v2: " + upperArmVelsMap.get(playerID2).x + ", " + upperArmVelsMap.get(playerID2).y);
+                        
+                        System.out.println("HandA1: " + localHandPosA1 + " HandA2: " + localHandPosA2);
+                        System.out.println("HandB1: " + localHandPosB1 + " HandB2: " + localHandPosB2);
+                        
+                        //float sign1 = FastMath.sign(upperArmVelsMap.get(playerID1).x);
+                        //float sign2 = FastMath.sign(upperArmVelsMap.get(playerID2).x);
+
+                        //if (sign1 == sign2) {
+                        //} else {
+                        //}
+
+                        // across body:  -x   away from body:  +x
+                        // checking x direction of playerID2 from playerID1 reference
+                        Vector3f locAHandPosB1 = modelA.worldToLocal(worldHandPosB1, null);
+                        Vector3f locAHandPosB2 = modelA.worldToLocal(worldHandPosB2, null);
+                        System.out.println("locAHandPosB1: " + locAHandPosB1);
+                        System.out.println("locAHandPosB2: " + locAHandPosB2);
+                        float locADirB = FastMath.sign(locAHandPosB2.x - locAHandPosB1.x);
+
+                        System.out.println("***X direction of player2: " + locADirB);
+
+                        // checking x direction of playerID1 from playerID2 reference
+                        Vector3f locBHandPosA1 = modelB.worldToLocal(worldHandPosA1, null);
+                        Vector3f locBHandPosA2 = modelB.worldToLocal(worldHandPosA2, null);
+                        System.out.println("locBHandPosA1: " + locBHandPosA1);
+                        System.out.println("locBHandPosA2: " + locBHandPosA2);
+                        float locBDirA = FastMath.sign(locBHandPosA2.x - locBHandPosA1.x);
+
+                        System.out.println("***X direction of player1: " + locBDirA);
+
+                        //float dx = handPos1.x - handPos2.x;
+                        //float dy = handPos1.y - handPos2.y;
+                        //float dx = locImpPosA.x - locImpPosB.x;
+                        //float dy = locImpPosA.y - locImpPosB.y;
+                        float dx1 = FastMath.abs(upperArmVelsMap.get(playerID2).x) * locADirB - upperArmVelsMap.get(playerID1).x;
+                        float dy1 = upperArmVelsMap.get(playerID2).y - upperArmVelsMap.get(playerID1).y;
+
+                        float dx2 = upperArmVelsMap.get(playerID2).x - FastMath.abs(upperArmVelsMap.get(playerID1).x) * locBDirA;
+                        float dy2 = upperArmVelsMap.get(playerID2).y - upperArmVelsMap.get(playerID1).y;
+
+                        float collisionisionAngleA = FastMath.atan2(dy1, dx1);
+                        float collisionisionAngleB = FastMath.atan2(dy2, dx2);
+                        
+                        float direction1 = FastMath.atan2(upperArmVelsMap.get(playerID1).y, upperArmVelsMap.get(playerID1).x);
+                        float direction2 = FastMath.atan2(upperArmVelsMap.get(playerID2).y, upperArmVelsMap.get(playerID2).x);
+
+                        float newX1Vel = upperArmVelsMap.get(playerID1).length() * FastMath.cos(direction1 - collisionisionAngleA);
+                        float newY1Vel = upperArmVelsMap.get(playerID1).length() * FastMath.sin(direction1 - collisionisionAngleA);
+                        float newX2Vel = upperArmVelsMap.get(playerID2).length() * FastMath.cos(direction2 - collisionisionAngleB);
+                        float newY2Vel = upperArmVelsMap.get(playerID2).length() * FastMath.sin(direction2 - collisionisionAngleB);
+                        //float final_xspeed_1 = ((ball.mass - ball2.mass) * new_xspeed_1 + (ball2.mass + ball2.mass) * new_xspeed_2) / (ball.mass + ball2.mass);
+                        //float final_xspeed_2 = ((ball.mass + ball.mass) * new_xspeed_1 + (ball2.mass - ball.mass) * new_xspeed_2) / (ball.mass + ball2.mass);
+                        //float final_yspeed_1 = new_yspeed_1;
+                        //float final_yspeed_2 = new_yspeed_2 * FastMath.sign(final_yspeed_1);
+                        float x1Vel = FastMath.cos(collisionisionAngleA) * /*FastMath.abs(newX2Vel) * locADirB*/ newX2Vel + FastMath.cos(collisionisionAngleA + FastMath.PI / 2) * newY1Vel;
+                        float y1Vel = FastMath.sin(collisionisionAngleA) * /*FastMath.abs(newX2Vel) * locADirB*/ newX2Vel + FastMath.sin(collisionisionAngleA + FastMath.PI / 2) * newY1Vel;
+                        float x2Vel = FastMath.cos(collisionisionAngleB) * /*FastMath.abs(newX1Vel) * locBDirA*/ newX1Vel + FastMath.cos(collisionisionAngleB + FastMath.PI / 2) * newY2Vel;
+                        float y2Vel = FastMath.sin(collisionisionAngleB) * /*FastMath.abs(newX1Vel) * locBDirA*/ newX1Vel + FastMath.sin(collisionisionAngleB + FastMath.PI / 2) * newY2Vel;
+
+                        System.out.println("id: " + playerID1 + " x1Vel: " + x1Vel + " y1Vel: " + y1Vel);
+                        System.out.println("id: " + playerID2 + " x2Vel: " + x2Vel + " Y2Vel: " + y2Vel);
+
+                        //upperArmVelsMap.put(playerID1, new Vector3f(x1Vel, y1Vel, 0f));
+                        //upperArmVelsMap.put(playerID2, new Vector3f(x2Vel, y2Vel, 0f));
+                        
+                        upperArmDeflectVelsMap.put(playerID1, upperArmDeflectVelsMap.get(playerID1).addLocal(x1Vel, y1Vel, 0f));
+                        upperArmDeflectVelsMap.put(playerID2, upperArmDeflectVelsMap.get(playerID2).addLocal(x2Vel, y2Vel, 0f));
+
+                        /*********/
+                        prevTimeSwordHit = curTime;
+                    }
+
+
                     
                     actions.add(new Callable() {
 
                         public Object call() throws Exception {
 
-                            long playerID1 = Long.valueOf(((ControlID) a).getID());
-                            long playerID2 = Long.valueOf(((ControlID) b).getID());
-        
-                            Node modelA = modelMap.get(playerID1);
-                            Node modelB = modelMap.get(playerID2);
                             
-                            if ((a instanceof SwordControl) && (b instanceof SwordControl)) {
-                                // Handle sword deflection
+        
+                            
 
-                                //float x1 = upperArmVelsMap.get(playerID1).x;
-                                //float y1 = upperArmVelsMap.get(playerID1).y;                                
-
-                                //Vector3f localImpactPosA = modelA.worldToLocal(modelA.getChild("sword").localToWorld(point1, null), null);
-                                //Vector3f localImpactPosB = modelB.worldToLocal(modelB.getChild("sword").localToWorld(point2, null), null);
-                                
-                                //System.out.println(impactPosA + "  " + impactPosB);
-                                
-                                Bone upperArmA = modelMap.get(playerID1).getControl(AnimControl.class).getSkeleton().getBone("UpArmR");
-                                Vector3f upperArmAPos = upperArmA.getModelSpacePosition();
-                                
-                                /*********/
-                                
-                                // Get movement vectors
-                                Vector3f v1 = new Vector3f(upperArmVelsMap.get(playerID1).x, upperArmVelsMap.get(playerID1).y, 0);
-                                Vector3f v2 = new Vector3f(upperArmVelsMap.get(playerID2).x, upperArmVelsMap.get(playerID2).y, 0);
-                                
-                                Vector3f n = new Vector3f(1, 0, 0);
-                                
-                                // Find the length of the component of each of the movement
-                                // vectors along n. 
-                                float a1 = v1.dot(n);
-                                float a2 = v2.dot(n);
-
-                                // optimizedP =  2(a1 - a2)
-                                //              -----------
-                                //                m1 + m2
-                                //float optimizedP = (2.0 * (a1 - a2)) / (mass1 + mass2);
-                                float optimizedP = a1 - a2;
-                                
-                                // Calculate v1', the new movement vector of circle1
-                                // v1' = v1 - optimizedP * m2 * n
-                                Vector3f newV1 = v1.subtract(n.mult(optimizedP));
-
-                                // Calculate v1', the new movement vector of circle1
-                                // v2' = v2 + optimizedP * m1 * n
-                                Vector3f newV2 = v2.add(n.mult(optimizedP));
-
-                                // Assign deflect velocities
-                                upperArmDeflectVelsMap.put(playerID1, upperArmDeflectVelsMap.get(playerID1).addLocal(newV1));
-                                upperArmDeflectVelsMap.put(playerID2, upperArmDeflectVelsMap.get(playerID2).addLocal(newV2));
-                                
-                                /*********/
-                                
-                            } else {
-
-                                if ((a instanceof SwordControl) && (b instanceof BodyControl)) {
-                                    charLifeMap.put(playerID2, charLifeMap.get(playerID2) * 0.999f);
-                                } else if ((b instanceof SwordControl) && (a instanceof BodyControl)) {
-                                    charLifeMap.put(playerID1, charLifeMap.get(playerID1) * 0.999f);
-                                }
-
-                                Deque player1Deque = prevStates.get(playerID1);
-                                Deque player2Deque = prevStates.get(playerID2);
-
-                                // go back some number of states
-                                for (int i = 1; i < goBackNumStates; i++) {
-                                    player1Deque.pollLast();
-                                    player2Deque.pollLast();
-                                }
-
-                                Vector3f[] p1State = (Vector3f[]) player1Deque.pollLast();
-                                Vector3f[] p2State = (Vector3f[]) player2Deque.pollLast();
-
-                                // replace the removed states
-
-                                Vector3f[] p1Next = (Vector3f[]) player1Deque.pollLast();
-                                Vector3f[] p2Next = (Vector3f[]) player2Deque.pollLast();
-
-                                for (int i = 0; i < goBackNumStates; i++) {
-                                    player1Deque.offerLast(p1Next);
-                                    player2Deque.offerLast(p2Next);
-                                }
-
-                                // reposition the character as recorded in the previous state
-                                upperArmAnglesMap.put(playerID1, p1State[0]);
-                                upperArmAnglesMap.put(playerID2, p2State[0]);
-
-                                elbowWristAngleMap.put(playerID1, p1State[1].getX());
-                                elbowWristAngleMap.put(playerID2, p2State[1].getX());
-
-                                charAngleMap.put(playerID1, p1State[1].getY());
-                                charAngleMap.put(playerID2, p2State[1].getY());
-
-                                charPositionMap.put(playerID1, p1State[2]);
-                                charPositionMap.put(playerID2, p2State[2]);
-
-                                modelMap.get(playerID1).getControl(CharacterControl.class).setPhysicsLocation(charPositionMap.get(playerID1));
-                                modelMap.get(playerID2).getControl(CharacterControl.class).setPhysicsLocation(charPositionMap.get(playerID2));
-                                //updateCharacters(timer.getTimePerFrame());
-
+                            if ((a instanceof SwordControl) && (b instanceof BodyControl)) {
+                                charLifeMap.put(playerID2, charLifeMap.get(playerID2) * 0.999f);
+                            } else if ((b instanceof SwordControl) && (a instanceof BodyControl)) {
+                                charLifeMap.put(playerID1, charLifeMap.get(playerID1) * 0.999f);
                             }
+
+                            Deque player1Deque = prevStates.get(playerID1);
+                            Deque player2Deque = prevStates.get(playerID2);
+
+                            // go back some number of states
+                            for (int i = 1; i < goBackNumStates; i++) {
+                                player1Deque.pollLast();
+                                player2Deque.pollLast();
+                            }
+
+                            Vector3f[] p1State = (Vector3f[]) player1Deque.pollLast();
+                            Vector3f[] p2State = (Vector3f[]) player2Deque.pollLast();
+
+                            // replace the removed states
+
+                            Vector3f[] p1Next = (Vector3f[]) player1Deque.pollLast();
+                            Vector3f[] p2Next = (Vector3f[]) player2Deque.pollLast();
+
+                            for (int i = 0; i < goBackNumStates; i++) {
+                                player1Deque.offerLast(p1Next);
+                                player2Deque.offerLast(p2Next);
+                            }
+
+                            // reposition the character as recorded in the previous state
+                            upperArmAnglesMap.put(playerID1, p1State[0]);
+                            upperArmAnglesMap.put(playerID2, p2State[0]);
+
+                            elbowWristAngleMap.put(playerID1, p1State[1].getX());
+                            elbowWristAngleMap.put(playerID2, p2State[1].getX());
+
+                            charAngleMap.put(playerID1, p1State[1].getY());
+                            charAngleMap.put(playerID2, p2State[1].getY());
+
+                            charPositionMap.put(playerID1, p1State[2]);
+                            charPositionMap.put(playerID2, p2State[2]);
+
+                            modelMap.get(playerID1).getControl(CharacterControl.class).setPhysicsLocation(charPositionMap.get(playerID1));
+                            modelMap.get(playerID2).getControl(CharacterControl.class).setPhysicsLocation(charPositionMap.get(playerID2));
+                            //updateCharacters(timer.getTimePerFrame());
+                        
+                            
                             return null;
                         }
-                    });
-                    //System.out.println("A1: " + a.getOverlappingCount()
-                    //        + " B1: " + b.getOverlappingCount());
-                    /* zeroing out velocities
-                    // rotateStop
-                    upperArmVelsMap.get(playerID1).z = 0;
-                    upperArmVelsMap.get(playerID2).z = 0;
-
-                    // stopMouseMovement
-                    upperArmVelsMap.get(playerID1).x = upperArmVelsMap.get(playerID1).y = 0;
-                    upperArmVelsMap.get(playerID2).x = upperArmVelsMap.get(playerID2).y = 0;
-
-                    // stop arm
-                    elbowWristVelMap.put(playerID1, 0f);
-                    elbowWristVelMap.put(playerID2, 0f);
-
-                    // stop char turn
-                    charTurnVelMap.put(playerID1, 0f);
-                    charTurnVelMap.put(playerID2, 0f);
-
-                    // stop forward move
-                    charVelocityMap.get(playerID1).z = 0;
-                    charVelocityMap.get(playerID2).z = 0;
-
-                    // stop left right move
-                    charVelocityMap.get(playerID1).x = 0;
-                    charVelocityMap.get(playerID2).x = 0;
-                     * 
-                     */
-                    
-                    /*
-                    upperArmVelsMap.put(playerID1, upperArmVelsMap.get(playerID1).mult(-1.0f));
-                    upperArmVelsMap.put(playerID2, upperArmVelsMap.get(playerID2).mult(-1.0f));
-                    elbowWristVelMap.put(playerID1, elbowWristVelMap.get(playerID1)*-1.0f);
-                    elbowWristVelMap.put(playerID2, elbowWristVelMap.get(playerID2)*-1.0f);
-                    charVelocityMap.put(playerID1, charVelocityMap.get(playerID1).mult(-1.0f));
-                    charVelocityMap.put(playerID2, charVelocityMap.get(playerID2).mult(-1.0f));
-                    charTurnVelMap.put(playerID1, charTurnVelMap.get(playerID1)*-1.0f);
-                    charTurnVelMap.put(playerID2, charTurnVelMap.get(playerID2)*-1.0f);
-                     * 
-                     * 
-                     */
-                    //updateNow = true;
+                    });                    
                 }
             }
         };
