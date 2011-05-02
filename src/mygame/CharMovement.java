@@ -12,7 +12,9 @@ import com.jme3.math.Vector3f;
 import com.jme3.scene.Node;
 
 /**
- *
+ * Helper class for Character. This contains the functions and constants that define
+ * the movement of a character.
+ * 
  * @author blah
  */
 public class CharMovement {
@@ -79,6 +81,14 @@ public class CharMovement {
         lowerArm.setUserTransforms(Vector3f.ZERO, createLowerArmTransform(elbowWristRotation), Vector3f.UNIT_XYZ);
     }
 
+    /**
+     * 
+     * @param upperArmAngles
+     * @param upperArmVel
+     * @param upperArmDeflectVel
+     * @param tpf
+     * @return 
+     */
     static public Vector3f extrapolateUpperArmAngles(Vector3f upperArmAngles, Vector3f upperArmVel, Vector3f upperArmDeflectVel, float tpf) {
         Vector3f newUpperArmAngles = new Vector3f(upperArmAngles);
         newUpperArmAngles.x += (FastMath.HALF_PI / 2f) * tpf * upperArmSpeed * (upperArmVel.x + upperArmDeflectVel.x);
@@ -106,6 +116,7 @@ public class CharMovement {
         return newUpperArmAngles;
     }
 
+    
     static public float extrapolateLowerArmAngles(Float elbowWristAngle, Float elbowWristVel, Float tpf) {
         float newElbowWristAngle = elbowWristAngle + (FastMath.HALF_PI / 2f) * tpf * lowerArmSpeed * elbowWristVel;
         if (newElbowWristAngle < Constraints.lRotMin) {

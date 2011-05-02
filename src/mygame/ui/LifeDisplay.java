@@ -12,7 +12,8 @@ import com.jme3.math.Vector3f;
 import com.jme3.scene.Node;
 
 /**
- *
+ * Encapsulates a life display.
+ * 
  * @author blah
  */
 public class LifeDisplay extends Node{

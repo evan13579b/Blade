@@ -390,6 +390,10 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
         //updateCharacters(tpf);
     }
 
+   /**
+     * Updates all the charactesr in playerSet.
+     * @param tpf 
+     */
     public void updateCharacters(float tpf) {
         for(Iterator<Long> playerIterator=playerSet.iterator(); playerIterator.hasNext();){
             long playerID = playerIterator.next();

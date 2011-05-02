@@ -45,7 +45,11 @@ import mygame.messages.SwordBodyCollisionMessage;
 import mygame.messages.SwordSwordCollisionMessage;
 
 /**
- *
+ * Base class for BladeClient and BladeServer.
+ * 
+ * Has all the initialization functions and many of the fields needed by the 
+ * server and client.
+ * 
  * @author blah
  */
 public class BladeBase extends SimpleApplication{

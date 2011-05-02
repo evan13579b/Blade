@@ -22,10 +22,10 @@ import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import mygame.BladeClient;
-import mygame.messages.InputMessages;
 
 /**
- *
+ * Creates teh login screen for the blade client.
+ * 
  * @author blah
  */
 public class LoginScreen implements ScreenController, ConnectionListener {    
