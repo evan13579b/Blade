@@ -185,7 +185,7 @@ public class BladeBase extends SimpleApplication{
             yDiff = yDiff - 25;
         }
         house = (Node)assetManager.loadModel("Models/Cube.mesh_1.j3o");
-        house.setLocalTranslation(0.0f, 15.0f, 70.0f);
+        house.setLocalTranslation(0.0f, 12.0f, 70.0f);
         house.setShadowMode(ShadowMode.CastAndReceive);
         house.setLocalScale(13f);
         //house.setMaterial(wall_mat); 
