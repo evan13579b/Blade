@@ -125,29 +125,8 @@ public class CharMovement {
     static public float extrapolateCharTurn(float charAngle, float charTurnVel, float tpf) {
         return charAngle + (FastMath.HALF_PI / 2f) * tpf * charTurnSpeed * charTurnVel;
     }
-/*
-      static public Vector3f oldExtrapolateCharMovement(Vector3f charPosition, Vector3f charVelocity, float charAngle, float charTurnVel, float tpf) {
-        float xDir, zDir;
-        zDir = FastMath.cos(charAngle);
-        xDir = FastMath.sin(charAngle);
-        Vector3f viewDirection = new Vector3f(xDir, 0, zDir);
 
-        //      Vector3f walkDirection=new Vector3f(
-
-
-        //        System.out.println("tpf is "+tpf);
-        Vector3f forward, up, left;
-        float xVel, zVel;
-        xVel = charVelocity.x;
-        zVel = charVelocity.z;
-        forward = new Vector3f(viewDirection);
-        up = new Vector3f(0, 1, 0);
-        left = up.cross(forward);
-        Vector3f vectorDiff = (left.mult(xVel).add(forward.mult(zVel)).mult(charForwardSpeed * tpf));
- 
-        return charPosition.add(vectorDiff);
-    }
-  */  
+    
     static public Vector3f extrapolateCharMovement(Vector3f charPosition, Vector3f charVelocity, float charAngle, float charTurnVel, float tpf) {
         float xDir, zDir;
         zDir = FastMath.cos(charAngle);
