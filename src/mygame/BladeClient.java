@@ -302,11 +302,12 @@ public class BladeClient extends BladeBase implements MessageListener, RawInputL
             bulletAppState.getPhysicsSpace().remove(destroyedModel.getChild("sword").getControl(SwordControl.class));
             bulletAppState.getPhysicsSpace().remove(destroyedModel.getControl(BodyControl.class));
             bulletAppState.getPhysicsSpace().remove(destroyedModel.getControl(CharacterControl.class));
-
+            final Node lifeDisplay=lifeDisplayMap.get(destroyedPlayerID);
             Future action = app.enqueue(new Callable() {
 
                 public Object call() throws Exception {
                     rootNode.detachChild(destroyedModel);
+                    rootNode.detachChild(lifeDisplay);
                     charMap.remove(destroyedPlayerID);
                     return null;
                 }
