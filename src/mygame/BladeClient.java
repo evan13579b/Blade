@@ -43,7 +43,6 @@ import com.jme3.animation.Bone;
 import mygame.messages.InputMessages;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
-import com.jme3.audio.AudioNode;
 import com.jme3.bounding.BoundingVolume;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.collision.PhysicsCollisionObject;
@@ -85,22 +84,17 @@ import mygame.messages.CharDestructionMessage;
 import com.jme3.bullet.collision.shapes.BoxCollisionShape;
 import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
 import com.jme3.bullet.util.CollisionShapeFactory;
-import com.jme3.input.controls.ActionListener;
-import com.jme3.input.controls.KeyTrigger;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.RenderState.BlendMode;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Matrix3f;
 import com.jme3.math.Quaternion;
 import com.jme3.niftygui.NiftyJmeDisplay;
-import com.jme3.post.FilterPostProcessor;
 import com.jme3.renderer.queue.RenderQueue.Bucket;
 import com.jme3.renderer.queue.RenderQueue.ShadowMode;
 import com.jme3.scene.debug.SkeletonDebugger;
 import com.jme3.system.AppSettings;
-import com.jme3.texture.Texture2D;
 import com.jme3.util.SkyFactory;
-import com.jme3.water.WaterFilter;
 import de.lessvoid.nifty.Nifty;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -142,22 +136,10 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     Material wall_mat;
     Material stone_mat;
     Material floor_mat;
-    //WATER VARIABLES
-    private Vector3f lightDir = new Vector3f(-4.9236743f, -1.27054665f, 5.896916f);
-    private float time = 0.0f;
-    private float waterHeight = -10.0f;
-    private float initialWaterHeight = -9.2f;
-    private WaterFilter water;
-    private FilterPostProcessor fpp;
-
-
     private RigidBodyControl terrain_phy;
     private RigidBodyControl basic_phy;
     private RigidBodyControl body_phy;
     private Node House;
-    private Node Tree;
-    private AudioNode music;
-    private Node sceneNodes;
     CharacterControl character;
     CompoundCollisionShape collisionShape;
     BoundingVolume ballBound;
@@ -213,53 +195,33 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         guiViewPort.addProcessor(niftyDisplay);
         flyCam.setDragToRotate(true);
         //app.setDisplayStatView(false);
-        sceneNodes = new Node("Scene");
-        rootNode.attachChild(sceneNodes);
-        
-        
         
         flyCam.setMoveSpeed(50);
         bulletAppState = new BulletAppState();
         stateManager.attach(bulletAppState);
-        
+        rootNode.attachChild(SkyFactory.createSky(assetManager, "Textures/Skysphere.jpg", true));
         initMaterials();
         initTerrain();
-        initWater();
+
         DirectionalLight sun = new DirectionalLight();
-        sun.setDirection(lightDir);
-        sun.setColor(ColorRGBA.White.clone().multLocal(1.7f));
-        sceneNodes.addLight(sun);
-        music = new AudioNode( assetManager, "Sound/music1.wav", true);
-        music.setLooping(true);
-        music.setVolume(1);
-        
+        sun.setDirection(new Vector3f(-0.1f, -0.7f, -1.0f));
+        rootNode.addLight(sun);
+
         DirectionalLight sun2 = new DirectionalLight();
-        sun2.setDirection(Vector3f.UNIT_Y.mult(-1));
-        sun2.setColor(ColorRGBA.White.clone().multLocal(0.3f));
-        sceneNodes.addLight(sun2);
+        sun2.setDirection(new Vector3f(0.1f, 0.7f, 1.0f));
+        rootNode.addLight(sun2);
 
-        //rootNode.addLight(sun2);
-
-        //rootNode.attachChild(SkyFactory.createSky(assetManager, "Textures/Skysphere.jpg", true));
-        sceneNodes.attachChild(SkyFactory.createSky(assetManager, "Textures/Skysphere.jpg", true));
-        
         flyCam.setEnabled(false);
+        
         if (debug) {
             bulletAppState.getPhysicsSpace().enableDebug(this.getAssetManager());
         }
-        music.setStatus(AudioNode.Status.Playing);
+
     }
     private boolean mouseCurrentlyStopped = true;
  
     @Override
     public void simpleUpdate(float tpf) {
-        //music.setStatus(AudioNode.Status.Playing);
-        super.simpleUpdate(tpf);
-        time += tpf;
-        waterHeight = (float) Math.cos(((time * 0.6f) % FastMath.TWO_PI)) * 1.5f;
-        water.setWaterHeight(initialWaterHeight + waterHeight);
-
-        
         if (readyToStart && !started){
             System.out.println("starting");
             if(client==null){
@@ -422,7 +384,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
     public void initTerrain() {
 
-        
+
         mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/TerrainLighting.j3md");
         //house_mat = new Material(assetManager,"Common/MatDefs/Water/SimpleWater.j3md");
         mat_terrain.setBoolean("useTriPlanarMapping", false);
@@ -468,36 +430,15 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
         terrain.setLocalTranslation(0, -100, 0);
         terrain.setLocalScale(2f, 2f, 2f);
-        terrain.setShadowMode(ShadowMode.CastAndReceive);
-        //rootNode.attachChild(terrain);
-        sceneNodes.attachChild(terrain);
+        
+        rootNode.attachChild(terrain);
+
         terrain_phy = new RigidBodyControl(0.0f);
         terrain_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
         terrain_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_03);
         terrain.addControl(terrain_phy);
         bulletAppState.getPhysicsSpace().add(terrain_phy);
         
-        /*for(int i = 0; i < 9; i++){
-            Tree[i] = (Node) assetManager.loadModel("Models/Tree.mesh.j3o");
-        }*/
-        int xDiff = 0;
-        int yDiff = 0;
-        for(int i = 0 ; i < 9; i++){
-            for(int j = 0; j < 9; j++){
-            Tree = (Node) assetManager.loadModel("Models/Tree.mesh.j3o");
-            Tree.setLocalTranslation(-80.0f + xDiff, 10.0f, 35.0f+yDiff);
-            sceneNodes.attachChild(Tree);
-            RigidBodyControl tree_phy = new RigidBodyControl(0.0f);
-            tree_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
-            tree_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_03);
-            Tree.addControl(tree_phy);
-            bulletAppState.getPhysicsSpace().add(tree_phy);
-            xDiff = xDiff - 25;
-            
-            }
-            xDiff = 0;
-            yDiff = yDiff - 25;
-        }
         House = (Node)assetManager.loadModel("Models/Cube.mesh.j3o");
         House.setLocalTranslation(0.0f, 3.0f, 70.0f);
         House.setShadowMode(ShadowMode.CastAndReceive);
@@ -506,79 +447,19 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         //Does not work atm house_mat.setTexture("m_Tex1", rock);
         //House.setMaterial(house_mat);
         House.setMaterial(wall_mat);
-        //rootNode.attachChild(House);
-        sceneNodes.attachChild(House);
+        rootNode.attachChild(House);
         RigidBodyControl house_phy = new RigidBodyControl(0.0f);
         house_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
         house_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_03);
         House.addControl(house_phy);
         bulletAppState.getPhysicsSpace().add(house_phy);
         
-       /*  DirectionalLight light = new DirectionalLight();
-        light.setDirection((new Vector3f(4.9f,1.3f, -5.9f)).normalize());
+         DirectionalLight light = new DirectionalLight();
+        light.setDirection((new Vector3f(-0.5f,-1f, -0.5f)).normalize());
         rootNode.addLight(light);
-        */
-        /*AmbientLight ambLight = new AmbientLight();
-        ambLight.setColor(new ColorRGBA(0.5f, 0.5f, 0.8f, 0.2f));
-        sceneNodes.addLight(ambLight);*/
-    }
-    
-    public void initWater(){
-        //NEW WATER
         
-        fpp = new FilterPostProcessor(assetManager);
-        water = new WaterFilter(rootNode, lightDir);
-        water.setWaveScale(0.003f);
-        water.setMaxAmplitude(2f);
-        water.setFoamExistence(new Vector3f(1f, 4, 0.5f));
-        water.setFoamTexture((Texture2D) assetManager.loadTexture("Common/MatDefs/Water/Textures/foam2.jpg"));
-        water.setRefractionStrength(0.2f);
-        water.setWaterHeight(initialWaterHeight);
-        fpp.addFilter(water);
-        viewPort.addProcessor(fpp);
-        inputManager.addListener(new ActionListener() {
-
-            public void onAction(String name, boolean isPressed, float tpf) {
-                if(isPressed){
-                    if(name.equals("foam1")){
-                        water.setFoamTexture((Texture2D) assetManager.loadTexture("Common/MatDefs/Water/Textures/foam.jpg"));                      
-                    }
-                    if(name.equals("foam2")){
-                        water.setFoamTexture((Texture2D) assetManager.loadTexture("Common/MatDefs/Water/Textures/foam2.jpg"));
-                    }
-                    if(name.equals("foam3")){
-                        water.setFoamTexture((Texture2D) assetManager.loadTexture("Common/MatDefs/Water/Textures/foam3.jpg"));
-                    }
-                }
-            }
-        }, "foam1","foam2","foam3");
-        inputManager.addMapping("foam1", new KeyTrigger(keyInput.KEY_1));
-        inputManager.addMapping("foam2", new KeyTrigger(keyInput.KEY_2));
-        inputManager.addMapping("foam3", new KeyTrigger(keyInput.KEY_3));
-
-        //OLD WATER
-         /* SimpleWaterProcessor waterProcessor = new SimpleWaterProcessor(assetManager);
-            waterProcessor.setReflectionScene(sceneNodes);
-            Vector3f waterLocation = new Vector3f(0,-7,0);
-            waterProcessor.setPlane(new Plane(Vector3f.UNIT_Y, waterLocation.dot(Vector3f.UNIT_Y)));
-            viewPort.addProcessor(waterProcessor);
-            
-            waterProcessor.setWaterDepth(30);
-            waterProcessor.setDistortionScale(0.05f);
-            waterProcessor.setWaveSpeed(0.06f);
-            waterProcessor.setWaterTransparency(0.5f);
-            Quad quad = new Quad(400,400);
-            quad.scaleTextureCoordinates(new Vector2f(6f,6f));
-            
-            Geometry water = new Geometry("water",quad);
-            water.setLocalRotation(new Quaternion().fromAngleAxis(-FastMath.HALF_PI, Vector3f.UNIT_X));
-            water.setLocalTranslation(-200, -7, 250);
-            water.setShadowMode(ShadowMode.Receive);
-            
-            water.setMaterial(waterProcessor.getMaterial());
-            rootNode.attachChild(water);
-            //waterProcessor.setRenderSize(128,128);*/
-    }   
+        
+    }
 
     public void initMaterials() {
         wall_mat = new Material(assetManager, "Common/MatDefs/Misc/SimpleTextured.j3md");
@@ -698,8 +579,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             Future action = app.enqueue(new Callable() {
 
                 public Object call() throws Exception {
-                    //rootNode.attachChild(newModel);
-                    sceneNodes.attachChild(newModel);
+                    rootNode.attachChild(newModel);
                     return null;
                 }
             });

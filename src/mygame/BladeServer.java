@@ -80,7 +80,6 @@ import com.jme3.terrain.heightmap.ImageBasedHeightMap;
 import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.WrapMode;
 import com.jme3.util.SkyFactory;
-import com.jme3.water.SimpleWaterProcessor;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.concurrent.ConcurrentHashMap;
@@ -186,6 +185,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         assetManager, "Textures/Skysphere.jpg", true));
         initMaterials();
         initTerrain();
+
         DirectionalLight sun = new DirectionalLight();
         sun.setDirection(new Vector3f(-0.1f, -0.7f, -1.0f));
         rootNode.addLight(sun);
@@ -643,9 +643,6 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
          
     }
 
-    
-         
-    
     public void initMaterials() {
         wall_mat = new Material(assetManager, "Common/MatDefs/Misc/SimpleTextured.j3md");
         TextureKey key = new TextureKey("Textures/road.jpg");
