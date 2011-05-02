@@ -54,10 +54,7 @@ import com.jme3.bullet.collision.PhysicsCollisionObject;
 import com.jme3.bullet.collision.shapes.BoxCollisionShape;
 import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
 import com.jme3.bullet.control.CharacterControl;
-import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.bullet.util.CollisionShapeFactory;
-import com.jme3.light.DirectionalLight;
-import com.jme3.material.Material;
 import com.jme3.math.FastMath;
 import com.jme3.math.Matrix3f;
 import com.jme3.math.Matrix4f;
@@ -68,9 +65,7 @@ import com.jme3.network.connection.Server;
 import com.jme3.network.events.ConnectionListener;
 import com.jme3.network.events.MessageListener;
 import com.jme3.network.message.Message;
-import com.jme3.network.serializing.Serializer;
 import com.jme3.network.sync.ServerSyncService;
-import com.jme3.renderer.queue.RenderQueue.ShadowMode;
 import com.jme3.scene.Node;
 import com.jme3.system.AppSettings;
 import com.jme3.system.JmeContext;
@@ -83,39 +78,28 @@ import com.jme3.util.SkyFactory;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import jme3tools.converters.ImageToAwt;
 import mygame.messages.CharCreationMessage;
 import mygame.messages.CharDestructionMessage;
 import mygame.messages.CharStatusMessage;
 import mygame.messages.ClientReadyMessage;
 import mygame.messages.HasID;
+import mygame.messages.SwordBodyCollisionMessage;
+import mygame.messages.SwordSwordCollisionMessage;
 
-public class BladeServer extends SimpleApplication implements MessageListener,ConnectionListener{
-    ConcurrentHashMap<Long,Node> modelMap=new ConcurrentHashMap();
-    ConcurrentHashMap<Long,Vector3f> upperArmAnglesMap=new ConcurrentHashMap();
-    ConcurrentHashMap<Long,Vector3f> upperArmVelsMap=new ConcurrentHashMap();
-    ConcurrentHashMap<Long,Vector3f> upperArmDeflectVelsMap=new ConcurrentHashMap();
-    
-    ConcurrentHashMap<Long,Float> elbowWristAngleMap=new ConcurrentHashMap();
-    ConcurrentHashMap<Long,Float> elbowWristVelMap=new ConcurrentHashMap();
-    HashSet<Long> playerSet=new HashSet();
+public class BladeServer extends BladeBase implements MessageListener,ConnectionListener{
     ConcurrentHashMap<Long,Client> clientMap=new ConcurrentHashMap();
     ConcurrentHashMap<Client,Long> playerIDMap=new ConcurrentHashMap();
-    ConcurrentHashMap<Long,Vector3f> charPositionMap=new ConcurrentHashMap();
-    ConcurrentHashMap<Long,Vector3f> charVelocityMap=new ConcurrentHashMap();
-    ConcurrentHashMap<Long,Float> charAngleMap=new ConcurrentHashMap();
-    ConcurrentHashMap<Long,Float> charTurnVelMap=new ConcurrentHashMap();
 
     ConcurrentHashMap<Long, Deque<Vector3f[]>> prevStates = new ConcurrentHashMap();
    
     ConcurrentHashMap<Long, Float> charLifeMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, Long> timeOfLastCollisionMap = new ConcurrentHashMap();
 
     private final long timeBetweenSyncs=10;
     private final int numPrevStates = 9;
@@ -127,18 +111,6 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     private long currentPlayerID=0;
     private float deflectFrictionCoeff=0.7f;
     private static BladeServer app;
-    private Node House;
-    private BulletAppState bulletAppState;
-    private TerrainQuad terrain;
-    Material mat_terrain;
-    Material lighting;
-
-    Material house_mat;
-    Material wall_mat;
-    Material stone_mat;
-    Material floor_mat;
-    private RigidBodyControl terrain_phy;
-    private RigidBodyControl basic_phy;
     private boolean updateNow;
     float airTime = 0;
 
@@ -148,7 +120,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     public static void main(String[] args) {
         app = new BladeServer();
         AppSettings appSettings=new AppSettings(true);
-        appSettings.setFrameRate(60);
+        appSettings.setFrameRate(30);
         app.setPauseOnLostFocus(false);
         app.setSettings(appSettings);
         //app.start();
@@ -157,11 +129,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
     @Override
     public void simpleInitApp() {
-        Serializer.registerClass(CharStatusMessage.class);
-        Serializer.registerClass(CharCreationMessage.class);
-        Serializer.registerClass(CharDestructionMessage.class);
-        Serializer.registerClass(ClientReadyMessage.class);
-        InputMessages.registerInputClasses();
+        super.simpleInitApp();
+        
        
         Logger.getLogger("").setLevel(Level.SEVERE);
         
@@ -175,24 +144,12 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
         InputMessages.addInputMessageListeners(server, this);
         server.addConnectionListener(this);
-        server.addMessageListener(this,CharCreationMessage.class,CharDestructionMessage.class,CharStatusMessage.class,ClientReadyMessage.class);
-
-        flyCam.setMoveSpeed(50);
-        bulletAppState = new BulletAppState();
+        server.addMessageListener(this,SwordSwordCollisionMessage.class,SwordBodyCollisionMessage.class,CharCreationMessage.class,CharDestructionMessage.class,CharStatusMessage.class,ClientReadyMessage.class);
         
-        stateManager.attach(bulletAppState);
-        rootNode.attachChild(SkyFactory.createSky(
-        assetManager, "Textures/Skysphere.jpg", true));
-        initMaterials();
-        initTerrain();
+        flyCam.setMoveSpeed(50);
 
-        DirectionalLight sun = new DirectionalLight();
-        sun.setDirection(new Vector3f(-0.1f, -0.7f, -1.0f));
-        rootNode.addLight(sun);
+        
 
-        DirectionalLight sun2 = new DirectionalLight();
-        sun2.setDirection(new Vector3f(0.1f, 0.7f, 1.0f));
-        rootNode.addLight(sun2);
 
         flyCam.setEnabled(true);
         this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().enableDebug(this.getAssetManager());
@@ -203,14 +160,12 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
                 final PhysicsCollisionObject a = event.getObjectA();
                 final PhysicsCollisionObject b = event.getObjectB();
-                
+                final Vector3f collisionCoordinates = event.getPositionWorldOnA();
                 if ((a != null && b != null && a instanceof ControlID && b instanceof ControlID
-                        && ((ControlID)a).getID() != ((ControlID)b).getID())) {
-                    
+                        && ((ControlID) a).getID() != ((ControlID) b).getID())) {
+
                     System.out.println("Collision!");
-                    //System.out.println("A: " + a.getOverlappingCount()
-                    //        + " B: " + b.getOverlappingCount());
-                    
+
                     final Vector3f point1 = event.getLocalPointA();
                     final Vector3f point2 = event.getLocalPointB();
 
@@ -336,6 +291,49 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                                 charLifeMap.put(playerID1, charLifeMap.get(playerID1) * 0.999f);
                             }
 
+                            // we limit the amount of collision messages per second to two
+                            // and we do this based on the id of the lowest ID whose sword collided.
+                            // this is to make sure that we don't get two rapid collisions
+                            // when both swords collided with each
+                            long effectPlayerID = -1;
+                            boolean swordSword = false;
+                            if ((a instanceof SwordControl)) {
+                                effectPlayerID = ((ControlID) a).getID();
+                                if (b instanceof SwordControl) {
+                                    swordSword = true;
+                                    if (effectPlayerID > ((ControlID) b).getID()) {
+                                        effectPlayerID = ((ControlID) b).getID();
+                                    }
+                                }
+                            } else if ((b instanceof SwordControl)) {
+                                effectPlayerID = ((ControlID) b).getID();
+                            }
+
+                            if (effectPlayerID != -1) {
+                                long currentTime = System.currentTimeMillis();
+
+                                if (currentTime - timeOfLastCollisionMap.get(effectPlayerID) > 500) {
+                                    
+                                    Message message;
+                                    if (swordSword) {
+                                        message = new SwordSwordCollisionMessage(new Vector3f(collisionCoordinates));
+                                        createEffect(collisionCoordinates,clankMat);
+                                    } else {
+                                        message = new SwordBodyCollisionMessage(new Vector3f(collisionCoordinates));
+                                        createEffect(collisionCoordinates,bloodMat);
+                                    }
+
+                                    for (Iterator<Long> playerIterator = playerSet.iterator(); playerIterator.hasNext();) {
+                                        long destPlayerID = playerIterator.next();
+                                        clientMap.get(destPlayerID).send(message);
+                                    }
+                                    timeOfLastCollisionMap.put(effectPlayerID, currentTime);
+                                }
+                            }
+
+                            long playerID1 = Long.valueOf(((ControlID) a).getID());
+                            long playerID2 = Long.valueOf(((ControlID) b).getID());
+
                             Deque player1Deque = prevStates.get(playerID1);
                             Deque player2Deque = prevStates.get(playerID2);
 
@@ -359,26 +357,28 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                             }
 
                             // reposition the character as recorded in the previous state
-                            upperArmAnglesMap.put(playerID1, p1State[0]);
-                            upperArmAnglesMap.put(playerID2, p2State[0]);
+                            Character character1=charMap.get(playerID1);
+                            Character character2=charMap.get(playerID2);
+                            character1.upperArmAngles=p1State[0];
+                            character2.upperArmAngles=p2State[0];
+                            
+                            character1.elbowWristAngle=p1State[1].getX();
+                            character2.elbowWristAngle=p2State[1].getX();
+                            
+                            character1.charAngle=p1State[1].getY();
+                            character2.charAngle=p2State[1].getY();
+                            
+                            character1.position=p1State[2];
+                            character2.position=p2State[2];
+                            
+                            character1.charControl.setPhysicsLocation(character1.position); 
+                            character2.charControl.setPhysicsLocation(character2.position); 
 
-                            elbowWristAngleMap.put(playerID1, p1State[1].getX());
-                            elbowWristAngleMap.put(playerID2, p2State[1].getX());
-
-                            charAngleMap.put(playerID1, p1State[1].getY());
-                            charAngleMap.put(playerID2, p2State[1].getY());
-
-                            charPositionMap.put(playerID1, p1State[2]);
-                            charPositionMap.put(playerID2, p2State[2]);
-
-                            modelMap.get(playerID1).getControl(CharacterControl.class).setPhysicsLocation(charPositionMap.get(playerID1));
-                            modelMap.get(playerID2).getControl(CharacterControl.class).setPhysicsLocation(charPositionMap.get(playerID2));
-                            //updateCharacters(timer.getTimePerFrame());
                             
 
                             return null;
                         }
-                    });                    
+                    });
                 }
             }
         };
@@ -405,7 +405,6 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             }
         };
         
-        //bulletAppState.getPhysicsSpace().setAccuracy((float)(1.0/120.0));
         System.out.println("Accuracy: " + bulletAppState.getPhysicsSpace().getAccuracy());
         
         this.getStateManager().getState(BulletAppState.class).getPhysicsSpace().addCollisionListener(physListener);
@@ -421,9 +420,13 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     public void updateCharacters(float tpf) {
         for(Iterator<Long> playerIterator=playerSet.iterator(); playerIterator.hasNext();){
             long playerID = playerIterator.next();
-            Vector3f upperArmAngles = upperArmAnglesMap.get(playerID);
-            
+            Character character=charMap.get(playerID);
             Vector3f[] prevState = new Vector3f[3];
+            prevState[0]=character.upperArmAngles;
+            prevState[1]=new Vector3f(character.elbowWristAngle,0f,0f);
+            prevState[1].setY(character.charAngle);
+            prevState[2] = character.position.clone();
+            character.update(tpf,true);
             
             Vector3f upperArmDeflectVels = upperArmDeflectVelsMap.get(playerID);
             
@@ -490,20 +493,14 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
 
             control.setWalkDirection(left.mult(xVel).add(forward.mult(zVel)));
             
-            prevState[2] = charPositionMap.get(playerID).clone();
-            charPositionMap.get(playerID).set(modelMap.get(playerID).getControl(CharacterControl.class).getPhysicsLocation()); // getLocalTranslation
-            
-            CharMovement.setUpperArmTransform(upperArmAnglesMap.get(playerID), modelMap.get(playerID));
-            CharMovement.setLowerArmTransform(elbowWristAngleMap.get(playerID), modelMap.get(playerID));
-
             // Adjust the sword collision shape in accordance with arm movement.
             // first, get rotation and position of hand
-            Bone hand = modelMap.get(playerID).getControl(AnimControl.class).getSkeleton().getBone("swordHand");
+            Bone hand = character.bodyModel.getControl(AnimControl.class).getSkeleton().getBone("swordHand");
             Matrix3f rotation = hand.getModelSpaceRotation().toRotationMatrix();
             Vector3f position = hand.getModelSpacePosition();
 
             // set the position of the sword to the position of the hand
-            Node swordNode = (Node) modelMap.get(playerID).getChild("sword");
+            Node swordNode = character.swordModel;
             Bone swordBone = swordNode.getControl(AnimControl.class).getSkeleton().getBone("swordBone");
             swordNode.setLocalRotation(rotation);
             swordNode.setLocalTranslation(position);
@@ -523,7 +520,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             CollisionShapeFactory.shiftCompoundShapeContents(cShape, shiftPosition);
 
             // remove GhostControl from PhysicsSpace, apply change, put in PhysicsSpace
-            SwordControl sword = modelMap.get(playerID).getChild("sword").getControl(SwordControl.class);
+            SwordControl sword = character.swordControl;
             bulletAppState.getPhysicsSpace().remove(sword);
             sword.setCollisionShape(cShape);
             bulletAppState.getPhysicsSpace().add(sword);
@@ -542,14 +539,15 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             timeOfLastSync = currentTime;
             List<Long> playerList=new LinkedList();
             playerList.addAll(playerSet);
+            
             for (Long sourcePlayerID:playerList) {
+                Character character=charMap.get(sourcePlayerID);
+                CharStatusMessage message=new CharStatusMessage(character.upperArmAngles,character.upperArmVels,
+                        character.position,character.velocity,character.elbowWristAngle,character.elbowWristVel,
+                        character.charAngle,character.turnVel,sourcePlayerID,charLifeMap.get(sourcePlayerID));
                 for (Long destPlayerID:playerList) {
                     try {
-                        clientMap.get(destPlayerID).send(new CharStatusMessage(upperArmAnglesMap.get(sourcePlayerID), 
-                                upperArmVelsMap.get(sourcePlayerID),charPositionMap.get(sourcePlayerID),
-                                charVelocityMap.get(sourcePlayerID),elbowWristAngleMap.get(sourcePlayerID),
-                                elbowWristVelMap.get(sourcePlayerID),charAngleMap.get(sourcePlayerID),
-                                charTurnVelMap.get(sourcePlayerID),sourcePlayerID,charLifeMap.get(sourcePlayerID)));
+                        clientMap.get(destPlayerID).send(message);
                     } catch (IOException ex) {
                         Logger.getLogger(BladeServer.class.getName()).log(Level.SEVERE, null, ex);
                     } catch (NullPointerException ex){
@@ -562,109 +560,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         }
     }
 
-    public void initTerrain() {
-
-        mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/TerrainLighting.j3md");
-        //house_mat = new Material(assetManager,"Common/MatDefs/Water/SimpleWater.j3md");
-        mat_terrain.setBoolean("useTriPlanarMapping", false);
-        mat_terrain.setBoolean("WardIso", true);
-        mat_terrain.setTexture("AlphaMap", assetManager.loadTexture("Textures/alpha1.1.png"));
-        
-        Texture grass = assetManager.loadTexture("Textures/grass.jpg");
-        grass.setWrap(WrapMode.Repeat);
-        mat_terrain.setTexture("m_DiffuseMap", grass);
-        mat_terrain.setFloat("m_DiffuseMap_0_scale", 64f);
-
-        Texture dirt = assetManager.loadTexture("Textures/TiZeta_SmlssWood1.jpg");
-        dirt.setWrap(WrapMode.Repeat);
-        mat_terrain.setTexture("m_DiffuseMap_1", dirt);
-        mat_terrain.setFloat("m_DiffuseMap_1_scale", 16f);
-
-        Texture rock = assetManager.loadTexture("Textures/TiZeta_cem1.jpg");
-        rock.setWrap(WrapMode.Repeat);
-        mat_terrain.setTexture("m_DiffuseMap_2", rock);
-        mat_terrain.setFloat("m_DiffuseMap_2_scale", 128f);
-
-        Texture normalMap0 = assetManager.loadTexture("Textures/grass_normal.png");
-        normalMap0.setWrap(WrapMode.Repeat);
-        Texture normalMap1 = assetManager.loadTexture("Textures/dirt_normal.png");
-        normalMap1.setWrap(WrapMode.Repeat);
-        Texture normalMap2 = assetManager.loadTexture("Textures/road_normal.png");
-        normalMap2.setWrap(WrapMode.Repeat);
-        mat_terrain.setTexture("NormalMap", normalMap0);
-        mat_terrain.setTexture("NormalMap_1", normalMap2);
-        mat_terrain.setTexture("NormalMap_2", normalMap2);
-        lighting = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
-        lighting.setTexture("DiffuseMap", grass);
-        lighting.setTexture("NormalMap", normalMap1);
-        lighting.setBoolean("WardIso", true);
-
-        AbstractHeightMap heightmap = null;
-        Texture heightMapImage = assetManager.loadTexture("Textures/flatland.png");
-        heightmap = new ImageBasedHeightMap(
-                ImageToAwt.convert(heightMapImage.getImage(), false, true, 0));
-        heightmap.load();
-        terrain = new TerrainQuad("my terrain", 65, 1025, heightmap.getHeightMap());
-        terrain.setMaterial(mat_terrain);
-
-        terrain.setLocalTranslation(0, -100, 0);
-        terrain.setLocalScale(2f, 2f, 2f);
-        
-        rootNode.attachChild(terrain);
-
-        terrain_phy = new RigidBodyControl(0.0f);
-        terrain_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
-        terrain_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_03);
-        terrain.addControl(terrain_phy);
-        bulletAppState.getPhysicsSpace().add(terrain_phy);
-        
-        House = (Node)assetManager.loadModel("Models/Cube.mesh.j3o");
-        House.setLocalTranslation(0.0f, 3.0f, 70.0f);
-        House.setShadowMode(ShadowMode.CastAndReceive);
-        House.setLocalScale(13f);
-        House.setMaterial(wall_mat); 
-        
-        //Does not work atm house_mat.setTexture("m_Tex1", rock);
-        //House.setMaterial(house_mat);
-        rootNode.attachChild(House);
-        RigidBodyControl house_phy = new RigidBodyControl(0.0f);
-        house_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
-        house_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_03);
-        House.addControl(house_phy);
-        bulletAppState.getPhysicsSpace().add(house_phy);
-        
-         DirectionalLight light = new DirectionalLight();
-        light.setDirection((new Vector3f(-0.5f,-1f, -0.5f)).normalize());
-        rootNode.addLight(light);
-
-        /*AmbientLight ambLight = new AmbientLight();
-        ambLight.setColor(new ColorRGBA(0.5f, 0.5f, 0.8f, 0.2f));
-        rootNode.addLight(ambLight);*/
-         
-    }
-
-    public void initMaterials() {
-        wall_mat = new Material(assetManager, "Common/MatDefs/Misc/SimpleTextured.j3md");
-        TextureKey key = new TextureKey("Textures/road.jpg");
-        key.setGenerateMips(true);
-        Texture tex = assetManager.loadTexture(key);
-        wall_mat.setTexture("ColorMap", tex);
-
-        stone_mat = new Material(assetManager, "Common/MatDefs/Misc/SimpleTextured.j3md");
-        TextureKey key2 = new TextureKey("Textures/road.jpg");
-        key2.setGenerateMips(true);
-
-        Texture tex2 = assetManager.loadTexture(key2);
-        stone_mat.setTexture("ColorMap", tex2);
-        
-        floor_mat = new Material(assetManager, "Common/MatDefs/Misc/SimpleTextured.j3md");
-        TextureKey key3 = new TextureKey("Textures/grass.jpg");
-        key3.setGenerateMips(true);
-        Texture tex3 = assetManager.loadTexture(key3);
-        tex3.setWrap(WrapMode.Repeat);
-        floor_mat.setTexture("ColorMap", tex3);
-        
-    }
+  
 
     public void messageReceived(Message message) {
         
@@ -674,21 +570,10 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                 long newPlayerID = currentPlayerID++;
                 Client client = message.getClient();
                 System.out.println("Received ClientReadyMessage");
+                Character character=new Character(newPlayerID,bulletAppState,assetManager);
+                charMap.put(newPlayerID, character);
+                final Node model = character.bodyModel;//Character.createCharacter("Models/Female.mesh.j3o", "Models/sword.mesh.j3o", assetManager, bulletAppState, true, newPlayerID);
 
-                final Node model = Character.createCharacter("Models/Female.mesh.j3o", "Models/sword.mesh.j3o", assetManager, bulletAppState, true, newPlayerID);
-                
-                //rootNode.attachChild(model);
-                //rootNode.attachChild(geom1);
-                modelMap.put(newPlayerID, model);
-                upperArmAnglesMap.put(newPlayerID, new Vector3f());
-                upperArmVelsMap.put(newPlayerID, new Vector3f());
-                upperArmDeflectVelsMap.put(newPlayerID, new Vector3f());
-                elbowWristAngleMap.put(newPlayerID, new Float(CharMovement.Constraints.lRotMin));
-                elbowWristVelMap.put(newPlayerID, new Float(0f));
-                charPositionMap.put(newPlayerID, new Vector3f());
-                charVelocityMap.put(newPlayerID, new Vector3f());
-                charAngleMap.put(newPlayerID, 0f);
-                charTurnVelMap.put(newPlayerID, 0f);
                 charLifeMap.put(newPlayerID, 1f);
                 
                 prevStates.put(newPlayerID, new ArrayDeque<Vector3f[]>(numPrevStates));
@@ -704,6 +589,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                 playerSet.add(newPlayerID);
                 clientMap.put(newPlayerID, client);
                 playerIDMap.put(client, newPlayerID);
+                timeOfLastCollisionMap.put(newPlayerID, 0L);
                 
                 actions.add(new Callable() {                    
                     public Object call() throws Exception {
@@ -720,11 +606,13 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
             final long playerID=hasID.getID();
             
             if (playerSet.contains(playerID)) {
+                final Character character=charMap.get(playerID);
+                
                 if (message instanceof InputMessages.RotateUArmCC) {
                     System.out.println("rotateCC");
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            upperArmVelsMap.get(playerID).z = -1;
+                            character.upperArmVels.z = -1;
                             return null;
                         }
                     });
@@ -732,7 +620,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     System.out.println("rotateC");
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            upperArmVelsMap.get(playerID).z = 1;
+                            character.upperArmVels.z = 1;
                             return null;
                         }
                     });
@@ -740,7 +628,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     System.out.println("rotateStop");
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            upperArmVelsMap.get(playerID).z = 0;
+                            character.upperArmVels.z = 0;
                             return null;
                         }
                     });
@@ -748,8 +636,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     final InputMessages.MouseMovement mouseMovement = (InputMessages.MouseMovement) message;
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            upperArmVelsMap.get(playerID).x = FastMath.cos(mouseMovement.angle);
-                            upperArmVelsMap.get(playerID).y = FastMath.sin(mouseMovement.angle);
+                            character.upperArmVels.x = FastMath.cos(mouseMovement.angle);
+                            character.upperArmVels.y = FastMath.sin(mouseMovement.angle);
                             return null;
                         }
                     });
@@ -757,7 +645,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            upperArmVelsMap.get(playerID).x = upperArmVelsMap.get(playerID).y = 0;
+                            character.upperArmVels.x = character.upperArmVels.y = 0;
                             return null;
                         }
                     });
@@ -767,7 +655,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            elbowWristVelMap.put(playerID, 1f);
+                            character.elbowWristVel=1f;
                             return null;
                         }
                     });
@@ -777,7 +665,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            elbowWristVelMap.put(playerID, -1f);
+                            character.elbowWristVel=-1f;
                             return null;
                         }
                     });
@@ -787,7 +675,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            elbowWristVelMap.put(playerID, 0f);
+                            character.elbowWristVel=0f;
                             return null;
                         }
                     });
@@ -797,7 +685,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            charVelocityMap.get(playerID).z = -CharMovement.charBackwordSpeed;
+                            character.velocity.z = -CharMovement.charBackwordSpeed;
                             return null;
                         }
                     });
@@ -807,7 +695,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            charVelocityMap.get(playerID).z = CharMovement.charForwardSpeed;
+                            character.velocity.z = CharMovement.charForwardSpeed;
                             return null;
                         }
                     });
@@ -817,7 +705,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            charVelocityMap.get(playerID).x = CharMovement.charStrafeSpeed;
+                            character.velocity.x = CharMovement.charStrafeSpeed;
                             return null;
                         }
                     });
@@ -827,34 +715,34 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            charVelocityMap.get(playerID).x = -CharMovement.charStrafeSpeed;
+                            character.velocity.x = -CharMovement.charStrafeSpeed;
                             return null;
                         }
                     });
                     
                 } else if (message instanceof InputMessages.TurnCharLeft) {
-                    
+                    System.out.println("Turn Left");
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            charTurnVelMap.put(playerID, 1f);
+                            character.turnVel=1f;
                             return null;
                         }
                     });
                     
                 } else if (message instanceof InputMessages.TurnCharRight) {
-                    
+                    System.out.println("Turn Right");
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            charTurnVelMap.put(playerID, -1f);
+                            character.turnVel=-1f;
                             return null;
                         }
                     });
                     
                 } else if (message instanceof InputMessages.StopCharTurn) {
-                    
+                    System.out.println("Stop Turn");
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            charTurnVelMap.put(playerID, 0f);
+                            character.turnVel=0f;
                             return null;
                         }
                     });
@@ -863,7 +751,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            charVelocityMap.get(playerID).z = 0;
+                            character.velocity.z = 0;
                             return null;
                         }
                     });
@@ -873,7 +761,7 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
                     
                     actions.add(new Callable() {
                         public Object call() throws Exception {
-                            charVelocityMap.get(playerID).x = 0;
+                            character.velocity.x = 0;
                             return null;
                         }
                     });
@@ -886,8 +774,6 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
     }
 
     public void messageSent(Message message) {
-  //      System.out.println("Sending message to "+message.getClient());
-  //      System.out.println("Sending message "+message.getClass());
     }
 
     public void objectReceived(Object object) {
@@ -906,11 +792,11 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         System.out.println("client disconnecting is " + client);
         final long playerID = playerIDMap.get(client);
         List<Long> players = new LinkedList();
-        Node model=modelMap.get(playerID);
+        Node model=charMap.get(playerID).bodyModel;
         bulletAppState.getPhysicsSpace().remove(model.getChild("sword").getControl(SwordControl.class));
         bulletAppState.getPhysicsSpace().remove(model.getControl(BodyControl.class));
         bulletAppState.getPhysicsSpace().remove(model.getControl(CharacterControl.class));
-        //rootNode.detachChild(modelMap.get(playerID));
+
         playerIDMap.remove(client);
         clientMap.remove(playerID);
         players.addAll(playerSet);
@@ -926,8 +812,8 @@ public class BladeServer extends SimpleApplication implements MessageListener,Co
         }        
         actions.add(new Callable() {
             public Object call() throws Exception {
-                rootNode.detachChild(modelMap.get(playerID));
-                modelMap.remove(playerID);
+                rootNode.detachChild(charMap.get(playerID).bodyModel);
+                charMap.remove(playerID);
                 return null;
             }
         });

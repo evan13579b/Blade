@@ -41,15 +41,9 @@ import com.jme3.animation.AnimControl;
 import com.jme3.animation.AnimEventListener;
 import com.jme3.animation.Bone;
 import mygame.messages.InputMessages;
-import com.jme3.app.SimpleApplication;
-import com.jme3.asset.TextureKey;
 import com.jme3.audio.AudioNode;
 import com.jme3.bounding.BoundingVolume;
-import com.jme3.bullet.BulletAppState;
-import com.jme3.bullet.collision.PhysicsCollisionObject;
 import com.jme3.bullet.control.CharacterControl;
-import com.jme3.bullet.control.RigidBodyControl;
-import com.jme3.input.ChaseCamera;
 import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
 import com.jme3.input.RawInputListener;
@@ -65,21 +59,13 @@ import com.jme3.network.connection.Client;
 import com.jme3.network.events.ConnectionListener;
 import com.jme3.network.events.MessageListener;
 import com.jme3.network.message.Message;
-import com.jme3.network.serializing.Serializer;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
-import com.jme3.terrain.heightmap.AbstractHeightMap;
-import com.jme3.terrain.geomipmap.TerrainQuad;
-import com.jme3.terrain.heightmap.ImageBasedHeightMap;
-import com.jme3.texture.Texture;
-import com.jme3.texture.Texture.WrapMode;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import jme3tools.converters.ImageToAwt;
 import mygame.messages.CharCreationMessage;
 import mygame.messages.CharDestructionMessage;
 import com.jme3.bullet.collision.shapes.BoxCollisionShape;
@@ -107,7 +93,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import mygame.messages.CharStatusMessage;
 import mygame.messages.ClientReadyMessage;
-import mygame.ui.HUD;
+import mygame.messages.SwordBodyCollisionMessage;
+import mygame.messages.SwordSwordCollisionMessage;
+import mygame.ui.LifeDisplay;
 import mygame.ui.LoginScreen;
 import mygame.util.IOLib;
 
@@ -117,22 +105,13 @@ import mygame.util.IOLib;
  */
 
 
-public class BladeClient extends SimpleApplication implements MessageListener, RawInputListener, ConnectionListener, AnimEventListener {
-
-    private ChaseCamera chaseCam;
+public class BladeClient extends BladeBase implements MessageListener, RawInputListener, ConnectionListener, AnimEventListener {
     private Node model;
-    ConcurrentHashMap<Long, Node> modelMap = new ConcurrentHashMap();
-    ConcurrentHashMap<Long, Vector3f> upperArmAnglesMap = new ConcurrentHashMap();
-    ConcurrentHashMap<Long, Vector3f> upperArmVelsMap = new ConcurrentHashMap();
-    ConcurrentHashMap<Long, Float> elbowWristAngleMap = new ConcurrentHashMap();
-    ConcurrentHashMap<Long, Float> elbowWristVelMap = new ConcurrentHashMap();
-    HashSet<Long> playerSet = new HashSet();
-    ConcurrentHashMap<Long, Vector3f> charPositionMap = new ConcurrentHashMap();
-    ConcurrentHashMap<Long, Vector3f> charVelocityMap = new ConcurrentHashMap();
-    ConcurrentHashMap<Long, Float> charAngleMap = new ConcurrentHashMap();
-    ConcurrentHashMap<Long, Float> charTurnVelMap = new ConcurrentHashMap();
+
     ConcurrentHashMap<Long, AnimChannel> animChannelMap = new ConcurrentHashMap();
     ConcurrentHashMap<Long, Float> charLifeMap = new ConcurrentHashMap();
+    ConcurrentHashMap<Long, LifeDisplay> lifeDisplayMap = new ConcurrentHashMap();
+    
 
     private final boolean debug = false;
     private BulletAppState bulletAppState;
@@ -167,7 +146,6 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     boolean readyToStart=false;
     boolean started=false;
     Nifty ui;
-    HUD hud;
 
     Client client;
     boolean clientSet = false;
@@ -177,7 +155,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         app = new BladeClient();
         AppSettings appSettings=new AppSettings(true);
         appSettings.setFrameRate(30);
-        app.setPauseOnLostFocus(false);
+  //      app.setPauseOnLostFocus(false);
         app.setSettings(appSettings);
         app.start();
     }
@@ -199,11 +177,8 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
     
     @Override
     public void simpleInitApp() {
-        Serializer.registerClass(CharStatusMessage.class);
-        Serializer.registerClass(CharCreationMessage.class);
-        Serializer.registerClass(CharDestructionMessage.class);
-        Serializer.registerClass(ClientReadyMessage.class);
-        InputMessages.registerInputClasses();
+        super.simpleInitApp();
+        
         Map<String,String> ipAddressMap=IOLib.getIpAddressMap();
 
         NiftyJmeDisplay niftyDisplay = new NiftyJmeDisplay(assetManager,inputManager,audioRenderer,guiViewPort);
@@ -212,20 +187,11 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         
         guiViewPort.addProcessor(niftyDisplay);
         flyCam.setDragToRotate(true);
-        //app.setDisplayStatView(false);
+        app.setDisplayStatView(false);
         sceneNodes = new Node("Scene");
         rootNode.attachChild(sceneNodes);
         
-        
-        
         flyCam.setMoveSpeed(50);
-        bulletAppState = new BulletAppState();
-        stateManager.attach(bulletAppState);
-        
-        initMaterials();
-        initTerrain();
-        initWater();
-        
         DirectionalLight sun = new DirectionalLight();
         sun.setDirection(lightDir);
         sun.setColor(ColorRGBA.White.clone().multLocal(1.7f));
@@ -234,17 +200,8 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
        // music.setLooping(true);
        // music.setVolume(1);
         
-        DirectionalLight sun2 = new DirectionalLight();
-        sun2.setDirection(Vector3f.UNIT_Y.mult(-1));
-        sun2.setColor(ColorRGBA.White.clone().multLocal(0.3f));
-        sceneNodes.addLight(sun2);
-
-        //rootNode.addLight(sun2);
-
-        //rootNode.attachChild(SkyFactory.createSky(assetManager, "Textures/Skysphere.jpg", true));
-        sceneNodes.attachChild(SkyFactory.createSky(assetManager, "Textures/Skysphere.jpg", true));
-        
         flyCam.setEnabled(false);
+        
         if (debug) {
             bulletAppState.getPhysicsSpace().enableDebug(this.getAssetManager());
         }
@@ -268,23 +225,21 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             }
             client.addConnectionListener(this);
             InputMessages.addInputMessageListeners(client, this);
-            client.addMessageListener(this, CharCreationMessage.class, CharDestructionMessage.class, CharStatusMessage.class,ClientReadyMessage.class);
+            client.addMessageListener(this, SwordSwordCollisionMessage.class,SwordBodyCollisionMessage.class,CharCreationMessage.class, CharDestructionMessage.class, CharStatusMessage.class,ClientReadyMessage.class);
+           
             try {
                 client.send(new ClientReadyMessage());
                 System.err.println("Sent ClientReadyMessage");
             } catch (IOException ex) {
                 Logger.getLogger(BladeClient.class.getName()).log(Level.SEVERE, null, ex);
             }
+            app.setDisplayStatView(true);
             started=true;
-            System.out.println("started");
-            hud=new HUD(this);
-            hud.enableLifeDisplay();
-            app.getGuiNode().attachChild(hud);
-            
+            System.out.println("started");            
         }
 
         if (clientSet) {
-            characterUpdate(tpf);
+            updateCharacters(tpf);
             if ((System.currentTimeMillis() - timeOfLastMouseMotion) > mouseMovementTimeout && !mouseCurrentlyStopped) {
                 try {
 
@@ -299,94 +254,34 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         }
     }
     
-    public void characterUpdate(float tpf) {
+    public void updateCharacters(float tpf) {
         for (Iterator<Long> playerIterator = playerSet.iterator(); playerIterator.hasNext();) {
             long nextPlayerID = playerIterator.next();
             upperArmAnglesMap.put(nextPlayerID, CharMovement.extrapolateUpperArmAngles(upperArmAnglesMap.get(nextPlayerID), upperArmVelsMap.get(nextPlayerID), Vector3f.ZERO, tpf));
             
-            elbowWristAngleMap.put(nextPlayerID, CharMovement.extrapolateLowerArmAngles(elbowWristAngleMap.get(nextPlayerID), elbowWristVelMap.get(nextPlayerID), tpf));
-
-            charAngleMap.put(nextPlayerID, CharMovement.extrapolateCharTurn(charAngleMap.get(nextPlayerID), charTurnVelMap.get(nextPlayerID), tpf));
-
-    //        Vector3f alternateExtrap=CharMovement.oldExtrapolateCharMovement(charPositionMap.get(nextPlayerID),charVelocityMap.get(nextPlayerID),
-      //              charAngleMap.get(nextPlayerID),charTurnVelMap.get(nextPlayerID),tpf);
-            charPositionMap.put(nextPlayerID, CharMovement.extrapolateCharMovement(charPositionMap.get(nextPlayerID),
-                    charVelocityMap.get(nextPlayerID), charAngleMap.get(nextPlayerID),charTurnVelMap.get(nextPlayerID),tpf));
-
-            CharMovement.setUpperArmTransform(upperArmAnglesMap.get(nextPlayerID), modelMap.get(nextPlayerID));
-            CharMovement.setLowerArmTransform(elbowWristAngleMap.get(nextPlayerID), modelMap.get(nextPlayerID));
-
-        //    Vector3f correctiveVelocity=correctiveVelocityMap.get(nextPlayerID);
-            
-            
-            Vector3f extrapolatedPosition,currentPosition;
-            extrapolatedPosition=charPositionMap.get(nextPlayerID);
-            currentPosition=modelMap.get(nextPlayerID).getLocalTranslation();
-     //       float diffLength=FastMath.sqrt(FastMath.sqr(extrapolatedPosition.x-currentPosition.x)+FastMath.sqr(extrapolatedPosition.z-currentPosition.z));
-            CharacterControl control=modelMap.get(nextPlayerID).getControl(CharacterControl.class);
-            
-            Vector3f diffVect=new Vector3f(extrapolatedPosition.x-currentPosition.x,0,extrapolatedPosition.z-currentPosition.z);
-   //         System.out.println("diffVect:"+diffVect);
-            float correctiveConstant=0.2f;
-            float correctiveX=0;
-            float correctiveZ=0;
-            float diffX=extrapolatedPosition.x-currentPosition.x;
-            float diffZ=extrapolatedPosition.z-currentPosition.z;
-            float diffLength=diffVect.length();/*
-            if(diffLength>10){
-                control.setPhysicsLocation(extrapolatedPosition);
-            }
-            else {
-                if(diffX>1)
-                    correctiveX=1.0f/3.0f;
-                else
-                    correctiveX=FastMath.abs(diffX)/3;
-                if(diffZ>1)
-                    correctiveZ=1.0f/3.0f;
-                else
-                    correctiveZ=FastMath.abs(diffZ)/3;
-            }*/
-                
-            Vector3f correctiveVelocity=new Vector3f(diffVect.x*correctiveConstant,0,diffVect.z*correctiveConstant);
-        //    correctiveVelocityMap.put(nextPlayerID, correctiveVelocity);
-            
-    //        float oldDiffLength=FastMath.sqrt(FastMath.sqr(alternateExtrap.x-currentPosition.x)+FastMath.sqr(alternateExtrap.z-currentPosition.z));
-      //      System.out.println("new diff is "+diffLength+", old dif is "+oldDiffLength);
-   //         if(diffLength>1.5f){
-    //              control.setPhysicsLocation(extrapolatedPosition);//new Vector3f(extrapolatedPosition.x,currentPosition.y+1,extrapolatedPosition.z));
-   //               System.out.println("warping");
-    //        }
-
-            float xDir,zDir;
-            zDir=FastMath.cos(charAngleMap.get(nextPlayerID));
-            xDir=FastMath.sin(charAngleMap.get(nextPlayerID));
-            Vector3f viewDirection=new Vector3f(xDir,0,zDir);
-            modelMap.get(nextPlayerID).getControl(CharacterControl.class).setViewDirection(viewDirection);
-
-            Vector3f forward,up,left;
-            float xVel,zVel;
-            xVel=charVelocityMap.get(nextPlayerID).x;
-            zVel=charVelocityMap.get(nextPlayerID).z;
-            forward=new Vector3f(viewDirection);
-            up=new Vector3f(0,1,0);
-            left=up.cross(forward);
+            Character character=charMap.get(nextPlayerID);
+            character.update(tpf,false);
 
             if(nextPlayerID==playerID){
-                cam.setDirection(viewDirection);
-                cam.setLocation(modelMap.get(nextPlayerID).getLocalTranslation().add(new Vector3f(0,4,0)).subtract(viewDirection.mult(8)));
+                cam.setDirection(character.charControl.getViewDirection());
+                cam.setLocation(character.bodyModel.getLocalTranslation().add(new Vector3f(0,4,0)).subtract(character.charControl.getViewDirection().mult(8)));
             }
 
-            Vector3f velocity=left.mult(xVel).add(forward.mult(zVel));
-            
-            control.setWalkDirection(velocity.add(correctiveVelocity));
+            if (lifeDisplayMap.get(nextPlayerID) != null) {
+                lifeDisplayMap.get(nextPlayerID).setLifeDisplayValue(charLifeMap.get(nextPlayerID));
+                if(playerID!=nextPlayerID){
+                    lifeDisplayMap.get(nextPlayerID).setLocalTranslation(character.bodyModel.getLocalTranslation());
+                    lifeDisplayMap.get(nextPlayerID).lookAt(charMap.get(playerID).bodyModel.getLocalTranslation().subtract(character.charControl.getViewDirection()).mult(1), new Vector3f(0,1,0));
+               } 
+            }
 
             // first, get rotation and position of hand
-            Bone hand = modelMap.get(nextPlayerID).getControl(AnimControl.class).getSkeleton().getBone("swordHand");
+            Bone hand = character.bodyModel.getControl(AnimControl.class).getSkeleton().getBone("swordHand");
             Matrix3f rotation = hand.getModelSpaceRotation().toRotationMatrix();
             Vector3f position = hand.getModelSpacePosition();
 
             // set the position of the sword to the position of the hand
-            Node swordNode = (Node) modelMap.get(nextPlayerID).getChild("sword");
+            Node swordNode = character.swordModel;
             Bone swordBone = swordNode.getControl(AnimControl.class).getSkeleton().getBone("swordBone");
             swordNode.setLocalRotation(rotation);
             swordNode.setLocalTranslation(position);
@@ -408,7 +303,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 CollisionShapeFactory.shiftCompoundShapeContents(cShape, shiftPosition);
                 
                 // remove GhostControl from PhysicsSpace, apply change, put in PhysicsSpace
-                SwordControl sword = modelMap.get(nextPlayerID).getChild("sword").getControl(SwordControl.class);
+                SwordControl sword = character.swordControl;
                 bulletAppState.getPhysicsSpace().remove(sword);
                 sword.setCollisionShape(cShape);
                 bulletAppState.getPhysicsSpace().add(sword);
@@ -421,187 +316,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         inputManager.setCursorVisible(false);
     }
 
-    public void initTerrain() {
-
-        
-        mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/TerrainLighting.j3md");
-        //house_mat = new Material(assetManager,"Common/MatDefs/Water/SimpleWater.j3md");
-        mat_terrain.setBoolean("useTriPlanarMapping", false);
-        mat_terrain.setBoolean("WardIso", true);
-        mat_terrain.setTexture("AlphaMap", assetManager.loadTexture("Textures/alpha1.1.png"));
-        
-        Texture grass = assetManager.loadTexture("Textures/grass.jpg");
-        grass.setWrap(WrapMode.Repeat);
-        mat_terrain.setTexture("m_DiffuseMap", grass);
-        mat_terrain.setFloat("m_DiffuseMap_0_scale", 64f);
-
-        Texture dirt = assetManager.loadTexture("Textures/TiZeta_SmlssWood1.jpg");
-        dirt.setWrap(WrapMode.Repeat);
-        mat_terrain.setTexture("m_DiffuseMap_1", dirt);
-        mat_terrain.setFloat("m_DiffuseMap_1_scale", 16f);
-
-        Texture rock = assetManager.loadTexture("Textures/TiZeta_cem1.jpg");
-        rock.setWrap(WrapMode.Repeat);
-        mat_terrain.setTexture("m_DiffuseMap_2", rock);
-        mat_terrain.setFloat("m_DiffuseMap_2_scale", 128f);
-
-        Texture normalMap0 = assetManager.loadTexture("Textures/grass_normal.png");
-        normalMap0.setWrap(WrapMode.Repeat);
-        Texture normalMap1 = assetManager.loadTexture("Textures/dirt_normal.png");
-        normalMap1.setWrap(WrapMode.Repeat);
-        Texture normalMap2 = assetManager.loadTexture("Textures/road_normal.png");
-        normalMap2.setWrap(WrapMode.Repeat);
-        mat_terrain.setTexture("NormalMap", normalMap0);
-        mat_terrain.setTexture("NormalMap_1", normalMap2);
-        mat_terrain.setTexture("NormalMap_2", normalMap2);
-        lighting = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
-        lighting.setTexture("DiffuseMap", grass);
-        lighting.setTexture("NormalMap", normalMap1);
-        lighting.setBoolean("WardIso", true);
-
-        AbstractHeightMap heightmap = null;
-        Texture heightMapImage = assetManager.loadTexture("Textures/flatland.png");
-        heightmap = new ImageBasedHeightMap(
-                ImageToAwt.convert(heightMapImage.getImage(), false, true, 0));
-        heightmap.load();
-        terrain = new TerrainQuad("my terrain", 65, 1025, heightmap.getHeightMap());
-        terrain.setMaterial(mat_terrain);
-
-        terrain.setLocalTranslation(0, -100, 0);
-        terrain.setLocalScale(2f, 2f, 2f);
-        terrain.setShadowMode(ShadowMode.CastAndReceive);
-        //rootNode.attachChild(terrain);
-        sceneNodes.attachChild(terrain);
-        terrain_phy = new RigidBodyControl(0.0f);
-        terrain_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
-        terrain_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_03);
-        terrain.addControl(terrain_phy);
-        bulletAppState.getPhysicsSpace().add(terrain_phy);
-        
-        /*for(int i = 0; i < 9; i++){
-            Tree[i] = (Node) assetManager.loadModel("Models/Tree.mesh.j3o");
-        }*/
-        int xDiff = 0;
-        int yDiff = 0;
-        for(int i = 0 ; i < 9; i++){
-            for(int j = 0; j < 9; j++){
-            Tree = (Node) assetManager.loadModel("Models/Tree.mesh.j3o");
-            Tree.setLocalTranslation(-80.0f + xDiff, 10.0f, 35.0f+yDiff);
-            sceneNodes.attachChild(Tree);
-            RigidBodyControl tree_phy = new RigidBodyControl(0.0f);
-            tree_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
-            tree_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_03);
-            Tree.addControl(tree_phy);
-            bulletAppState.getPhysicsSpace().add(tree_phy);
-            xDiff = xDiff - 25;
-            
-            }
-            xDiff = 0;
-            yDiff = yDiff - 25;
-        }
-        House = (Node)assetManager.loadModel("Models/Cube.mesh.j3o");
-        House.setLocalTranslation(0.0f, 3.0f, 70.0f);
-        House.setShadowMode(ShadowMode.CastAndReceive);
-        House.setLocalScale(13f);
-        House.setMaterial(wall_mat); 
-        //Does not work atm house_mat.setTexture("m_Tex1", rock);
-        //House.setMaterial(house_mat);
-        House.setMaterial(wall_mat);
-        //rootNode.attachChild(House);
-        sceneNodes.attachChild(House);
-        RigidBodyControl house_phy = new RigidBodyControl(0.0f);
-        house_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
-        house_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_03);
-        House.addControl(house_phy);
-        bulletAppState.getPhysicsSpace().add(house_phy);
-        
-       /*  DirectionalLight light = new DirectionalLight();
-        light.setDirection((new Vector3f(4.9f,1.3f, -5.9f)).normalize());
-        rootNode.addLight(light);
-        */
-        /*AmbientLight ambLight = new AmbientLight();
-        ambLight.setColor(new ColorRGBA(0.5f, 0.5f, 0.8f, 0.2f));
-        sceneNodes.addLight(ambLight);*/
-    }
     
-    public void initWater(){
-        //NEW WATER
-        
-        fpp = new FilterPostProcessor(assetManager);
-        water = new WaterFilter(rootNode, lightDir);
-        water.setWaveScale(0.003f);
-        water.setMaxAmplitude(2f);
-        water.setFoamExistence(new Vector3f(1f, 4, 0.5f));
-        water.setFoamTexture((Texture2D) assetManager.loadTexture("Common/MatDefs/Water/Textures/foam2.jpg"));
-        water.setRefractionStrength(0.2f);
-        water.setWaterHeight(initialWaterHeight);
-        fpp.addFilter(water);
-        viewPort.addProcessor(fpp);
-        inputManager.addListener(new ActionListener() {
-
-            public void onAction(String name, boolean isPressed, float tpf) {
-                if(isPressed){
-                    if(name.equals("foam1")){
-                        water.setFoamTexture((Texture2D) assetManager.loadTexture("Common/MatDefs/Water/Textures/foam.jpg"));                      
-                    }
-                    if(name.equals("foam2")){
-                        water.setFoamTexture((Texture2D) assetManager.loadTexture("Common/MatDefs/Water/Textures/foam2.jpg"));
-                    }
-                    if(name.equals("foam3")){
-                        water.setFoamTexture((Texture2D) assetManager.loadTexture("Common/MatDefs/Water/Textures/foam3.jpg"));
-                    }
-                }
-            }
-        }, "foam1","foam2","foam3");
-        inputManager.addMapping("foam1", new KeyTrigger(keyInput.KEY_1));
-        inputManager.addMapping("foam2", new KeyTrigger(keyInput.KEY_2));
-        inputManager.addMapping("foam3", new KeyTrigger(keyInput.KEY_3));
-
-        //OLD WATER
-         /* SimpleWaterProcessor waterProcessor = new SimpleWaterProcessor(assetManager);
-            waterProcessor.setReflectionScene(sceneNodes);
-            Vector3f waterLocation = new Vector3f(0,-7,0);
-            waterProcessor.setPlane(new Plane(Vector3f.UNIT_Y, waterLocation.dot(Vector3f.UNIT_Y)));
-            viewPort.addProcessor(waterProcessor);
-            
-            waterProcessor.setWaterDepth(30);
-            waterProcessor.setDistortionScale(0.05f);
-            waterProcessor.setWaveSpeed(0.06f);
-            waterProcessor.setWaterTransparency(0.5f);
-            Quad quad = new Quad(400,400);
-            quad.scaleTextureCoordinates(new Vector2f(6f,6f));
-            
-            Geometry water = new Geometry("water",quad);
-            water.setLocalRotation(new Quaternion().fromAngleAxis(-FastMath.HALF_PI, Vector3f.UNIT_X));
-            water.setLocalTranslation(-200, -7, 250);
-            water.setShadowMode(ShadowMode.Receive);
-            
-            water.setMaterial(waterProcessor.getMaterial());
-            rootNode.attachChild(water);
-            //waterProcessor.setRenderSize(128,128);*/
-    }   
-
-    public void initMaterials() {
-        wall_mat = new Material(assetManager, "Common/MatDefs/Misc/SimpleTextured.j3md");
-        TextureKey key = new TextureKey("Textures/road.jpg");
-        key.setGenerateMips(true);
-        Texture tex = assetManager.loadTexture(key);
-        wall_mat.setTexture("ColorMap", tex);
-
-        stone_mat = new Material(assetManager, "Common/MatDefs/Misc/SimpleTextured.j3md");
-        TextureKey key2 = new TextureKey("Textures/road.jpg");
-        key2.setGenerateMips(true);
-
-        Texture tex2 = assetManager.loadTexture(key2);
-        stone_mat.setTexture("ColorMap", tex2);
-
-        floor_mat = new Material(assetManager, "Common/MatDefs/Misc/SimpleTextured.j3md");
-        TextureKey key3 = new TextureKey("Textures/grass.jpg");
-        key3.setGenerateMips(true);
-        Texture tex3 = assetManager.loadTexture(key3);
-        tex3.setWrap(WrapMode.Repeat);
-        floor_mat.setTexture("ColorMap", tex3);
-    }
 
     public void messageReceived(Message message) {
         if (message instanceof CharDestructionMessage){
@@ -609,16 +324,16 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             final long destroyedPlayerID=destroMessage.playerID;
             System.out.println("my id is "+playerID+", and destroID is "+destroyedPlayerID);
             playerSet.remove(destroyedPlayerID);
-            Node model=modelMap.get(destroyedPlayerID);
-            bulletAppState.getPhysicsSpace().remove(model.getChild("sword").getControl(SwordControl.class));
-            bulletAppState.getPhysicsSpace().remove(model.getControl(BodyControl.class));
-            bulletAppState.getPhysicsSpace().remove(model.getControl(CharacterControl.class));
-            //rootNode.detachChild(modelMap.get(destroyedPlayerID));
+            final Node destroyedModel=charMap.get(destroyedPlayerID).bodyModel;
+            bulletAppState.getPhysicsSpace().remove(destroyedModel.getChild("sword").getControl(SwordControl.class));
+            bulletAppState.getPhysicsSpace().remove(destroyedModel.getControl(BodyControl.class));
+            bulletAppState.getPhysicsSpace().remove(destroyedModel.getControl(CharacterControl.class));
+
             Future action = app.enqueue(new Callable() {
 
                 public Object call() throws Exception {
-                    rootNode.detachChild(modelMap.get(destroyedPlayerID));
-                    modelMap.remove(destroyedPlayerID);
+                    rootNode.detachChild(destroyedModel);
+                    charMap.remove(destroyedPlayerID);
                     return null;
                 }
             });
@@ -628,9 +343,9 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
         else if (message instanceof CharCreationMessage) {
             System.out.println("Creating character");
             CharCreationMessage creationMessage = (CharCreationMessage) message;
-            long newPlayerID = creationMessage.playerID;
-            final Node newModel = Character.createCharacter("Models/Female.mesh.j3o", "Models/sword.mesh.j3o", assetManager, bulletAppState, true, newPlayerID);
-            //rootNode.attachChild(newModel);
+            final long newPlayerID = creationMessage.playerID;
+            Character character=new Character(newPlayerID,bulletAppState,assetManager);
+            final Node newModel=character.bodyModel;//= Character.createCharacter("Models/Female.mesh.j3o", "Models/sword.mesh.j3o", assetManager, bulletAppState, true, newPlayerID);
             
             if (debug) {
                 AnimControl control = newModel.getControl(AnimControl.class);
@@ -641,7 +356,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 skeletonDebug.setMaterial(mat2);
                 newModel.attachChild(skeletonDebug);
                 
-                Node newSword = (Node)newModel.getChild("sword");
+                Node newSword = character.swordModel;//(Node)newModel.getChild("sword");
                 
                 AnimControl control1 = newSword.getControl(AnimControl.class);
                 SkeletonDebugger skeletonDebug1 = new SkeletonDebugger("skeleton1", control1.getSkeleton());
@@ -651,7 +366,9 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 skeletonDebug1.setMaterial(mat21);
                 newSword.attachChild(skeletonDebug1);
             }
+
             
+           
             if (creationMessage.controllable) {
                 playerID = newPlayerID;
                 model = newModel;
@@ -679,28 +396,33 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
                 chaseCam.setLookAtOffset(new Vector3f(0.0f, 4.0f, 0.0f));
  */
                 registerInput();
+                
                 clientSet = true;
             }
-            modelMap.put(newPlayerID, newModel);
             
             playerSet.add(newPlayerID);
-            upperArmAnglesMap.put(newPlayerID, new Vector3f());
-            upperArmVelsMap.put(newPlayerID, new Vector3f());
-            elbowWristAngleMap.put(newPlayerID, new Float(CharMovement.Constraints.lRotMin));
-            elbowWristVelMap.put(newPlayerID, new Float(0f));
-            charPositionMap.put(newPlayerID, new Vector3f());
-            charVelocityMap.put(newPlayerID, new Vector3f());
-            charAngleMap.put(newPlayerID, 0f);
-            charTurnVelMap.put(newPlayerID, 0f);
-            animChannelMap.put(newPlayerID, modelMap.get(newPlayerID).getControl(AnimControl.class).createChannel());
+            animChannelMap.put(newPlayerID, character.bodyModel.getControl(AnimControl.class).createChannel());
             animChannelMap.get(newPlayerID).setAnim("stand");
             charLifeMap.put(newPlayerID, 1f);
-
+            charMap.put(newPlayerID, character); 
+            
+            final boolean controllable=creationMessage.controllable;
             Future action = app.enqueue(new Callable() {
 
                 public Object call() throws Exception {
-                    //rootNode.attachChild(newModel);
-                    sceneNodes.attachChild(newModel);
+                    LifeDisplay lifeDisplay;
+                    if (controllable) {
+                        lifeDisplay = new LifeDisplay(assetManager.loadFont("Interface/Fonts/Default.fnt"), true);
+                        lifeDisplayMap.put(newPlayerID, lifeDisplay);
+                        lifeDisplay.setLocalTranslation(0,app.getSettings().getHeight(),0);
+                        guiNode.attachChild(lifeDisplay);
+                    }
+                    else{
+                        lifeDisplay = new LifeDisplay(assetManager.loadFont("Interface/Fonts/Default.fnt"), false);
+                        lifeDisplayMap.put(newPlayerID, lifeDisplay);
+                        rootNode.attachChild(lifeDisplay);
+                    }
+                    rootNode.attachChild(newModel);
                     return null;
                 }
             });
@@ -709,19 +431,19 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
             
         } else if (message instanceof CharStatusMessage) {
             if (clientSet) {
-
+                
                 CharStatusMessage charStatus = (CharStatusMessage) message;
                 long messagePlayerID = charStatus.playerID;
-
-                upperArmAnglesMap.put(messagePlayerID, charStatus.upperArmAngles.clone());
-                upperArmVelsMap.put(messagePlayerID, charStatus.upperArmVels.clone());
-                elbowWristAngleMap.put(messagePlayerID, charStatus.elbowWristAngle);
-                elbowWristVelMap.put(messagePlayerID, charStatus.elbowWristVel);
-                charPositionMap.put(messagePlayerID, charStatus.charPosition);
-                charVelocityMap.put(messagePlayerID, charStatus.charVelocity);
-                charAngleMap.put(messagePlayerID, charStatus.charAngle);
-                charTurnVelMap.put(messagePlayerID, charStatus.charTurnVel);
-                charLifeMap.put(messagePlayerID, charStatus.life);
+                Character character=charMap.get(messagePlayerID);
+ 
+                character.upperArmAngles=charStatus.upperArmAngles.clone();
+                character.upperArmVels=charStatus.upperArmVels.clone();
+                character.elbowWristAngle=charStatus.elbowWristAngle;
+                character.elbowWristVel=charStatus.elbowWristVel;
+                character.position=charStatus.charPosition.clone();
+                character.velocity=charStatus.charVelocity.clone();
+                character.charAngle=charStatus.charAngle;
+                character.turnVel=charStatus.charTurnVel;
                 if (animChannelMap.get(messagePlayerID) != null) {
                     if (charVelocityMap.get(messagePlayerID).z < 0 ){
            //             System.out.println("back");
@@ -755,15 +477,22 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
                 }
                 
-                if(messagePlayerID==playerID){
-                    hud.setLifeDisplayValue(charStatus.life);
-                }
+                charLifeMap.put(messagePlayerID,charStatus.life);
             }
+        } else if (message instanceof SwordSwordCollisionMessage){
+            SwordSwordCollisionMessage collisionMessage=(SwordSwordCollisionMessage)message;
+            System.out.println("Received sword-sword collision at "+collisionMessage.coordinates);
+            createEffect(collisionMessage.coordinates,clankMat);
+
+        } else if (message instanceof SwordBodyCollisionMessage) {
+            SwordBodyCollisionMessage collisionMessage = (SwordBodyCollisionMessage) message;
+            System.out.println("Received sword-body collision" + collisionMessage.coordinates);
+            
+            createEffect(collisionMessage.coordinates,bloodMat);
         }
     }
 
     public void messageSent(Message message) {
-    //    System.out.println(message.getClass());
     }
 
     public void objectReceived(Object object) {
@@ -783,7 +512,7 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
     public void onJoyButtonEvent(JoyButtonEvent evt) {
     }
-    private final int eventsPerPacket = 1; // how many events should happen before next packet is sent
+    private final int eventsPerPacket = 3; // how many events should happen before next packet is sent
     private final long mouseMovementTimeout = 20;// 100; // how long until we propose to send a StopMouseMovement message
     private long timeOfLastMouseMotion = 0; // how long since last movement
     private int currentMouseEvents = 0;
@@ -821,14 +550,14 @@ public class BladeClient extends SimpleApplication implements MessageListener, R
 
         try {
             if (evt.getDeltaWheel() > 0) {
-                if (prevDeltaWheel < 0 && !(elbowWristAngleMap.get(playerID) == CharMovement.Constraints.lRotMax)) {
+                if (prevDeltaWheel < 0 && !(charMap.get(playerID).elbowWristAngle == CharMovement.Constraints.lRotMax)) {
                     client.send(new InputMessages.StopLArm(playerID));
                 } else {
                     client.send(new InputMessages.LArmDown(playerID));
                 }
                 prevDeltaWheel = 1;
             } else if (evt.getDeltaWheel() < 0) {
-                if (prevDeltaWheel > 0 && !(elbowWristAngleMap.get(playerID) == CharMovement.Constraints.lRotMin)) {
+                if (prevDeltaWheel > 0 && !(charMap.get(playerID).elbowWristAngle == CharMovement.Constraints.lRotMin)) {
                     client.send(new InputMessages.StopLArm(playerID));
                 } else {
                     client.send(new InputMessages.LArmUp(playerID));
