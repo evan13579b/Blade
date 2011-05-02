@@ -43,6 +43,7 @@ import com.jme3.animation.Bone;
 import mygame.messages.InputMessages;
 import com.jme3.audio.AudioNode;
 import com.jme3.bounding.BoundingVolume;
+import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
@@ -70,9 +71,8 @@ import mygame.messages.CharCreationMessage;
 import mygame.messages.CharDestructionMessage;
 import com.jme3.bullet.collision.shapes.BoxCollisionShape;
 import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
+import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.bullet.util.CollisionShapeFactory;
-import com.jme3.input.controls.ActionListener;
-import com.jme3.input.controls.KeyTrigger;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.RenderState.BlendMode;
 import com.jme3.math.ColorRGBA;
@@ -81,11 +81,9 @@ import com.jme3.math.Quaternion;
 import com.jme3.niftygui.NiftyJmeDisplay;
 import com.jme3.post.FilterPostProcessor;
 import com.jme3.renderer.queue.RenderQueue.Bucket;
-import com.jme3.renderer.queue.RenderQueue.ShadowMode;
 import com.jme3.scene.debug.SkeletonDebugger;
 import com.jme3.system.AppSettings;
-import com.jme3.texture.Texture2D;
-import com.jme3.util.SkyFactory;
+import com.jme3.terrain.geomipmap.TerrainQuad;
 import com.jme3.water.WaterFilter;
 import de.lessvoid.nifty.Nifty;
 import java.util.Map;
@@ -106,38 +104,18 @@ import mygame.util.IOLib;
 
 
 public class BladeClient extends BladeBase implements MessageListener, RawInputListener, ConnectionListener, AnimEventListener {
-    private Node model;
-
     ConcurrentHashMap<Long, AnimChannel> animChannelMap = new ConcurrentHashMap();
     ConcurrentHashMap<Long, Float> charLifeMap = new ConcurrentHashMap();
     ConcurrentHashMap<Long, LifeDisplay> lifeDisplayMap = new ConcurrentHashMap();
     
-
     private final boolean debug = false;
-    private BulletAppState bulletAppState;
-    private TerrainQuad terrain;
-    Material mat_terrain;
-    Material lighting;
-    Material wall_mat;
-    Material stone_mat;
-    Material floor_mat;
     //WATER VARIABLES
     private Vector3f lightDir = new Vector3f(-4.9236743f, -1.27054665f, 5.896916f);
     private float time = 0.0f;
     private float waterHeight = -10.0f;
     private float initialWaterHeight = -9.2f;
-    private WaterFilter water;
-    private FilterPostProcessor fpp;
-
-
-    private RigidBodyControl terrain_phy;
-    private RigidBodyControl basic_phy;
-    private RigidBodyControl body_phy;
-    private Node House;
-    private Node Tree;
-    private AudioNode music;
+    
     private Node sceneNodes;
-    CharacterControl character;
     CompoundCollisionShape collisionShape;
     BoundingVolume ballBound;
     Geometry block;
@@ -196,9 +174,6 @@ public class BladeClient extends BladeBase implements MessageListener, RawInputL
         sun.setDirection(lightDir);
         sun.setColor(ColorRGBA.White.clone().multLocal(1.7f));
         sceneNodes.addLight(sun);
-       // music = new AudioNode( assetManager, "Sound/music1.wav", true);
-       // music.setLooping(true);
-       // music.setVolume(1);
         
         flyCam.setEnabled(false);
         
@@ -257,7 +232,6 @@ public class BladeClient extends BladeBase implements MessageListener, RawInputL
     public void updateCharacters(float tpf) {
         for (Iterator<Long> playerIterator = playerSet.iterator(); playerIterator.hasNext();) {
             long nextPlayerID = playerIterator.next();
-            upperArmAnglesMap.put(nextPlayerID, CharMovement.extrapolateUpperArmAngles(upperArmAnglesMap.get(nextPlayerID), upperArmVelsMap.get(nextPlayerID), Vector3f.ZERO, tpf));
             
             Character character=charMap.get(nextPlayerID);
             character.update(tpf,false);
@@ -371,7 +345,6 @@ public class BladeClient extends BladeBase implements MessageListener, RawInputL
            
             if (creationMessage.controllable) {
                 playerID = newPlayerID;
-                model = newModel;
                 System.out.println("claiming player id " + playerID);
                 
                 /**** Testing transparency of model ****/
@@ -445,27 +418,27 @@ public class BladeClient extends BladeBase implements MessageListener, RawInputL
                 character.charAngle=charStatus.charAngle;
                 character.turnVel=charStatus.charTurnVel;
                 if (animChannelMap.get(messagePlayerID) != null) {
-                    if (charVelocityMap.get(messagePlayerID).z < 0 ){
+                    if (character.velocity.z < 0 ){
            //             System.out.println("back");
                         if (!(animChannelMap.get(messagePlayerID).getAnimationName().equals("backWalk"))) 
                             animChannelMap.get(messagePlayerID).setAnim("backWalk");
-                    }else if(charVelocityMap.get(messagePlayerID).z > 0){
+                    }else if(character.velocity.z > 0){
            //             System.out.println("forward");
                         if (!(animChannelMap.get(messagePlayerID).getAnimationName().equals("walk"))) 
                             animChannelMap.get(messagePlayerID).setAnim("walk");
-                    }else if(charVelocityMap.get(messagePlayerID).x < 0){
+                    }else if(character.velocity.x < 0){
             //            System.out.println("right");
                         if (!(animChannelMap.get(messagePlayerID).getAnimationName().equals("sideR"))) 
                             animChannelMap.get(messagePlayerID).setAnim("sideR");
-                    }else if(charVelocityMap.get(messagePlayerID).x > 0){
+                    }else if(character.velocity.x > 0){
             //            System.out.println("left");
                         if (!(animChannelMap.get(messagePlayerID).getAnimationName().equals("sideL"))) 
                             animChannelMap.get(messagePlayerID).setAnim("sideL");
-                    }else if(charTurnVelMap.get(messagePlayerID) < 0){
+                    }else if(character.turnVel < 0){
             //            System.out.println("rotateR");
                         if (!(animChannelMap.get(messagePlayerID).getAnimationName().equals("rotateR"))) 
                             animChannelMap.get(messagePlayerID).setAnim("rotateR");
-                    }else if(charTurnVelMap.get(messagePlayerID) > 0){
+                    }else if(character.turnVel > 0){
             //            System.out.println("rotateL");
                         if (!(animChannelMap.get(messagePlayerID).getAnimationName().equals("rotateL"))) 
                             animChannelMap.get(messagePlayerID).setAnim("rotateL");

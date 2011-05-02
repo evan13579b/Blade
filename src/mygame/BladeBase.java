@@ -11,26 +11,24 @@ import com.jme3.bullet.collision.PhysicsCollisionObject;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.effect.ParticleEmitter;
 import com.jme3.effect.ParticleMesh;
+import com.jme3.input.controls.ActionListener;
+import com.jme3.input.controls.KeyTrigger;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
-import com.jme3.math.FastMath;
-import com.jme3.math.Plane;
-import com.jme3.math.Quaternion;
-import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 import com.jme3.network.serializing.Serializer;
+import com.jme3.post.FilterPostProcessor;
 import com.jme3.renderer.queue.RenderQueue.ShadowMode;
-import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
-import com.jme3.scene.shape.Quad;
 import com.jme3.terrain.geomipmap.TerrainQuad;
 import com.jme3.terrain.heightmap.AbstractHeightMap;
 import com.jme3.terrain.heightmap.ImageBasedHeightMap;
 import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.WrapMode;
+import com.jme3.texture.Texture2D;
 import com.jme3.util.SkyFactory;
-import com.jme3.water.SimpleWaterProcessor;
+import com.jme3.water.WaterFilter;
 import java.util.HashSet;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -63,11 +61,20 @@ public class BladeBase extends SimpleApplication{
     Material bloodMat;
     Material clankMat;
     
+    private Vector3f lightDir = new Vector3f(-4.9236743f, -1.27054665f, 5.896916f);
+    
     private Node house;
+    private Node tree;
+    private Node sceneNodes;
     
     private TerrainQuad terrain;
     
     private RigidBodyControl terrain_phy;
+    
+    private FilterPostProcessor fpp;
+    WaterFilter water;
+    
+    private float initialWaterHeight = -9.2f;
     
     BulletAppState bulletAppState;
     
@@ -80,6 +87,9 @@ public class BladeBase extends SimpleApplication{
         Serializer.registerClass(SwordSwordCollisionMessage.class);
         Serializer.registerClass(SwordBodyCollisionMessage.class);
         InputMessages.registerInputClasses();
+        
+        sceneNodes = new Node("Scene");
+        rootNode.attachChild(sceneNodes);
         
         bulletAppState=new BulletAppState();
         stateManager.attach(bulletAppState);
@@ -100,11 +110,11 @@ public class BladeBase extends SimpleApplication{
     
     public void initTerrain() {
         mat_terrain = new Material(assetManager, "Common/MatDefs/Terrain/TerrainLighting.j3md");
-        
+        //house_mat = new Material(assetManager,"Common/MatDefs/Water/SimpleWater.j3md");
         mat_terrain.setBoolean("useTriPlanarMapping", false);
         mat_terrain.setBoolean("WardIso", true);
         mat_terrain.setTexture("AlphaMap", assetManager.loadTexture("Textures/alpha1.1.png"));
-
+        
         Texture grass = assetManager.loadTexture("Textures/grass.jpg");
         grass.setWrap(WrapMode.Repeat);
         mat_terrain.setTexture("m_DiffuseMap", grass);
@@ -114,7 +124,7 @@ public class BladeBase extends SimpleApplication{
         dirt.setWrap(WrapMode.Repeat);
         mat_terrain.setTexture("m_DiffuseMap_1", dirt);
         mat_terrain.setFloat("m_DiffuseMap_1_scale", 16f);
-        
+
         Texture rock = assetManager.loadTexture("Textures/TiZeta_cem1.jpg");
         rock.setWrap(WrapMode.Repeat);
         mat_terrain.setTexture("m_DiffuseMap_2", rock);
@@ -133,7 +143,7 @@ public class BladeBase extends SimpleApplication{
         lighting.setTexture("DiffuseMap", grass);
         lighting.setTexture("NormalMap", normalMap1);
         lighting.setBoolean("WardIso", true);
-               
+
         AbstractHeightMap heightmap = null;
         Texture heightMapImage = assetManager.loadTexture("Textures/flatland.png");
         heightmap = new ImageBasedHeightMap(
@@ -144,31 +154,51 @@ public class BladeBase extends SimpleApplication{
 
         terrain.setLocalTranslation(0, -100, 0);
         terrain.setLocalScale(2f, 2f, 2f);
-
-        rootNode.attachChild(terrain);
-
+        terrain.setShadowMode(ShadowMode.CastAndReceive);
+        //rootNode.attachChild(terrain);
+        sceneNodes.attachChild(terrain);
         terrain_phy = new RigidBodyControl(0.0f);
         terrain_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
         terrain_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_03);
         terrain.addControl(terrain_phy);
         bulletAppState.getPhysicsSpace().add(terrain_phy);
-
-        house = (Node) assetManager.loadModel("Models/Cube.mesh.j3o");
+        
+        /*for(int i = 0; i < 9; i++){
+            Tree[i] = (Node) assetManager.loadModel("Models/Tree.mesh.j3o");
+        }*/
+        int xDiff = 0;
+        int yDiff = 0;
+        for(int i = 0 ; i < 9; i++){
+            for(int j = 0; j < 9; j++){
+            tree = (Node) assetManager.loadModel("Models/Tree.mesh.j3o");
+            tree.setLocalTranslation(-80.0f + xDiff, 10.0f, 35.0f+yDiff);
+            sceneNodes.attachChild(tree);
+            RigidBodyControl tree_phy = new RigidBodyControl(0.0f);
+            tree_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
+            tree_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_03);
+            tree.addControl(tree_phy);
+            bulletAppState.getPhysicsSpace().add(tree_phy);
+            xDiff = xDiff - 25;
+            
+            }
+            xDiff = 0;
+            yDiff = yDiff - 25;
+        }
+        house = (Node)assetManager.loadModel("Models/Cube.mesh.j3o");
         house.setLocalTranslation(0.0f, 3.0f, 70.0f);
         house.setShadowMode(ShadowMode.CastAndReceive);
         house.setLocalScale(13f);
+        house.setMaterial(wall_mat); 
+        //Does not work atm house_mat.setTexture("m_Tex1", rock);
+        //House.setMaterial(house_mat);
         house.setMaterial(wall_mat);
-
-        rootNode.attachChild(house);
+        //rootNode.attachChild(House);
+        sceneNodes.attachChild(house);
         RigidBodyControl house_phy = new RigidBodyControl(0.0f);
         house_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_02);
         house_phy.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_03);
         house.addControl(house_phy);
         bulletAppState.getPhysicsSpace().add(house_phy);
-
-        DirectionalLight light = new DirectionalLight();
-        light.setDirection((new Vector3f(-0.5f, -1f, -0.5f)).normalize());
-        rootNode.addLight(light);
     }
 
     public void initMaterials() {
@@ -200,25 +230,35 @@ public class BladeBase extends SimpleApplication{
     }
     
     public void initWater() {
-        SimpleWaterProcessor waterProcessor = new SimpleWaterProcessor(assetManager);
-        waterProcessor.setReflectionScene(rootNode);
-        Vector3f waterLocation = new Vector3f(0, -10, 0);
-        waterProcessor.setPlane(new Plane(Vector3f.UNIT_Y, waterLocation.dot(Vector3f.UNIT_Y)));
-        viewPort.addProcessor(waterProcessor);
+        fpp = new FilterPostProcessor(assetManager);
+        water = new WaterFilter(rootNode, lightDir);
+        water.setWaveScale(0.003f);
+        water.setMaxAmplitude(2f);
+        water.setFoamExistence(new Vector3f(1f, 4, 0.5f));
+        water.setFoamTexture((Texture2D) assetManager.loadTexture("Common/MatDefs/Water/Textures/foam2.jpg"));
+        water.setRefractionStrength(0.2f);
+        water.setWaterHeight(initialWaterHeight);
+        fpp.addFilter(water);
+        viewPort.addProcessor(fpp);
+        inputManager.addListener(new ActionListener() {
 
-        waterProcessor.setWaterDepth(40);
-        waterProcessor.setDistortionScale(0.05f);
-        waterProcessor.setWaveSpeed(0.06f);
-
-        Quad quad = new Quad(1400, 1400);
-        quad.scaleTextureCoordinates(new Vector2f(6f, 6f));
-
-        Geometry water = new Geometry("water", quad);
-        water.setLocalRotation(new Quaternion().fromAngleAxis(-FastMath.HALF_PI, Vector3f.UNIT_X));
-        water.setLocalTranslation(-200, -7, 250);
-        water.setShadowMode(ShadowMode.Receive);
-        water.setMaterial(waterProcessor.getMaterial());
-        rootNode.attachChild(water);
+            public void onAction(String name, boolean isPressed, float tpf) {
+                if(isPressed){
+                    if(name.equals("foam1")){
+                        water.setFoamTexture((Texture2D) assetManager.loadTexture("Common/MatDefs/Water/Textures/foam.jpg"));                      
+                    }
+                    if(name.equals("foam2")){
+                        water.setFoamTexture((Texture2D) assetManager.loadTexture("Common/MatDefs/Water/Textures/foam2.jpg"));
+                    }
+                    if(name.equals("foam3")){
+                        water.setFoamTexture((Texture2D) assetManager.loadTexture("Common/MatDefs/Water/Textures/foam3.jpg"));
+                    }
+                }
+            }
+        }, "foam1","foam2","foam3");
+        inputManager.addMapping("foam1", new KeyTrigger(keyInput.KEY_1));
+        inputManager.addMapping("foam2", new KeyTrigger(keyInput.KEY_2));
+        inputManager.addMapping("foam3", new KeyTrigger(keyInput.KEY_3));
     }
     
     public void createEffect(final Vector3f coords,final Material material) {

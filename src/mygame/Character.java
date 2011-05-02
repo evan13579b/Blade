@@ -38,6 +38,8 @@ public class Character{
     Vector3f position;
     Vector3f velocity;
     
+    Vector3f upperArmDeflectVels;
+    
     float charAngle;
     float turnVel;
     float elbowWristAngle;
@@ -59,6 +61,7 @@ public class Character{
         
         bodyModel.attachChild(swordModel);
         
+        upperArmDeflectVels=new Vector3f();
         upperArmAngles=new Vector3f();
         upperArmVels=new Vector3f();
         position=new Vector3f();
@@ -72,7 +75,7 @@ public class Character{
     }
     
     public void update(float tpf,boolean serverChar){
-        upperArmAngles=CharMovement.extrapolateUpperArmAngles(upperArmAngles, upperArmVels, tpf);
+        upperArmAngles=CharMovement.extrapolateUpperArmAngles(upperArmAngles, upperArmVels, upperArmDeflectVels, tpf);
         elbowWristAngle=CharMovement.extrapolateLowerArmAngles(elbowWristAngle, elbowWristVel, tpf);
         charAngle=CharMovement.extrapolateCharTurn(charAngle, turnVel, tpf);
         CharMovement.setUpperArmTransform(upperArmAngles, bodyModel);

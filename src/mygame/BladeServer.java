@@ -166,14 +166,13 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
 
                     System.out.println("Collision!");
 
-                    final Vector3f point1 = event.getLocalPointA();
-                    final Vector3f point2 = event.getLocalPointB();
-
                     final long playerID1 = Long.valueOf(((ControlID) a).getID());
                     final long playerID2 = Long.valueOf(((ControlID) b).getID());
 
-                    final Node modelA = modelMap.get(playerID1);
-                    final Node modelB = modelMap.get(playerID2);
+                    final Character characterA=charMap.get(playerID1);
+                    final Character characterB=charMap.get(playerID2);
+                    final Node modelA = characterA.bodyModel;
+                    final Node modelB = characterB.bodyModel;
 
                     actions.add(new Callable() {
 
@@ -186,29 +185,29 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                                 // Handle sword deflection
 
                                 /*********/
-                                Vector3f localHandPosA1 = modelMap.get(playerID1).getControl(AnimControl.class).getSkeleton().getBone("swordHand").getModelSpacePosition();
-                                Vector3f localHandPosB1 = modelMap.get(playerID2).getControl(AnimControl.class).getSkeleton().getBone("swordHand").getModelSpacePosition();
+                                Vector3f localHandPosA1 = characterA.bodyModel.getControl(AnimControl.class).getSkeleton().getBone("swordHand").getModelSpacePosition();
+                                Vector3f localHandPosB1 = characterB.bodyModel.getControl(AnimControl.class).getSkeleton().getBone("swordHand").getModelSpacePosition();
 
-                                Vector3f worldHandPosA1 = modelMap.get(playerID1).localToWorld(localHandPosA1, null);
-                                Vector3f worldHandPosB1 = modelMap.get(playerID2).localToWorld(localHandPosB1, null);
+                                Vector3f worldHandPosA1 = characterA.bodyModel.localToWorld(localHandPosA1, null);
+                                Vector3f worldHandPosB1 = characterB.bodyModel.localToWorld(localHandPosB1, null);
 
                                 Matrix4f rotA2 = new Matrix4f();
-                                rotA2.fromAngleNormalAxis(upperArmVelsMap.get(playerID1).x, Vector3f.UNIT_Y);
+                                rotA2.fromAngleNormalAxis(characterA.upperArmVels.x, Vector3f.UNIT_Y);
 
                                 Matrix4f rotB2 = new Matrix4f();
-                                rotB2.fromAngleNormalAxis(upperArmVelsMap.get(playerID2).x, Vector3f.UNIT_Y);
+                                rotB2.fromAngleNormalAxis(characterB.upperArmVels.x, Vector3f.UNIT_Y);
 
                                 Vector3f localHandPosA2 = rotA2.mult(modelA.worldToLocal(worldHandPosA1, null));
                                 Vector3f localHandPosB2 = rotB2.mult(modelB.worldToLocal(worldHandPosB1, null));
 
-                                Vector3f worldHandPosA2 = modelMap.get(playerID1).localToWorld(localHandPosA2, null);
-                                Vector3f worldHandPosB2 = modelMap.get(playerID2).localToWorld(localHandPosB2, null);
+                                Vector3f worldHandPosA2 = characterA.bodyModel.localToWorld(localHandPosA2, null);
+                                Vector3f worldHandPosB2 = characterB.bodyModel.localToWorld(localHandPosB2, null);
 
                                 //Vector3f locImpPosA = modelA.worldToLocal(modelA.getChild("sword").localToWorld(point1, null), null);
                                 //Vector3f locImpPosB = modelA.worldToLocal(modelB.getChild("sword").localToWorld(point2, null), null);
 
-                                System.out.println("Initial v1: " + upperArmVelsMap.get(playerID1).x + ", " + upperArmVelsMap.get(playerID1).y);
-                                System.out.println("Initial v2: " + upperArmVelsMap.get(playerID2).x + ", " + upperArmVelsMap.get(playerID2).y);
+                                System.out.println("Initial v1: " + characterA.upperArmVels.x + ", " + characterA.upperArmVels.y);
+                                System.out.println("Initial v2: " + characterB.upperArmVels.x + ", " + characterB.upperArmVels.y);
 
                                 System.out.println("HandA1: " + localHandPosA1 + " HandA2: " + localHandPosA2);
                                 System.out.println("HandB1: " + localHandPosB1 + " HandB2: " + localHandPosB2);
@@ -243,22 +242,22 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                                 //float dy = handPos1.y - handPos2.y;
                                 //float dx = locImpPosA.x - locImpPosB.x;
                                 //float dy = locImpPosA.y - locImpPosB.y;
-                                float dx1 = FastMath.abs(upperArmVelsMap.get(playerID2).x) * locADirB - upperArmVelsMap.get(playerID1).x;
-                                float dy1 = upperArmVelsMap.get(playerID2).y - upperArmVelsMap.get(playerID1).y;
+                                float dx1 = FastMath.abs(characterB.upperArmVels.x) * locADirB - characterA.upperArmVels.x;
+                                float dy1 = characterB.upperArmVels.y - characterA.upperArmVels.y;
 
-                                float dx2 = upperArmVelsMap.get(playerID2).x - FastMath.abs(upperArmVelsMap.get(playerID1).x) * locBDirA;
-                                float dy2 = upperArmVelsMap.get(playerID2).y - upperArmVelsMap.get(playerID1).y;
+                                float dx2 = characterB.upperArmVels.x - FastMath.abs(characterA.upperArmVels.x) * locBDirA;
+                                float dy2 = characterB.upperArmVels.y - characterA.upperArmVels.y;
 
                                 float collisionisionAngleA = FastMath.atan2(dy1, dx1);
                                 float collisionisionAngleB = FastMath.atan2(dy2, dx2);
 
-                                float direction1 = FastMath.atan2(upperArmVelsMap.get(playerID1).y, upperArmVelsMap.get(playerID1).x);
-                                float direction2 = FastMath.atan2(upperArmVelsMap.get(playerID2).y, upperArmVelsMap.get(playerID2).x);
+                                float direction1 = FastMath.atan2(characterA.upperArmVels.y, characterA.upperArmVels.x);
+                                float direction2 = FastMath.atan2(characterB.upperArmVels.y, characterB.upperArmVels.x);
 
-                                float newX1Vel = upperArmVelsMap.get(playerID1).length() * FastMath.cos(direction1 - collisionisionAngleA);
-                                float newY1Vel = upperArmVelsMap.get(playerID1).length() * FastMath.sin(direction1 - collisionisionAngleA);
-                                float newX2Vel = upperArmVelsMap.get(playerID2).length() * FastMath.cos(direction2 - collisionisionAngleB);
-                                float newY2Vel = upperArmVelsMap.get(playerID2).length() * FastMath.sin(direction2 - collisionisionAngleB);
+                                float newX1Vel = characterA.upperArmVels.length() * FastMath.cos(direction1 - collisionisionAngleA);
+                                float newY1Vel = characterA.upperArmVels.length() * FastMath.sin(direction1 - collisionisionAngleA);
+                                float newX2Vel = characterB.upperArmVels.length() * FastMath.cos(direction2 - collisionisionAngleB);
+                                float newY2Vel = characterB.upperArmVels.length() * FastMath.sin(direction2 - collisionisionAngleB);
                                 //float final_xspeed_1 = ((ball.mass - ball2.mass) * new_xspeed_1 + (ball2.mass + ball2.mass) * new_xspeed_2) / (ball.mass + ball2.mass);
                                 //float final_xspeed_2 = ((ball.mass + ball.mass) * new_xspeed_1 + (ball2.mass - ball.mass) * new_xspeed_2) / (ball.mass + ball2.mass);
                                 //float final_yspeed_1 = new_yspeed_1;
@@ -276,8 +275,8 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                                 //upperArmVelsMap.put(playerID2, new Vector3f(x2Vel, y2Vel, 0f));
 
                                 //upperArmDeflectVelsMap.put(playerID1, upperArmDeflectVelsMap.get(playerID1).addLocal(x1Vel, y1Vel, 0f));
-                                upperArmDeflectVelsMap.put(playerID1, new Vector3f(x1Vel, y1Vel, 0f));
-                                upperArmDeflectVelsMap.put(playerID2, new Vector3f(x2Vel, y2Vel, 0f));
+                                characterA.upperArmDeflectVels=new Vector3f(x1Vel, y1Vel, 0f);
+                                characterB.upperArmDeflectVels=new Vector3f(x2Vel, y2Vel, 0f);
 
                                 /*********/
                                 prevTimeSwordHit = curTime;
@@ -428,23 +427,14 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
             prevState[2] = character.position.clone();
             character.update(tpf,true);
             
-            Vector3f upperArmDeflectVels = upperArmDeflectVelsMap.get(playerID);
-            
-            //System.out.println("upperArmAngles: " + upperArmAnglesMap.get(playerID));
-            //System.out.println("deflect: " + upperArmDeflectVels);
-            
-            prevState[0] = upperArmAnglesMap.get(playerID);
-            upperArmAnglesMap.put(playerID, CharMovement.extrapolateUpperArmAngles(upperArmAngles,
-                    upperArmVelsMap.get(playerID), upperArmDeflectVels, tpf));
-
-            //System.out.println("After Angles: " + upperArmAnglesMap.get(playerID));
+            Vector3f upperArmDeflectVels = character.upperArmDeflectVels;
             
             float deflectMagnitude = upperArmDeflectVels.length();
 
             if (deflectMagnitude != 0f) {
 
                 if (upperArmDeflectVels.length() < FastMath.FLT_EPSILON) {
-                    upperArmDeflectVelsMap.put(playerID, upperArmDeflectVels.mult(0));
+                    character.upperArmDeflectVels=upperArmDeflectVels.mult(0);
                 } else {
                     float newX, newY;
                     
@@ -463,35 +453,10 @@ public class BladeServer extends BladeBase implements MessageListener,Connection
                         newY = (FastMath.sign(newY) != signY)?0f:newX;
                     }
                     
-                    upperArmDeflectVelsMap.put(playerID, new Vector3f(newX, newY, 0));
+                    character.upperArmDeflectVels=new Vector3f(newX, newY, 0);
                 }
             }
             
-            
-            prevState[1] = new Vector3f(elbowWristAngleMap.get(playerID), 0f, 0f);
-            elbowWristAngleMap.put(playerID, CharMovement.extrapolateLowerArmAngles(elbowWristAngleMap.get(playerID),
-                    elbowWristVelMap.get(playerID), tpf));
-
-            prevState[1].setY(charAngleMap.get(playerID));
-            charAngleMap.put(playerID, CharMovement.extrapolateCharTurn(charAngleMap.get(playerID),
-                    charTurnVelMap.get(playerID), tpf));
-
-            CharacterControl control=modelMap.get(playerID).getControl(CharacterControl.class);
-            float xDir,zDir;
-            zDir=FastMath.cos(charAngleMap.get(playerID));
-            xDir=FastMath.sin(charAngleMap.get(playerID));
-            Vector3f viewDirection=new Vector3f(xDir,0,zDir);
-            control.setViewDirection(viewDirection);
-
-            Vector3f forward,up,left;
-            float xVel,zVel;
-            xVel=charVelocityMap.get(playerID).x;
-            zVel=charVelocityMap.get(playerID).z;
-            forward=new Vector3f(viewDirection);
-            up=new Vector3f(0,1,0);
-            left=up.cross(forward);
-
-            control.setWalkDirection(left.mult(xVel).add(forward.mult(zVel)));
             
             // Adjust the sword collision shape in accordance with arm movement.
             // first, get rotation and position of hand
